@@ -104,3 +104,65 @@ export type ItemListFilters = {
   limit?: number;
   offset?: number;
 };
+
+export type ReservationItem = {
+  itemId: string;
+  itemName: string;
+  quantity: number;
+  custodianId?: string | null;
+  custodianName?: string | null;
+  remainingAfterReservation?: number | null;
+  issuedQuantity?: number;
+  returnedQuantity?: number;
+  markedReturnedQuantity?: number;
+  remainingToIssue?: number;
+  remainingToReturn?: number;
+  remainingToMarkReturned?: number;
+  remainingToReceive?: number;
+};
+
+export type Reservation = {
+  id: string;
+  title: string;
+  tuntasId: string;
+  reservedByUserId: string;
+  reservedByName?: string | null;
+  approvedByUserId?: string | null;
+  requestingUnitId?: string | null;
+  requestingUnitName?: string | null;
+  eventId?: string | null;
+  totalItems: number;
+  totalQuantity: number;
+  startDate: string;
+  endDate: string;
+  status: string;
+  unitReviewStatus?: string;
+  topLevelReviewStatus?: string;
+  pickupAt?: string | null;
+  pickupLocationId?: string | null;
+  pickupLocationPath?: string | null;
+  pickupProposalStatus?: string;
+  returnAt?: string | null;
+  returnLocationId?: string | null;
+  returnLocationPath?: string | null;
+  returnProposalStatus?: string;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: ReservationItem[];
+};
+
+export type ReservationListResponse = {
+  reservations: Reservation[];
+  total: number;
+  limit?: number | null;
+  offset: number;
+  hasMore: boolean;
+};
+
+export type ReservationListFilters = {
+  status?: string;
+  itemId?: string;
+  limit?: number;
+  offset?: number;
+};

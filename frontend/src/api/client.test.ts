@@ -78,6 +78,25 @@ describe("api client", () => {
     expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
   });
 
+  it("fetches reservations with status pagination and tuntas context", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ reservations: [], total: 0, limit: 25, offset: 25, hasMore: false }));
+
+    await api.listReservations("access-token", "tuntas-1", {
+      status: "PENDING",
+      limit: 25,
+      offset: 25
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/reservations?status=PENDING&limit=25&offset=25");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+  });
+
   it("sends JSON bodies for login", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({

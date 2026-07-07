@@ -5,6 +5,8 @@ import type {
   Item,
   LoginRequest,
   PermissionsResponse,
+  ReservationListFilters,
+  ReservationListResponse,
   TokenResponse,
   UserTuntas
 } from "./types";
@@ -117,5 +119,12 @@ export const api = {
     request<Item>(`/api/items/${itemId}`, {
       token,
       tuntasId
+    }),
+
+  listReservations: (token: string, tuntasId: string, filters: ReservationListFilters = {}) =>
+    request<ReservationListResponse>("/api/reservations", {
+      token,
+      tuntasId,
+      query: filters
     })
 };

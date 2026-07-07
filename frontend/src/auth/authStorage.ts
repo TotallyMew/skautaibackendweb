@@ -15,7 +15,9 @@ export type AuthState = {
   leadershipUnitIds: string[];
 };
 
-export function authFromTokenResponse(response: TokenResponse): AuthState {
+export function authFromTokenResponse(response: TokenResponse, preferredTuntasId?: string | null): AuthState {
+  const hasPreferredTuntas = response.tuntai?.some((tuntas) => tuntas.id === preferredTuntasId);
+
   return {
     token: response.token,
     refreshToken: response.refreshToken ?? null,
@@ -24,7 +26,7 @@ export function authFromTokenResponse(response: TokenResponse): AuthState {
     name: response.name,
     type: response.type,
     tuntai: response.tuntai ?? [],
-    activeTuntasId: response.tuntai?.[0]?.id ?? null,
+    activeTuntasId: hasPreferredTuntas ? preferredTuntasId ?? null : response.tuntai?.[0]?.id ?? null,
     permissions: [],
     leadershipUnitIds: []
   };
@@ -56,4 +58,3 @@ export function saveAuthState(state: AuthState | null) {
   }
   localStorage.setItem(storageKey, JSON.stringify(state));
 }
-

@@ -301,6 +301,15 @@ button {
   background: linear-gradient(135deg, #f6f7f4 0%, #e9eee4 48%, #f7efe3 100%);
 }
 
+.route-loading {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 .login-panel {
   width: min(100%, 420px);
   padding: 28px;
@@ -387,4 +396,3 @@ button {
     grid-template-columns: 1fr;
   }
 }
-

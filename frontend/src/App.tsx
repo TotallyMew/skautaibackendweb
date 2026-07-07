@@ -5,6 +5,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventDetailPage } from "./pages/EventDetailPage";
 import { EventsPage } from "./pages/EventsPage";
+import { InventoryCreatePage } from "./pages/InventoryCreatePage";
 import { InventoryDetailPage } from "./pages/InventoryDetailPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -23,6 +24,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="inventory" element={<InventoryPage />} />
+          <Route path="inventory/new" element={<InventoryCreatePage />} />
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/reservations/:reservationId" element={<ReservationDetailPage />} />

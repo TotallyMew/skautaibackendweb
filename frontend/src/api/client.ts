@@ -1,5 +1,6 @@
 import type {
   ApiErrorBody,
+  CreateItemRequest,
   EventListFilters,
   EventListResponse,
   ItemListFilters,
@@ -146,6 +147,14 @@ export const api = {
     request<Item>(`/api/items/${itemId}`, {
       token,
       tuntasId
+    }),
+
+  createItem: (token: string, tuntasId: string, body: CreateItemRequest) =>
+    request<Item>("/api/items", {
+      token,
+      tuntasId,
+      method: "POST",
+      body
     }),
 
   listReservations: (token: string, tuntasId: string, filters: ReservationListFilters = {}) =>

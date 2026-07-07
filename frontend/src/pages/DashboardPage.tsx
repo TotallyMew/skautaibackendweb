@@ -128,7 +128,7 @@ export function DashboardPage() {
         </div>
         <div className="home-action-grid">
           <ActionTile to="/inventory" icon={Package} title="Atidaryti inventorių" subtitle="Bendras sąrašas, paieška ir filtrai." />
-          <ActionTile to="/inventory" icon={Plus} title="Aktyvūs įrašai" subtitle={formatCount(dashboard?.inventoryTotal, "aktyvus įrašas", "aktyvūs įrašai", "aktyvių įrašų")} />
+          <ActionTile to="/inventory/new" icon={Plus} title="Naujas įrašas" subtitle="Sukurti bendro inventoriaus įrašą." />
           <ActionTile to="/inventory" icon={MapPin} title="Naujausi įrašai" subtitle={summarizeItems(dashboard?.latestItems ?? [])} />
         </div>
       </section>

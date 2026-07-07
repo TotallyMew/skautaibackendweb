@@ -105,6 +105,33 @@ export type ItemListFilters = {
   offset?: number;
 };
 
+export type CreateItemRequest = {
+  name: string;
+  description?: string | null;
+  type: string;
+  category: string;
+  custodianId?: string | null;
+  origin?: string;
+  quantity: number;
+  isConsumable?: boolean;
+  unitOfMeasure?: string;
+  minimumQuantity?: number | null;
+  condition?: string;
+  locationId?: string | null;
+  temporaryStorageLabel?: string | null;
+  responsibleUserId?: string | null;
+  purchaseDate?: string | null;
+  purchasePrice?: number | null;
+  notes?: string | null;
+  customFields?: ItemCustomFieldRequest[];
+  duplicateHandling?: string;
+};
+
+export type ItemCustomFieldRequest = {
+  fieldName: string;
+  fieldValue?: string | null;
+};
+
 export type ReservationItem = {
   itemId: string;
   itemName: string;

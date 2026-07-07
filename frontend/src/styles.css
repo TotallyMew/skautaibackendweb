@@ -827,6 +827,102 @@ button {
   font-weight: 600;
 }
 
+.form-panel {
+  display: grid;
+  gap: 14px;
+  max-width: 980px;
+}
+
+.form-section {
+  display: grid;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface-lowest);
+  box-shadow: 0 8px 22px var(--shadow);
+  padding: 18px;
+}
+
+.form-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.form-section-heading > svg {
+  box-sizing: content-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface-lowest);
+  padding: 8px;
+}
+
+.form-section-heading h3,
+.form-section-heading span {
+  margin: 0;
+}
+
+.form-section-heading span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted);
+  font-size: 0.84rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.form-field {
+  display: grid;
+  gap: 6px;
+  color: var(--text-body);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.form-field.wide {
+  grid-column: 1 / -1;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-lowest);
+  color: var(--text);
+  padding: 10px 12px;
+}
+
+.form-field textarea {
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(31, 58, 42, 0.14);
+  outline: none;
+}
+
+.form-toggle {
+  align-self: end;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .primary-button {
   justify-content: center;
   min-height: 54px;
@@ -835,6 +931,12 @@ button {
   color: var(--surface-lowest);
   font-weight: 700;
   padding: 11px 14px;
+}
+
+.compact-primary-button {
+  min-height: 42px;
+  border-radius: 8px;
+  padding: 9px 12px;
 }
 
 .secondary-button,
@@ -911,6 +1013,13 @@ button {
   color: var(--text);
   font-size: 1rem;
   font-weight: 700;
+}
+
+.toolbar-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .section-heading h2 {
@@ -1781,7 +1890,8 @@ button {
   .home-overview-row,
   .home-summary-grid,
   .home-page,
-  .home-action-grid {
+  .home-action-grid,
+  .form-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1789,6 +1899,10 @@ button {
   .section-toolbar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .toolbar-actions {
+    justify-content: flex-start;
   }
 
   .home-page > .home-section {

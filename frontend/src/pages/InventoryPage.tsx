@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageCheck, PackageSearch, RefreshCw, Search } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageCheck, PackageSearch, Plus, RefreshCw, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
@@ -106,10 +106,16 @@ export function InventoryPage() {
           <strong>{total}</strong>
           <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
-        <button className="secondary-button" type="button" onClick={() => setOffset(0)} disabled={!canFetch || isLoading}>
-          <RefreshCw size={17} aria-hidden="true" />
-          Atnaujinti
-        </button>
+        <div className="toolbar-actions">
+          <Link className="primary-button compact-primary-button" to="/inventory/new">
+            <Plus size={17} aria-hidden="true" />
+            Naujas įrašas
+          </Link>
+          <button className="secondary-button" type="button" onClick={() => setOffset(0)} disabled={!canFetch || isLoading}>
+            <RefreshCw size={17} aria-hidden="true" />
+            Atnaujinti
+          </button>
+        </div>
       </div>
 
       <form className="filter-bar" onSubmit={applyFilters}>

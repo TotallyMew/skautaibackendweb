@@ -6,5 +6,8 @@ export default defineConfig({
   cacheDir: ".vite-cache",
   server: {
     port: 5173
+  },
+  preview: {
+    allowedHosts: ["webfront-production-098d.up.railway.app"]
   }
 });

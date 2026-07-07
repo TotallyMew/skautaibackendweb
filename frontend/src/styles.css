@@ -140,16 +140,41 @@ button {
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 24px;
+  gap: 14px;
+  padding: 16px;
   border-right: 1px solid var(--border);
-  background: var(--surface-low);
+  background: var(--surface);
+}
+
+.drawer-identity {
+  display: grid;
+  gap: 6px;
+  border-radius: 18px;
+  background: var(--accent-container);
+  color: var(--accent-strong);
+  padding: 16px;
+}
+
+.drawer-identity strong {
+  font-family: "Space Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.drawer-identity span {
+  color: var(--accent-strong);
+  font-size: 0.84rem;
+  opacity: 0.78;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.compact-brand {
+  display: none;
 }
 
 .brand-mark {
@@ -199,6 +224,20 @@ button {
   outline: none;
 }
 
+.drawer-section {
+  display: grid;
+  gap: 6px;
+}
+
+.drawer-section-title {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0 10px;
+  text-transform: uppercase;
+}
+
 .nav-list {
   display: grid;
   gap: 6px;
@@ -218,21 +257,32 @@ button {
   min-height: 42px;
   padding: 10px 12px;
   color: var(--text-body);
+  font-weight: 600;
 }
 
 .nav-link.active,
 .nav-link:hover {
-  background: var(--surface-container);
+  background: var(--accent-container);
   color: var(--accent-strong);
 }
 
+.nav-button {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
 .logout-button {
-  margin-top: auto;
   min-height: 42px;
   border: 1px solid var(--border);
   background: var(--surface-lowest);
   color: var(--text-body);
   padding: 10px 12px;
+}
+
+.account-section {
+  margin-top: auto;
 }
 
 .content {
@@ -1306,6 +1356,14 @@ button {
     position: static;
     border-right: 0;
     border-bottom: 1px solid var(--border);
+  }
+
+  .drawer-identity {
+    display: none;
+  }
+
+  .compact-brand {
+    display: flex;
   }
 
   .nav-list {

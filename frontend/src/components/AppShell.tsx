@@ -1,13 +1,16 @@
-import { CalendarDays, ClipboardList, Home, LogOut, Package, ShieldCheck, UsersRound } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { CalendarDays, ClipboardList, Home, LogOut, Package, ShieldCheck, Shuffle, UsersRound, type LucideIcon } from "lucide-react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
-const navItems = [
+const quickAccessItems = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/inventory", label: "Inventorius", icon: Package },
   { to: "/requests", label: "Prašymai", icon: ClipboardList },
+  { to: "/events", label: "Renginiai", icon: CalendarDays }
+];
+
+const managementItems = [
   { to: "/members", label: "Nariai", icon: UsersRound, permission: "members.view" },
-  { to: "/events", label: "Renginiai", icon: CalendarDays },
   { to: "/admin", label: "Administravimas", icon: ShieldCheck }
 ];
 
@@ -17,11 +20,20 @@ function hasPermission(permissions: string[] | undefined, permission: string) {
 
 export function AppShell() {
   const { auth, logout, selectTuntas } = useAuth();
+  const location = useLocation();
+  const title = currentTitle(location.pathname);
+  const activeTuntasName = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name;
 
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="brand">
+        <div className="drawer-identity">
+          <strong>Skautų Inventorius</strong>
+          <span>{auth?.name ?? "Vartotojas"}</span>
+          <span>{activeTuntasName ?? "Tuntas dar nepasirinktas"}</span>
+        </div>
+
+        <div className="brand compact-brand">
           <span className="brand-mark">SI</span>
           <div>
             <strong>Skautų inventorius</strong>
@@ -41,14 +53,16 @@ export function AppShell() {
           ))}
         </select>
 
-        <nav className="nav-list">
-          {navItems.filter((item) => !item.permission || hasPermission(auth?.permissions, item.permission)).map(({ to, label, icon: Icon }) => (
-            <NavLink key={to} to={to} end={to === "/"} className="nav-link">
-              <Icon size={18} aria-hidden="true" />
-              <span>{label}</span>
-            </NavLink>
-          ))}
-        </nav>
+        <DrawerSection title="Greita prieiga" items={quickAccessItems} permissions={auth?.permissions} />
+        <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} />
+
+        <div className="drawer-section account-section">
+          <span className="drawer-section-title">Paskyra</span>
+          <button className="nav-link nav-button" type="button" onClick={() => document.getElementById("tuntas-select")?.focus()}>
+            <Shuffle size={18} aria-hidden="true" />
+            <span>Keisti tuntą</span>
+          </button>
+        </div>
 
         <button className="logout-button" type="button" onClick={() => void logout()}>
           <LogOut size={18} aria-hidden="true" />
@@ -59,8 +73,8 @@ export function AppShell() {
       <main className="content">
         <header className="topbar">
           <div>
-            <span className="eyebrow">Prisijungęs vartotojas</span>
-            <h1>{auth?.name ?? "Vartotojas"}</h1>
+            <span className="eyebrow">{activeTuntasName ?? "Tuntas nepasirinktas"}</span>
+            <h1>{title}</h1>
           </div>
           <div className="permission-summary">
             <strong>{auth?.permissions.length ?? 0}</strong>
@@ -71,4 +85,40 @@ export function AppShell() {
       </main>
     </div>
   );
+}
+
+type NavItem = {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  permission?: string;
+};
+
+function DrawerSection({ title, items, permissions }: { title: string; items: NavItem[]; permissions?: string[] }) {
+  const visibleItems = items.filter((item) => !item.permission || hasPermission(permissions, item.permission));
+  if (visibleItems.length === 0) return null;
+
+  return (
+    <nav className="drawer-section" aria-label={title}>
+      <span className="drawer-section-title">{title}</span>
+      <div className="nav-list">
+        {visibleItems.map(({ to, label, icon: Icon }) => (
+          <NavLink key={to} to={to} end={to === "/"} className="nav-link">
+            <Icon size={18} aria-hidden="true" />
+            <span>{label}</span>
+          </NavLink>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function currentTitle(pathname: string) {
+  if (pathname === "/") return "Pradžia";
+  if (pathname.startsWith("/inventory")) return "Inventorius";
+  if (pathname.startsWith("/requests")) return "Prašymai";
+  if (pathname.startsWith("/members")) return "Nariai";
+  if (pathname.startsWith("/events")) return "Renginiai";
+  if (pathname.startsWith("/admin")) return "Administravimas";
+  return "Skautų inventorius";
 }

@@ -1,0 +1,340 @@
+package lt.skautai
+
+import io.ktor.http.*
+import io.ktor.server.config.ApplicationConfig
+import io.ktor.server.application.*
+import io.ktor.server.netty.*
+import io.ktor.server.plugins.cors.routing.CORS
+import io.ktor.server.plugins.defaultheaders.*
+import io.ktor.server.plugins.BadRequestException
+import io.ktor.server.plugins.statuspages.*
+import io.ktor.server.response.*
+import io.ktor.server.request.httpMethod
+import io.ktor.server.request.path
+import lt.skautai.database.tables.Tuntai
+import lt.skautai.models.responses.ErrorResponse
+import lt.skautai.plugins.configureCompression
+import lt.skautai.plugins.configureRouting
+import lt.skautai.plugins.configureLiveEventPublisher
+import lt.skautai.plugins.configureRequestTiming
+import lt.skautai.plugins.configureRequestBodyLimits
+import lt.skautai.plugins.configureSecurity
+import lt.skautai.plugins.configureSerialization
+import lt.skautai.plugins.configureRateLimiting
+import lt.skautai.plugins.RequestBodyTooLargeException
+import lt.skautai.plugins.RequestLengthRequiredException
+import lt.skautai.services.PermissionSeeder
+import lt.skautai.services.VadovasRankSupport
+import lt.skautai.services.OperationalMetrics
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
+import org.flywaydb.core.Flyway
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.net.URI
+import java.net.URLDecoder
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.charset.StandardCharsets
+import kotlin.io.path.Path
+
+fun main(args: Array<String>) {
+    loadDotEnvIntoSystemProperties()
+    EngineMain.main(args)
+}
+
+fun Application.module() {
+    val applicationLogger = log
+    loadDotEnvIntoSystemProperties()
+    configureDatabases()
+    configureSerialization()
+    configureSecurity()
+    configureRateLimiting()
+    configureRequestBodyLimits()
+    configureCompression()
+    configureRequestTiming()
+    configureLiveEventPublisher()
+    install(CORS) {
+        allowMethod(HttpMethod.Get)
+        allowMethod(HttpMethod.Post)
+        allowMethod(HttpMethod.Put)
+        allowMethod(HttpMethod.Patch)
+        allowMethod(HttpMethod.Delete)
+        allowMethod(HttpMethod.Options)
+        allowHeader(HttpHeaders.Authorization)
+        allowHeader(HttpHeaders.ContentType)
+        allowHeader("X-Tuntas-Id")
+        allowHeader("X-Org-Unit-Id")
+        allowCredentials = true
+
+        configuredCorsHosts().forEach { host ->
+            allowHost(host.host, schemes = host.schemes)
+        }
+    }
+    install(DefaultHeaders) {
+        header("X-Content-Type-Options", "nosniff")
+        header("X-Frame-Options", "DENY")
+        header("Referrer-Policy", "strict-origin-when-cross-origin")
+        header("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    }
+    install(StatusPages) {
+        status(HttpStatusCode.TooManyRequests) { call, status ->
+            OperationalMetrics.rateLimitedRequest()
+            applicationLogger.warn(
+                "Rate limit exceeded method={} path={}",
+                call.request.httpMethod.value,
+                call.request.path()
+            )
+            val retryAfter = call.response.headers[HttpHeaders.RetryAfter]
+                ?.toLongOrNull()
+                ?.coerceAtLeast(1)
+            val message = if (retryAfter != null) {
+                "Per daug užklausų. Bandykite dar kartą po $retryAfter sek."
+            } else {
+                "Per daug užklausų. Palaukite ir bandykite dar kartą."
+            }
+            call.respond(status, ErrorResponse(message))
+        }
+        exception<RequestBodyTooLargeException> { call, cause ->
+            call.respond(
+                HttpStatusCode.PayloadTooLarge,
+                ErrorResponse("Request body is too large.")
+            )
+        }
+        exception<RequestLengthRequiredException> { call, _ ->
+            call.respond(HttpStatusCode.LengthRequired, ErrorResponse("Content-Length header is required."))
+        }
+        exception<BadRequestException> { call, cause ->
+            applicationLogger.warn(
+                "Bad request method={} path={}",
+                call.request.httpMethod.value,
+                call.request.path(),
+                cause
+            )
+            call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid request."))
+        }
+        exception<Throwable> { call, cause ->
+            OperationalMetrics.unhandledError()
+            applicationLogger.error(
+                "Unhandled request error method={} path={}",
+                call.request.httpMethod.value,
+                call.request.path(),
+                cause
+            )
+            call.respond(HttpStatusCode.InternalServerError, ErrorResponse("Internal server error"))
+        }
+    }
+    configureRouting()
+    PermissionSeeder.seedPermissions()
+    transaction {
+        Tuntai.selectAll().map { it[Tuntai.id] }.forEach { tuntasId ->
+            PermissionSeeder.seedRolePermissions(tuntasId)
+        }
+    }
+    VadovasRankSupport.backfillExistingLeadershipUsers()
+}
+
+fun Application.configureDatabases() {
+    val config = environment.config
+    val databaseSettings = resolveDatabaseSettings(config)
+    val driver = config.property("database.driver").getString()
+    val dataSource = HikariDataSource(
+        HikariConfig().apply {
+            jdbcUrl = databaseSettings.url
+            driverClassName = driver
+            username = databaseSettings.user
+            password = databaseSettings.password
+            maximumPoolSize = systemInt("DB_POOL_MAX_SIZE", 5)
+            minimumIdle = systemInt("DB_POOL_MIN_IDLE", 1)
+            connectionTimeout = systemLong("DB_POOL_CONNECTION_TIMEOUT_MS", 10_000L)
+            validationTimeout = systemLong("DB_POOL_VALIDATION_TIMEOUT_MS", 3_000L)
+            idleTimeout = systemLong("DB_POOL_IDLE_TIMEOUT_MS", 600_000L)
+            maxLifetime = systemLong("DB_POOL_MAX_LIFETIME_MS", 1_500_000L)
+            connectionInitSql = "SET statement_timeout = ${systemLong("DB_STATEMENT_TIMEOUT_MS", 15_000L)}; SET idle_in_transaction_session_timeout = ${systemLong("DB_IDLE_TX_TIMEOUT_MS", 30_000L)}"
+            poolName = "skautai-db"
+        }
+    )
+
+    Database.connect(dataSource)
+
+    val logger = log
+    Flyway.configure()
+        .dataSource(dataSource)
+        .locations("classpath:db/migration")
+        .validateMigrationNaming(true)
+        .load()
+        .migrate()
+
+    transaction {
+        exec("SELECT 1")
+        logger.info("Database connected successfully")
+    }
+}
+
+private data class DatabaseSettings(
+    val url: String,
+    val user: String,
+    val password: String
+)
+
+private fun resolveDatabaseSettings(config: ApplicationConfig): DatabaseSettings {
+    val railwayUrl = System.getenv("DATABASE_URL")
+        ?: System.getProperty("DATABASE_URL")
+    val railwayPrivateUrl = System.getenv("DATABASE_PRIVATE_URL")
+        ?: System.getProperty("DATABASE_PRIVATE_URL")
+    val railwayPublicUrl = System.getenv("DATABASE_PUBLIC_URL")
+        ?: System.getProperty("DATABASE_PUBLIC_URL")
+
+    val parsedRailway = railwayUrl?.let(::parseDatabaseUrl)
+    val parsedPrivateRailway = railwayPrivateUrl?.let(::parseDatabaseUrl)
+    val parsedPublicRailway = railwayPublicUrl?.let(::parseDatabaseUrl)
+    val configuredUrl = System.getenv("DB_URL")
+        ?: System.getProperty("DB_URL")
+        ?: config.property("database.url").getString()
+    val configuredUser = System.getenv("DB_USER")
+        ?: System.getProperty("DB_USER")
+        ?: config.property("database.user").getString()
+    val configuredPassword = System.getenv("DB_PASSWORD")
+        ?: System.getProperty("DB_PASSWORD")
+        ?: config.propertyOrNull("database.password")?.getString()
+        ?: ""
+
+    return DatabaseSettings(
+        url = parsedPrivateRailway?.url ?: parsedRailway?.url ?: configuredUrl.takeUnless { railwayPublicUrl != null } ?: parsedPublicRailway?.url ?: configuredUrl,
+        user = parsedPrivateRailway?.user?.takeIf { it.isNotBlank() }
+            ?: parsedRailway?.user?.takeIf { it.isNotBlank() }
+            ?: configuredUser.takeUnless { railwayPublicUrl != null }
+            ?: parsedPublicRailway?.user
+            ?: configuredUser,
+        password = parsedPrivateRailway?.password
+            ?: parsedRailway?.password
+            ?: configuredPassword.takeUnless { railwayPublicUrl != null }
+            ?: parsedPublicRailway?.password
+            ?: configuredPassword
+    )
+}
+
+private fun systemInt(key: String, default: Int): Int =
+    (System.getenv(key) ?: System.getProperty(key))?.toIntOrNull() ?: default
+
+private fun systemLong(key: String, default: Long): Long =
+    (System.getenv(key) ?: System.getProperty(key))?.toLongOrNull() ?: default
+
+private fun parseDatabaseUrl(rawUrl: String): DatabaseSettings? {
+    if (rawUrl.startsWith("jdbc:postgresql://")) {
+        return DatabaseSettings(rawUrl, "", "")
+    }
+    if (!rawUrl.startsWith("postgres://") && !rawUrl.startsWith("postgresql://")) return null
+
+    val uri = URI(rawUrl)
+    val userInfo = uri.rawUserInfo.orEmpty().split(":", limit = 2)
+    val user = userInfo.getOrNull(0).orEmpty().urlDecode()
+    val password = userInfo.getOrNull(1).orEmpty().urlDecode()
+    val port = if (uri.port > 0) ":${uri.port}" else ""
+    val query = uri.rawQuery?.let { "?$it" }.orEmpty()
+    val jdbcUrl = "jdbc:postgresql://${uri.host}$port${uri.rawPath}$query"
+    return DatabaseSettings(jdbcUrl, user, password)
+}
+
+private fun String.urlDecode(): String =
+    URLDecoder.decode(this, StandardCharsets.UTF_8)
+
+private val supportedDotEnvKeys = setOf(
+    "DB_URL",
+    "DB_USER",
+    "DB_PASSWORD",
+    "DATABASE_URL",
+    "DATABASE_PRIVATE_URL",
+    "DATABASE_PUBLIC_URL",
+    "JWT_SECRET",
+    "SETUP_BOOTSTRAP_TOKEN",
+    "FIREBASE_SERVICE_ACCOUNT_PATH",
+    "NOTIFICATIONS_TEST_ENABLED",
+    "UPLOADS_DIR",
+    "PORT",
+    "DB_POOL_MAX_SIZE",
+    "DB_POOL_MIN_IDLE",
+    "DB_POOL_CONNECTION_TIMEOUT_MS",
+    "DB_POOL_VALIDATION_TIMEOUT_MS",
+    "DB_POOL_IDLE_TIMEOUT_MS",
+    "DB_POOL_MAX_LIFETIME_MS"
+    ,"DB_STATEMENT_TIMEOUT_MS"
+    ,"DB_IDLE_TX_TIMEOUT_MS"
+    ,"METRICS_TOKEN"
+    ,"TRUSTED_PROXY_IPS"
+    ,"MAX_API_BODY_BYTES"
+    ,"MAX_UPLOAD_BODY_BYTES"
+    ,"ANDROID_APP_CERT_SHA256"
+    ,"RESEND_API_KEY"
+    ,"PASSWORD_RESET_EMAIL_FROM"
+    ,"PASSWORD_RESET_PUBLIC_BASE_URL"
+    ,"ACCOUNT_DELETION_PUBLIC_BASE_URL"
+    ,"CORS_ALLOWED_ORIGINS"
+    ,"WEB_CORS_ALLOWED_ORIGINS"
+    ,"WEB_PORT"
+    ,"WEB_UPLOADS_DIR"
+)
+
+private data class CorsHost(val host: String, val schemes: List<String>)
+
+private fun configuredCorsHosts(): List<CorsHost> {
+    val configured = (
+        System.getenv("WEB_CORS_ALLOWED_ORIGINS")
+            ?: System.getProperty("WEB_CORS_ALLOWED_ORIGINS")
+            ?: System.getenv("CORS_ALLOWED_ORIGINS")
+            ?: System.getProperty("CORS_ALLOWED_ORIGINS")
+        )
+        ?.split(",")
+        ?.mapNotNull { it.trim().takeIf(String::isNotBlank)?.toCorsHost() }
+        .orEmpty()
+    if (configured.isNotEmpty()) return configured
+    return listOf(
+        CorsHost("localhost:3000", listOf("http")),
+        CorsHost("localhost:5173", listOf("http")),
+        CorsHost("127.0.0.1:3000", listOf("http")),
+        CorsHost("127.0.0.1:5173", listOf("http"))
+    )
+}
+
+private fun String.toCorsHost(): CorsHost? {
+    val uri = runCatching {
+        if (contains("://")) URI(this) else URI("https://$this")
+    }.getOrNull() ?: return null
+    val host = uri.host ?: return null
+    val port = if (uri.port > 0) ":${uri.port}" else ""
+    val scheme = uri.scheme?.takeIf { it == "http" || it == "https" } ?: "https"
+    return CorsHost("$host$port", listOf(scheme))
+}
+
+private fun loadDotEnvIntoSystemProperties(dotEnvPath: Path = Path(".env")) {
+    val resolvedDotEnvPath = listOf(
+        dotEnvPath,
+        Path("skautu-inventoriaus-valdymas-backend/.env")
+    ).firstOrNull { Files.exists(it) } ?: return
+
+    Files.readAllLines(resolvedDotEnvPath).forEach { rawLine ->
+        val line = rawLine.trim()
+        if (line.isBlank() || line.startsWith("#")) return@forEach
+
+        val normalizedLine = if (line.startsWith("export ")) {
+            line.removePrefix("export ").trim()
+        } else {
+            line
+        }
+
+        val separatorIndex = normalizedLine.indexOf('=')
+        if (separatorIndex <= 0) return@forEach
+
+        val key = normalizedLine.substring(0, separatorIndex).trim()
+        if (key !in supportedDotEnvKeys) return@forEach
+
+        val value = normalizedLine.substring(separatorIndex + 1).trim()
+            .removeSurrounding("\"")
+            .removeSurrounding("'")
+
+        if (System.getenv(key) == null && System.getProperty(key) == null) {
+            System.setProperty(key, value)
+        }
+    }
+}

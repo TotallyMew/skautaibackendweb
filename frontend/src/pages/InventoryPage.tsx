@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageSearch, RefreshCw, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
@@ -79,11 +79,6 @@ export function InventoryPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, category, offset, query, sharedOnly, status, type]);
 
-  const activeTuntasName = useMemo(
-    () => auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name,
-    [auth?.activeTuntasId, auth?.tuntai]
-  );
-
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setOffset(0);
@@ -106,10 +101,10 @@ export function InventoryPage() {
 
   return (
     <section className="inventory-page">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">{activeTuntasName ?? "Tuntas nepasirinktas"}</span>
-          <h2>Inventorius</h2>
+      <div className="section-toolbar">
+        <div className="list-summary">
+          <strong>{total}</strong>
+          <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
         <button className="secondary-button" type="button" onClick={() => setOffset(0)} disabled={!canFetch || isLoading}>
           <RefreshCw size={17} aria-hidden="true" />
@@ -156,12 +151,11 @@ export function InventoryPage() {
           Tik bendras
         </label>
 
-        <button className="primary-button" type="submit">
+        <button className="filter-search-button" type="submit" aria-label="Ieškoti" title="Ieškoti">
           <Search size={17} aria-hidden="true" />
-          Ieškoti
         </button>
 
-        <button className="secondary-button" type="button" onClick={resetFilters}>
+        <button className="filter-clear-button" type="button" onClick={resetFilters}>
           Valyti
         </button>
       </form>
@@ -240,9 +234,11 @@ function InventoryList({ items }: { items: Item[] }) {
               <span className="mini-chip">{item.custodianName ?? "Bendras tuntas"}</span>
             </div>
           </div>
-          <div className="record-meta">
+          <div className="record-meta record-quantity">
             <strong className={item.isLowStock ? "danger-text" : undefined}>{item.quantity} {item.unitOfMeasure ?? "vnt."}</strong>
             {item.minimumQuantity != null && <span>Min. {item.minimumQuantity}</span>}
+          </div>
+          <div className="record-meta record-location">
             <span>{item.locationPath ?? item.locationName ?? item.temporaryStorageLabel ?? "Lokacija nenurodyta"}</span>
           </div>
           <StatusBadge status={item.status} />

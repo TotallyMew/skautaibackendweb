@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, ClipboardList, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
@@ -67,21 +67,16 @@ export function RequestsPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, offset, reloadKey, status]);
 
-  const activeTuntasName = useMemo(
-    () => auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name,
-    [auth?.activeTuntasId, auth?.tuntai]
-  );
-
   const total = reservationsState?.total ?? 0;
   const currentPage = Math.floor(offset / pageSize) + 1;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <section className="inventory-page">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">{activeTuntasName ?? "Tuntas nepasirinktas"}</span>
-          <h2>Prašymai ir rezervacijos</h2>
+      <div className="section-toolbar">
+        <div className="list-summary">
+          <strong>{total}</strong>
+          <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
         <button
           className="secondary-button"
@@ -178,12 +173,12 @@ function ReservationsList({ reservations }: { reservations: Reservation[] }) {
               <ReviewBadge label="Tuntas" status={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
             </div>
           </div>
-          <div className="record-meta">
+          <div className="record-meta record-date">
             <strong>{formatDate(reservation.startDate)}</strong>
             <span>iki {formatDate(reservation.endDate)}</span>
             <span>{reservation.reservedByName ?? "Rezervavęs narys nenurodytas"}</span>
           </div>
-          <div className="record-meta">
+          <div className="record-meta record-quantity">
             <strong>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</strong>
             <span>{reservation.totalQuantity} vnt.</span>
             <span>{summarizeItems(reservation)}</span>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Event, EventListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -174,13 +175,21 @@ export function EventsPage() {
 function EventsList({ events }: { events: Event[] }) {
   return (
     <div className="record-list">
+      <div className="record-header event-record-row" aria-hidden="true">
+        <span />
+        <span>Renginys</span>
+        <span>Data</span>
+        <span>Inventorius</span>
+        <span>Biudžetas</span>
+        <span>Būsena</span>
+      </div>
       {events.map((event) => (
         <article className="record-row event-record-row" key={event.id}>
           <div className="record-icon">
             <CalendarDays size={18} aria-hidden="true" />
           </div>
           <div className="record-main">
-            <strong className="record-title">{event.name}</strong>
+            <Link className="record-title" to={`/events/${event.id}`}>{event.name}</Link>
             <span>{event.customTypeLabel ?? eventTypeLabel(event.type)}</span>
             {event.notes && <span>{event.notes}</span>}
             <div className="record-chip-row">

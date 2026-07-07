@@ -222,6 +222,13 @@ export function InventoryPage() {
 function InventoryList({ items }: { items: Item[] }) {
   return (
     <div className="record-list">
+      <div className="record-header inventory-record-row" aria-hidden="true">
+        <span />
+        <span>Inventorius</span>
+        <span>Kiekis</span>
+        <span>Lokacija</span>
+        <span>Būsena</span>
+      </div>
       {items.map((item) => (
         <article className="record-row inventory-record-row" key={item.id}>
           <div className="record-icon">

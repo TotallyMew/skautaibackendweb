@@ -167,6 +167,78 @@ export type ReservationListFilters = {
   offset?: number;
 };
 
+export type RequisitionItem = {
+  id: string;
+  itemId?: string | null;
+  requestType: string;
+  existingItemId?: string | null;
+  itemName: string;
+  itemDescription?: string | null;
+  quantityRequested: number;
+  quantityApproved?: number | null;
+  rejectionReason?: string | null;
+  notes?: string | null;
+};
+
+export type Requisition = {
+  id: string;
+  tuntasId: string;
+  createdByUserId: string;
+  requestingUnitId?: string | null;
+  requestingUnitName?: string | null;
+  status: string;
+  unitReviewStatus: string;
+  topLevelReviewStatus: string;
+  purchasedAt?: string | null;
+  addedToInventoryAt?: string | null;
+  reviewLevel: string;
+  lastAction: string;
+  neededByDate?: string | null;
+  notes?: string | null;
+  items: RequisitionItem[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type RequisitionListResponse = {
+  requests: Requisition[];
+  total: number;
+};
+
+export type SharedInventoryRequestItem = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  quantity: number;
+};
+
+export type SharedInventoryRequest = {
+  id: string;
+  tuntasId: string;
+  requestedByUserId: string;
+  requestedByUserName?: string | null;
+  itemId?: string | null;
+  itemName: string;
+  itemDescription?: string | null;
+  quantity: number;
+  neededByDate?: string | null;
+  eventId?: string | null;
+  requestingUnitId?: string | null;
+  requestingUnitName?: string | null;
+  needsDraugininkasApproval: boolean;
+  draugininkasStatus?: string | null;
+  topLevelStatus: string;
+  notes?: string | null;
+  items: SharedInventoryRequestItem[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SharedInventoryRequestListResponse = {
+  requests: SharedInventoryRequest[];
+  total: number;
+};
+
 export type MemberLeadershipRole = {
   id: string;
   roleId: string;
@@ -279,4 +351,24 @@ export type EventListFilters = {
   status?: string;
   limit?: number;
   offset?: number;
+};
+
+export type MyTask = {
+  id: string;
+  type: string;
+  title: string;
+  subtitle: string;
+  count?: number | null;
+  priority: number;
+  urgency: string;
+  bucket: string;
+  routeTarget: string;
+  createdAt: string;
+  dueAt?: string | null;
+  entityId?: string | null;
+};
+
+export type MyTaskListResponse = {
+  tasks: MyTask[];
+  total: number;
 };

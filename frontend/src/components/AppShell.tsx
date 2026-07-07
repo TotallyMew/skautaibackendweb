@@ -1,9 +1,10 @@
-import { CalendarDays, ClipboardList, Home, LogOut, Package, ShieldCheck, Shuffle, UsersRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardList, Home, ListTodo, LogOut, Package, ShieldCheck, Shuffle, UsersRound, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
 const quickAccessItems = [
   { to: "/", label: "Pradžia", icon: Home },
+  { to: "/tasks", label: "Mano užduotys", icon: ListTodo },
   { to: "/inventory", label: "Inventorius", icon: Package },
   { to: "/requests", label: "Prašymai", icon: ClipboardList },
   { to: "/events", label: "Renginiai", icon: CalendarDays }
@@ -115,6 +116,7 @@ function DrawerSection({ title, items, permissions }: { title: string; items: Na
 
 function currentTitle(pathname: string) {
   if (pathname === "/") return "Pradžia";
+  if (pathname.startsWith("/tasks")) return "Mano užduotys";
   if (pathname.startsWith("/inventory")) return "Inventorius";
   if (pathname.startsWith("/requests")) return "Prašymai";
   if (pathname.startsWith("/members")) return "Nariai";

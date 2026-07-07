@@ -8,10 +8,13 @@ import type {
   LoginRequest,
   Member,
   MemberListResponse,
+  MyTaskListResponse,
   PermissionsResponse,
   Reservation,
   ReservationListFilters,
   ReservationListResponse,
+  RequisitionListResponse,
+  SharedInventoryRequestListResponse,
   TokenResponse,
   UserTuntas
 } from "./types";
@@ -158,6 +161,30 @@ export const api = {
       tuntasId
     }),
 
+  listRequisitions: (token: string, tuntasId: string) =>
+    request<RequisitionListResponse>("/api/requisitions", {
+      token,
+      tuntasId
+    }),
+
+  getRequisition: (token: string, tuntasId: string, requisitionId: string) =>
+    request<RequisitionListResponse["requests"][number]>(`/api/requisitions/${requisitionId}`, {
+      token,
+      tuntasId
+    }),
+
+  listSharedInventoryRequests: (token: string, tuntasId: string) =>
+    request<SharedInventoryRequestListResponse>("/api/inventory-requests", {
+      token,
+      tuntasId
+    }),
+
+  getSharedInventoryRequest: (token: string, tuntasId: string, requestId: string) =>
+    request<SharedInventoryRequestListResponse["requests"][number]>(`/api/inventory-requests/${requestId}`, {
+      token,
+      tuntasId
+    }),
+
   listMembers: (token: string, tuntasId: string) =>
     request<MemberListResponse>("/api/members", {
       token,
@@ -169,5 +196,17 @@ export const api = {
       token,
       tuntasId,
       query: filters
+    }),
+
+  getEvent: (token: string, tuntasId: string, eventId: string) =>
+    request<EventListResponse["events"][number]>(`/api/events/${eventId}`, {
+      token,
+      tuntasId
+    }),
+
+  listMyTasks: (token: string, tuntasId: string) =>
+    request<MyTaskListResponse>("/api/tasks/my", {
+      token,
+      tuntasId
     })
 };

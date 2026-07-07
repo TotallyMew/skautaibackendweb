@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AlertCircle, ArrowLeft, Calendar, Loader2, MapPin, Package, QrCode, UserRound, type LucideIcon } from "lucide-react";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import type { Item } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { itemOriginLabel, itemTypeLabel, statusLabel } from "../utils/display";
 
 export function InventoryDetailPage() {
   const { itemId } = useParams();
@@ -29,9 +30,9 @@ export function InventoryDetailPage() {
           setItem(response);
         }
       })
-      .catch((cause) => {
+      .catch(() => {
         if (!isCancelled) {
-          setError(cause instanceof ApiError ? cause.message : "Nepavyko uzkrauti inventoriaus iraso.");
+          setError("Nepavyko užkrauti inventoriaus įrašo.");
           setItem(null);
         }
       })
@@ -57,9 +58,9 @@ export function InventoryDetailPage() {
         <div>
           <Link className="back-link" to="/inventory">
             <ArrowLeft size={17} aria-hidden="true" />
-            Grizti i inventoriu
+            Grįžti į inventorių
           </Link>
-          <h2>{item?.name ?? "Inventoriaus irasas"}</h2>
+          <h2>{item?.name ?? "Inventoriaus įrašas"}</h2>
         </div>
         {item && <StatusBadge status={item.status} />}
       </div>
@@ -68,7 +69,7 @@ export function InventoryDetailPage() {
         <div className="data-panel">
           <div className="table-state">
             <Loader2 className="spin" size={22} aria-hidden="true" />
-            Kraunamas inventoriaus irasas...
+            Kraunamas inventoriaus įrašas...
           </div>
         </div>
       )}
@@ -85,7 +86,7 @@ export function InventoryDetailPage() {
           <article className="detail-main">
             <div className="detail-title-row">
               <div>
-                <span className="eyebrow">{item.category} / {item.type}</span>
+                <span className="eyebrow">{item.category} / {itemTypeLabel(item.type)}</span>
                 <h3>{item.name}</h3>
               </div>
               <div className={item.isLowStock ? "quantity-card danger-border" : "quantity-card"}>
@@ -97,10 +98,10 @@ export function InventoryDetailPage() {
             {item.description && <p className="detail-description">{item.description}</p>}
 
             <div className="info-grid">
-              <InfoTile icon={Package} label="Bukle" value={item.condition} />
+              <InfoTile icon={Package} label="Būklė" value={item.condition} />
               <InfoTile icon={UserRound} label="Saugotojas" value={item.custodianName ?? "Bendras tuntas"} />
               <InfoTile icon={MapPin} label="Lokacija" value={location} />
-              <InfoTile icon={QrCode} label="QR tokenas" value={item.qrToken} />
+              <InfoTile icon={QrCode} label="QR kodas" value={item.qrToken} />
               <InfoTile icon={Calendar} label="Atnaujinta" value={formatDate(item.updatedAt)} />
               <InfoTile icon={UserRound} label="Atsakingas" value={item.responsibleUserName ?? "-"} />
             </div>
@@ -128,13 +129,13 @@ export function InventoryDetailPage() {
           </article>
 
           <aside className="detail-side">
-            <DetailFact label="Kilmė" value={item.origin} />
+            <DetailFact label="Kilmė" value={itemOriginLabel(item.origin)} />
             <DetailFact label="Rinkinys" value={item.kitName ?? "-"} />
             <DetailFact label="Sukurė" value={item.createdByUserName ?? "-"} />
             <DetailFact label="Sukurta" value={formatDate(item.createdAt)} />
             <DetailFact label="Pirkimo data" value={item.purchaseDate ?? "-"} />
             <DetailFact label="Pirkimo kaina" value={formatPrice(item.purchasePrice)} />
-            {item.rejectionReason && <DetailFact label="Atmetimo priezastis" value={item.rejectionReason} />}
+            {item.rejectionReason && <DetailFact label="Atmetimo priežastis" value={item.rejectionReason} />}
           </aside>
         </div>
       )}
@@ -162,8 +163,7 @@ function DetailFact({ label, value }: { label: string; value: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const normalized = status.toLowerCase().replaceAll("_", " ");
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{normalized}</span>;
+  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
 }
 
 function formatDate(value: string) {

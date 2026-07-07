@@ -181,6 +181,119 @@ button {
   gap: 18px;
 }
 
+.home-page {
+  display: grid;
+  gap: 22px;
+}
+
+.home-overview,
+.home-empty-card,
+.home-action-tile {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px rgba(31, 37, 34, 0.06);
+}
+
+.home-overview {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+}
+
+.home-overview-row,
+.home-summary-grid,
+.home-action-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.home-overview-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.home-overview h2,
+.home-section h2 {
+  margin: 0;
+}
+
+.home-overview p {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+}
+
+.home-summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary-tile {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+}
+
+.summary-tile span,
+.summary-tile strong {
+  display: block;
+}
+
+.summary-tile span,
+.home-action-tile span,
+.home-empty-card span {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.summary-tile strong {
+  margin-top: 3px;
+  overflow-wrap: anywhere;
+}
+
+.home-section {
+  display: grid;
+  gap: 12px;
+}
+
+.home-action-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-action-tile,
+.home-empty-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px;
+}
+
+.home-action-tile {
+  color: #1f2522;
+  text-decoration: none;
+}
+
+.home-action-tile:hover {
+  border-color: var(--accent);
+}
+
+.home-action-tile svg,
+.home-empty-card svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.home-action-tile strong,
+.home-action-tile span,
+.home-empty-card strong,
+.home-empty-card span {
+  display: block;
+}
+
+.home-action-tile span,
+.home-empty-card span {
+  margin-top: 4px;
+  line-height: 1.45;
+}
+
 .overview-panel,
 .work-area,
 .login-panel {
@@ -869,7 +982,10 @@ button {
   .context-list,
   .filter-bar,
   .detail-grid,
-  .info-grid {
+  .info-grid,
+  .home-overview-row,
+  .home-summary-grid,
+  .home-action-grid {
     grid-template-columns: 1fr;
   }
 

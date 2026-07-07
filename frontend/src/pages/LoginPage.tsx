@@ -1,7 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
-import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 
 export function LoginPage() {
@@ -26,8 +25,8 @@ export function LoginPage() {
     try {
       await login({ email, password });
       navigate(from, { replace: true });
-    } catch (cause) {
-      setError(cause instanceof ApiError ? cause.message : "Nepavyko prisijungti.");
+    } catch {
+      setError("Nepavyko prisijungti. Patikrink el. paštą ir slaptažodį.");
     } finally {
       setIsSubmitting(false);
     }
@@ -37,16 +36,16 @@ export function LoginPage() {
     <main className="login-page">
       <section className="login-panel">
         <div className="brand login-brand">
-          <span className="brand-mark">SI</span>
-          <div>
-            <strong>Skautu inventorius</strong>
-            <small>Web sistema</small>
+            <span className="brand-mark">SI</span>
+            <div>
+            <strong>Skautų inventorius</strong>
+            <small>Žiniatinklio sistema</small>
           </div>
         </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
           <label>
-            El. pastas
+            El. paštas
             <input
               autoComplete="email"
               required
@@ -57,7 +56,7 @@ export function LoginPage() {
           </label>
 
           <label>
-            Slaptazodis
+            Slaptažodis
             <input
               autoComplete="current-password"
               required
@@ -78,4 +77,3 @@ export function LoginPage() {
     </main>
   );
 }
-

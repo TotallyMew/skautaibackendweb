@@ -1,14 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageSearch, RefreshCw, Search } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { countLabel, itemTypeLabel, statusLabel } from "../utils/display";
 
 const pageSize = 25;
 
 const statusOptions = [
-  { value: "", label: "Visos busenos" },
+  { value: "", label: "Visos būsenos" },
   { value: "ACTIVE", label: "Aktyvus" },
   { value: "PENDING_APPROVAL", label: "Laukia tvirtinimo" },
   { value: "INACTIVE", label: "Neaktyvus" }
@@ -16,8 +17,8 @@ const statusOptions = [
 
 const typeOptions = [
   { value: "", label: "Visi tipai" },
-  { value: "SHARED", label: "Bendras" },
-  { value: "UNIT", label: "Draugoves" },
+  { value: "COLLECTIVE", label: "Bendras" },
+  { value: "ASSIGNED", label: "Priskirtas" },
   { value: "INDIVIDUAL", label: "Asmeninis" }
 ];
 
@@ -61,9 +62,9 @@ export function InventoryPage() {
           setItemsState(response);
         }
       })
-      .catch((cause) => {
+      .catch(() => {
         if (!isCancelled) {
-          setError(cause instanceof ApiError ? cause.message : "Nepavyko uzkrauti inventoriaus.");
+          setError("Nepavyko užkrauti inventoriaus.");
           setItemsState(null);
         }
       })
@@ -121,7 +122,7 @@ export function InventoryPage() {
           <Search size={17} aria-hidden="true" />
           <input
             type="search"
-            placeholder="Ieskoti pagal pavadinima, kategorija, bukle..."
+            placeholder="Ieškoti pagal pavadinimą, kategoriją, būklę..."
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
@@ -157,7 +158,7 @@ export function InventoryPage() {
 
         <button className="primary-button" type="submit">
           <Search size={17} aria-hidden="true" />
-          Ieskoti
+          Ieškoti
         </button>
 
         <button className="secondary-button" type="button" onClick={resetFilters}>
@@ -174,7 +175,7 @@ export function InventoryPage() {
 
       <div className="data-panel">
         <div className="data-panel-header">
-          <span>{total} irasu</span>
+          <span>{total} {countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
           <span>Puslapis {currentPage} / {pageCount}</span>
         </div>
 
@@ -188,8 +189,8 @@ export function InventoryPage() {
         {!isLoading && !error && itemsState?.items.length === 0 && (
           <div className="empty-state">
             <PackageSearch size={28} aria-hidden="true" />
-            <strong>Inventoriaus pagal siuos filtrus nerasta</strong>
-            <span>Pakeisk paieska arba filtrus ir bandyk dar karta.</span>
+            <strong>Inventoriaus pagal šiuos filtrus nerasta</strong>
+            <span>Pakeisk paiešką arba filtrus ir bandyk dar kartą.</span>
           </div>
         )}
 
@@ -235,7 +236,7 @@ function InventoryTable({ items }: { items: Item[] }) {
             <th>Kiekis</th>
             <th>Saugotojas</th>
             <th>Lokacija</th>
-            <th>Busena</th>
+            <th>Būsena</th>
           </tr>
         </thead>
         <tbody>
@@ -247,7 +248,7 @@ function InventoryTable({ items }: { items: Item[] }) {
               </td>
               <td>
                 <strong>{item.category}</strong>
-                <span>{item.type}</span>
+                <span>{itemTypeLabel(item.type)}</span>
               </td>
               <td>
                 <strong className={item.isLowStock ? "danger-text" : undefined}>
@@ -267,6 +268,5 @@ function InventoryTable({ items }: { items: Item[] }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const normalized = status.toLowerCase().replaceAll("_", " ");
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{normalized}</span>;
+  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
 }

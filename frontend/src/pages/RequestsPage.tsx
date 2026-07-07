@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, ClipboardList, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import type { Reservation, ReservationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
 
 const pageSize = 25;
 
 const statusOptions = [
-  { value: "", label: "Visos busenos" },
+  { value: "", label: "Visos būsenos" },
   { value: "PENDING", label: "Laukia" },
   { value: "APPROVED", label: "Patvirtintos" },
   { value: "REJECTED", label: "Atmestos" },
-  { value: "ISSUED", label: "Isduotos" },
-  { value: "RETURNED", label: "Grazintos" },
+  { value: "ISSUED", label: "Išduotos" },
+  { value: "RETURNED", label: "Grąžintos" },
   { value: "CANCELLED", label: "Atsauktos" }
 ];
 
@@ -49,9 +50,9 @@ export function RequestsPage() {
           setReservationsState(response);
         }
       })
-      .catch((cause) => {
+      .catch(() => {
         if (!isCancelled) {
-          setError(cause instanceof ApiError ? cause.message : "Nepavyko uzkrauti rezervaciju.");
+          setError("Nepavyko užkrauti rezervacijų.");
           setReservationsState(null);
         }
       })
@@ -80,7 +81,7 @@ export function RequestsPage() {
       <div className="section-heading">
         <div>
           <span className="eyebrow">{activeTuntasName ?? "Tuntas nepasirinktas"}</span>
-          <h2>Prasymai ir rezervacijos</h2>
+          <h2>Prašymai ir rezervacijos</h2>
         </div>
         <button
           className="secondary-button"
@@ -113,7 +114,7 @@ export function RequestsPage() {
 
       <div className="data-panel">
         <div className="data-panel-header">
-          <span>{total} irasu</span>
+          <span>{total} {countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
           <span>Puslapis {currentPage} / {pageCount}</span>
         </div>
 
@@ -127,8 +128,8 @@ export function RequestsPage() {
         {!isLoading && !error && reservationsState?.reservations.length === 0 && (
           <div className="empty-state">
             <ClipboardList size={28} aria-hidden="true" />
-            <strong>Rezervaciju pagal si filtra nerasta</strong>
-            <span>Pakeisk busena arba atnaujink sarasa.</span>
+            <strong>Rezervacijų pagal šį filtrą nerasta</strong>
+            <span>Pakeisk būseną arba atnaujink sąrašą.</span>
           </div>
         )}
 
@@ -173,8 +174,8 @@ function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
             <th>Laikotarpis</th>
             <th>Rezervavo</th>
             <th>Inventorius</th>
-            <th>Perziura</th>
-            <th>Busena</th>
+            <th>Peržiūra</th>
+            <th>Būsena</th>
           </tr>
         </thead>
         <tbody>
@@ -182,7 +183,7 @@ function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
             <tr key={reservation.id}>
               <td>
                 <Link className="table-link" to={`/requests/reservations/${reservation.id}`}>{reservation.title}</Link>
-                <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prasymas"}</span>
+                <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prašymas"}</span>
               </td>
               <td>
                 <strong>{formatDate(reservation.startDate)}</strong>
@@ -190,7 +191,7 @@ function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
               </td>
               <td>{reservation.reservedByName ?? "-"}</td>
               <td>
-                <strong>{reservation.totalItems} irasai</strong>
+                <strong>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</strong>
                 <span>{reservation.totalQuantity} vnt.</span>
                 <span>{summarizeItems(reservation)}</span>
               </td>
@@ -210,18 +211,17 @@ function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
 function ReviewBadge({ label, status }: { label: string; status: string }) {
   return (
     <span className={`review-badge review-${status.toLowerCase()}`}>
-      {label}: {status.toLowerCase().replaceAll("_", " ")}
+      {label}: {reviewStatusLabel(status)}
     </span>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const normalized = status.toLowerCase().replaceAll("_", " ");
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{normalized}</span>;
+  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
 }
 
 function summarizeItems(reservation: Reservation) {
-  if (reservation.items.length === 0) return "Be inventoriaus irasu";
+  if (reservation.items.length === 0) return "Be inventoriaus įrašų";
   return reservation.items.slice(0, 2).map((item) => item.itemName).join(", ") + (reservation.items.length > 2 ? "..." : "");
 }
 

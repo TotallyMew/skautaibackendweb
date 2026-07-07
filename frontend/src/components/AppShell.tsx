@@ -3,9 +3,9 @@ import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
 const navItems = [
-  { to: "/", label: "Pradzia", icon: Home },
+  { to: "/", label: "Pradžia", icon: Home },
   { to: "/inventory", label: "Inventorius", icon: Package },
-  { to: "/requests", label: "Prasymai", icon: ClipboardList },
+  { to: "/requests", label: "Prašymai", icon: ClipboardList },
   { to: "/members", label: "Nariai", icon: UsersRound },
   { to: "/events", label: "Renginiai", icon: CalendarDays },
   { to: "/admin", label: "Administravimas", icon: ShieldCheck }
@@ -20,8 +20,8 @@ export function AppShell() {
         <div className="brand">
           <span className="brand-mark">SI</span>
           <div>
-            <strong>Skautu inventorius</strong>
-            <small>Web</small>
+            <strong>Skautų inventorius</strong>
+            <small>Žiniatinklio sistema</small>
           </div>
         </div>
 
@@ -55,12 +55,12 @@ export function AppShell() {
       <main className="content">
         <header className="topbar">
           <div>
-            <span className="eyebrow">Prisijunges vartotojas</span>
+            <span className="eyebrow">Prisijungęs vartotojas</span>
             <h1>{auth?.name ?? "Vartotojas"}</h1>
           </div>
           <div className="permission-summary">
             <strong>{auth?.permissions.length ?? 0}</strong>
-            <span>teises</span>
+            <span>teisės</span>
           </div>
         </header>
         <Outlet />
@@ -68,4 +68,3 @@ export function AppShell() {
     </div>
   );
 }
-

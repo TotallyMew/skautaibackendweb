@@ -6,8 +6,7 @@ export function AdminPage() {
     <WorkArea
       icon={ShieldCheck}
       title="Administravimas"
-      description="Cia bus superadmin, tuntu tvirtinimas, pranesimai, globalus nustatymai ir administravimo darbo vietos."
+      description="Čia bus vyriausiojo administratoriaus darbo vieta, tuntų tvirtinimas, pranešimai ir bendri sistemos nustatymai."
     />
   );
 }
-

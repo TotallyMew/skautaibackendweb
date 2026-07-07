@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AlertCircle, ArrowLeft, CalendarDays, ClipboardList, Loader2, MapPin, UserRound, type LucideIcon } from "lucide-react";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import type { Reservation } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { countLabel, proposalStatusLabel, reviewStatusLabel, statusLabel } from "../utils/display";
 
 export function ReservationDetailPage() {
   const { reservationId } = useParams();
@@ -29,9 +30,9 @@ export function ReservationDetailPage() {
           setReservation(response);
         }
       })
-      .catch((cause) => {
+      .catch(() => {
         if (!isCancelled) {
-          setError(cause instanceof ApiError ? cause.message : "Nepavyko uzkrauti rezervacijos.");
+          setError("Nepavyko užkrauti rezervacijos.");
           setReservation(null);
         }
       })
@@ -52,7 +53,7 @@ export function ReservationDetailPage() {
         <div>
           <Link className="back-link" to="/requests">
             <ArrowLeft size={17} aria-hidden="true" />
-            Grizti i prasymus
+            Grįžti į prašymus
           </Link>
           <h2>{reservation?.title ?? "Rezervacija"}</h2>
         </div>
@@ -80,23 +81,23 @@ export function ReservationDetailPage() {
           <article className="detail-main">
             <div className="detail-title-row">
               <div>
-                <span className="eyebrow">{reservation.requestingUnitName ?? "Bendras prasymas"}</span>
+                <span className="eyebrow">{reservation.requestingUnitName ?? "Bendras prašymas"}</span>
                 <h3>{reservation.title}</h3>
               </div>
               <div className="quantity-card">
                 <strong>{reservation.totalQuantity} vnt.</strong>
-                <span>{reservation.totalItems} irasai</span>
+                <span>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</span>
               </div>
             </div>
 
             {reservation.notes && <p className="detail-description">{reservation.notes}</p>}
 
             <div className="info-grid">
-              <InfoTile icon={CalendarDays} label="Pradzia" value={formatDate(reservation.startDate)} />
+              <InfoTile icon={CalendarDays} label="Pradžia" value={formatDate(reservation.startDate)} />
               <InfoTile icon={CalendarDays} label="Pabaiga" value={formatDate(reservation.endDate)} />
               <InfoTile icon={UserRound} label="Rezervavo" value={reservation.reservedByName ?? "-"} />
-              <InfoTile icon={MapPin} label="Paemimas" value={pickupSummary(reservation)} />
-              <InfoTile icon={MapPin} label="Grazinimas" value={returnSummary(reservation)} />
+              <InfoTile icon={MapPin} label="Paėmimas" value={pickupSummary(reservation)} />
+              <InfoTile icon={MapPin} label="Grąžinimas" value={returnSummary(reservation)} />
               <InfoTile icon={ClipboardList} label="Atnaujinta" value={formatDateTime(reservation.updatedAt)} />
             </div>
 
@@ -108,8 +109,8 @@ export function ReservationDetailPage() {
                     <tr>
                       <th>Inventorius</th>
                       <th>Kiekis</th>
-                      <th>Isduota</th>
-                      <th>Grazinta</th>
+                      <th>Išduota</th>
+                      <th>Grąžinta</th>
                       <th>Likutis</th>
                     </tr>
                   </thead>
@@ -124,8 +125,8 @@ export function ReservationDetailPage() {
                         <td>{item.issuedQuantity ?? 0}</td>
                         <td>{item.returnedQuantity ?? 0}</td>
                         <td>
-                          <strong>{item.remainingToIssue ?? 0} isduoti</strong>
-                          <span>{item.remainingToReturn ?? 0} grazinti</span>
+                          <strong>{item.remainingToIssue ?? 0} išduoti</strong>
+                          <span>{item.remainingToReturn ?? 0} grąžinti</span>
                         </td>
                       </tr>
                     ))}
@@ -136,11 +137,11 @@ export function ReservationDetailPage() {
           </article>
 
           <aside className="detail-side">
-            <DetailFact label="Busena" value={reservation.status} />
-            <DetailFact label="Padalinio perziura" value={reservation.unitReviewStatus ?? "NOT_REQUIRED"} />
-            <DetailFact label="Tunto perziura" value={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
-            <DetailFact label="Paemimo pasiulymas" value={reservation.pickupProposalStatus ?? "NONE"} />
-            <DetailFact label="Grazinimo pasiulymas" value={reservation.returnProposalStatus ?? "NONE"} />
+            <DetailFact label="Būsena" value={statusLabel(reservation.status)} />
+            <DetailFact label="Padalinio peržiūra" value={reviewStatusLabel(reservation.unitReviewStatus ?? "NOT_REQUIRED")} />
+            <DetailFact label="Tunto peržiūra" value={reviewStatusLabel(reservation.topLevelReviewStatus ?? "NOT_REQUIRED")} />
+            <DetailFact label="Paėmimo pasiūlymas" value={proposalStatusLabel(reservation.pickupProposalStatus ?? "NONE")} />
+            <DetailFact label="Grąžinimo pasiūlymas" value={proposalStatusLabel(reservation.returnProposalStatus ?? "NONE")} />
             <DetailFact label="Sukurta" value={formatDateTime(reservation.createdAt)} />
           </aside>
         </div>
@@ -169,8 +170,7 @@ function DetailFact({ label, value }: { label: string; value: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const normalized = status.toLowerCase().replaceAll("_", " ");
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{normalized}</span>;
+  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
 }
 
 function pickupSummary(reservation: Reservation) {

@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import type { Event, EventListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { countLabel, eventTypeLabel, roleLabel, statusLabel } from "../utils/display";
 
 const pageSize = 25;
 
 const statusOptions = [
-  { value: "", label: "Visos busenos" },
+  { value: "", label: "Visos būsenos" },
   { value: "PLANNING", label: "Planuojami" },
   { value: "ACTIVE", label: "Aktyvus" },
-  { value: "WRAP_UP", label: "Uzdarymas" },
+  { value: "WRAP_UP", label: "Uždarymas" },
   { value: "COMPLETED", label: "Baigti" },
-  { value: "CANCELLED", label: "Atsaukti" }
+  { value: "CANCELLED", label: "Atšaukti" }
 ];
 
 const typeOptions = [
@@ -56,9 +57,9 @@ export function EventsPage() {
           setEventsState(response);
         }
       })
-      .catch((cause) => {
+      .catch(() => {
         if (!isCancelled) {
-          setError(cause instanceof ApiError ? cause.message : "Nepavyko uzkrauti renginiu.");
+          setError("Nepavyko užkrauti renginių.");
           setEventsState(null);
         }
       })
@@ -125,7 +126,7 @@ export function EventsPage() {
 
       <div className="data-panel">
         <div className="data-panel-header">
-          <span>{total} irasu</span>
+          <span>{total} {countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
           <span>Puslapis {currentPage} / {pageCount}</span>
         </div>
 
@@ -139,8 +140,8 @@ export function EventsPage() {
         {!isLoading && !error && eventsState?.events.length === 0 && (
           <div className="empty-state">
             <CalendarDays size={28} aria-hidden="true" />
-            <strong>Renginiu pagal siuos filtrus nerasta</strong>
-            <span>Pakeisk busena arba tipa ir bandyk dar karta.</span>
+            <strong>Renginių pagal šiuos filtrus nerasta</strong>
+            <span>Pakeisk būseną arba tipą ir bandyk dar kartą.</span>
           </div>
         )}
 
@@ -183,10 +184,10 @@ function EventsTable({ events }: { events: Event[] }) {
           <tr>
             <th>Renginys</th>
             <th>Laikotarpis</th>
-            <th>Roles</th>
+            <th>Vaidmenys</th>
             <th>Inventorius</th>
             <th>Finansai</th>
-            <th>Busena</th>
+            <th>Būsena</th>
           </tr>
         </thead>
         <tbody>
@@ -194,7 +195,7 @@ function EventsTable({ events }: { events: Event[] }) {
             <tr key={event.id}>
               <td>
                 <strong>{event.name}</strong>
-                <span>{event.customTypeLabel ?? event.type}</span>
+                <span>{event.customTypeLabel ?? eventTypeLabel(event.type)}</span>
                 {event.notes && <span>{event.notes}</span>}
               </td>
               <td>
@@ -214,15 +215,14 @@ function EventsTable({ events }: { events: Event[] }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const normalized = status.toLowerCase().replaceAll("_", " ");
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{normalized}</span>;
+  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
 }
 
 function summarizeRoles(event: Event) {
   if (event.eventRoles.length === 0) return "-";
   return event.eventRoles
     .slice(0, 3)
-    .map((role) => role.userName ? `${role.role}: ${role.userName}` : role.role)
+    .map((role) => role.userName ? `${roleLabel(role.role)}: ${role.userName}` : roleLabel(role.role))
     .join(", ") + (event.eventRoles.length > 3 ? "..." : "");
 }
 
@@ -232,7 +232,7 @@ function inventorySummary(event: Event) {
   return (
     <>
       <strong>{summary.totalAllocatedQuantity}/{summary.totalPlannedQuantity} suplanuota</strong>
-      <span>{summary.totalShortageQuantity} truksta</span>
+      <span>{summary.totalShortageQuantity} trūksta</span>
       <span>{summary.itemsNeedingPurchase} pirkti</span>
     </>
   );
@@ -244,7 +244,7 @@ function financeSummary(event: Event) {
   return (
     <>
       <strong className={summary.overBudget ? "danger-text" : undefined}>{formatPrice(summary.spentTotal)}</strong>
-      <span>{summary.remainingAmount != null ? `${formatPrice(summary.remainingAmount)} liko` : "Biudzetas nenurodytas"}</span>
+      <span>{summary.remainingAmount != null ? `${formatPrice(summary.remainingAmount)} liko` : "Biudžetas nenurodytas"}</span>
     </>
   );
 }

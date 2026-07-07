@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertCircle, Loader2, RefreshCw, Search, ShieldCheck, UsersRound } from "lucide-react";
-import { ApiError, api } from "../api/client";
+import { api } from "../api/client";
 import type { Member, MemberListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { assignmentTypeLabel, roleLabel } from "../utils/display";
 
 export function MembersPage() {
   const { auth } = useAuth();
@@ -32,9 +33,9 @@ export function MembersPage() {
           setMembersState(response);
         }
       })
-      .catch((cause) => {
+      .catch(() => {
         if (!isCancelled) {
-          setError(cause instanceof ApiError ? cause.message : "Nepavyko uzkrauti nariu.");
+          setError("Nepavyko užkrauti narių.");
           setMembersState(null);
         }
       })
@@ -105,14 +106,14 @@ export function MembersPage() {
           <Search size={17} aria-hidden="true" />
           <input
             type="search"
-            placeholder="Ieskoti pagal varda, el. pasta, vieneta, role..."
+            placeholder="Ieškoti pagal vardą, el. paštą, vienetą, vaidmenį..."
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
           />
         </label>
         <button className="primary-button" type="submit">
           <Search size={17} aria-hidden="true" />
-          Ieskoti
+          Ieškoti
         </button>
         <button className="secondary-button" type="button" onClick={resetSearch}>
           Valyti
@@ -129,7 +130,7 @@ export function MembersPage() {
       <div className="data-panel">
         <div className="data-panel-header">
           <span>{filteredMembers.length} rodoma</span>
-          <span>{membersState?.total ?? 0} is viso</span>
+          <span>{membersState?.total ?? 0} iš viso</span>
         </div>
 
         {isLoading && (
@@ -142,8 +143,8 @@ export function MembersPage() {
         {!isLoading && !error && filteredMembers.length === 0 && (
           <div className="empty-state">
             <UsersRound size={28} aria-hidden="true" />
-            <strong>Nariu nerasta</strong>
-            <span>Pakeisk paieska arba atnaujink sarasa.</span>
+            <strong>Narių nerasta</strong>
+            <span>Pakeisk paiešką arba atnaujink sąrašą.</span>
           </div>
         )}
 
@@ -166,7 +167,7 @@ function MembersTable({ members }: { members: Member[] }) {
             <th>Vienetai</th>
             <th>Vadovavimas</th>
             <th>Laipsniai</th>
-            <th>Istojo</th>
+            <th>Įstojo</th>
           </tr>
         </thead>
         <tbody>
@@ -174,7 +175,7 @@ function MembersTable({ members }: { members: Member[] }) {
             <tr key={member.userId}>
               <td>
                 <strong>{member.name} {member.surname}</strong>
-                {member.isIdentityHidden && <span className="muted-with-icon"><ShieldCheck size={14} aria-hidden="true" /> Paslepta tapatybe</span>}
+                {member.isIdentityHidden && <span className="muted-with-icon"><ShieldCheck size={14} aria-hidden="true" /> Paslėpta tapatybė</span>}
               </td>
               <td>
                 <strong>{member.email}</strong>
@@ -194,19 +195,19 @@ function MembersTable({ members }: { members: Member[] }) {
 
 function summarizeUnits(member: Member) {
   if (member.unitAssignments.length === 0) return "-";
-  return member.unitAssignments.map((unit) => `${unit.organizationalUnitName} (${unit.assignmentType})`).join(", ");
+  return member.unitAssignments.map((unit) => `${unit.organizationalUnitName} (${assignmentTypeLabel(unit.assignmentType)})`).join(", ");
 }
 
 function summarizeLeadership(member: Member) {
   if (member.leadershipRoles.length === 0) return "-";
   return member.leadershipRoles
-    .map((role) => role.organizationalUnitName ? `${role.roleName} / ${role.organizationalUnitName}` : role.roleName)
+    .map((role) => role.organizationalUnitName ? `${roleLabel(role.roleName)} / ${role.organizationalUnitName}` : roleLabel(role.roleName))
     .join(", ");
 }
 
 function summarizeRanks(member: Member) {
   if (member.ranks.length === 0) return "-";
-  return member.ranks.map((rank) => rank.roleName).join(", ");
+  return member.ranks.map((rank) => roleLabel(rank.roleName)).join(", ");
 }
 
 function formatDate(value: string) {

@@ -2,22 +2,18 @@ import { CalendarDays, ClipboardList, Home, ListTodo, LogOut, Package, ShieldChe
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
-const quickAccessItems = [
+const quickAccessItems: NavItem[] = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/tasks", label: "Mano užduotys", icon: ListTodo },
-  { to: "/inventory", label: "Inventorius", icon: Package },
-  { to: "/requests", label: "Prašymai", icon: ClipboardList },
-  { to: "/events", label: "Renginiai", icon: CalendarDays }
+  { to: "/inventory", label: "Inventorius", icon: Package, anyPermission: ["items.view", "items.create", "items.review"] },
+  { to: "/requests", label: "Prašymai", icon: ClipboardList, anyPermission: ["reservations.view", "reservations.create", "requisitions.create", "items.request.bendras", "items.request.approve"] },
+  { to: "/events", label: "Renginiai", icon: CalendarDays, anyPermission: ["events.view"] }
 ];
 
-const managementItems = [
-  { to: "/members", label: "Nariai", icon: UsersRound, permission: "members.view" },
-  { to: "/admin", label: "Administravimas", icon: ShieldCheck }
+const managementItems: NavItem[] = [
+  { to: "/members", label: "Nariai", icon: UsersRound, anyPermission: ["members.view"] },
+  { to: "/admin", label: "Administravimas", icon: ShieldCheck, superAdminOnly: true }
 ];
-
-function hasPermission(permissions: string[] | undefined, permission: string) {
-  return permissions?.some((value) => value === permission || value.startsWith(`${permission}:`)) ?? false;
-}
 
 export function AppShell() {
   const { auth, logout, selectTuntas } = useAuth();
@@ -25,7 +21,7 @@ export function AppShell() {
   const title = currentTitle(location.pathname);
   const isSuperAdmin = auth?.type === "super_admin";
   const activeTuntasName = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name;
-  const contextLabel = isSuperAdmin ? "Visi tuntai" : activeTuntasName ?? "Tuntas dar nepasirinktas";
+  const contextLabel = isSuperAdmin ? "Superadministratorius" : activeTuntasName ?? "Tuntas dar nepasirinktas";
 
   return (
     <div className="app-shell">
@@ -61,7 +57,7 @@ export function AppShell() {
         )}
 
         {!isSuperAdmin && <DrawerSection title="Greita prieiga" items={quickAccessItems} permissions={auth?.permissions} />}
-        <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} forceAdmin={isSuperAdmin} />
+        <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} isSuperAdmin={isSuperAdmin} />
 
         {!isSuperAdmin && (
           <div className="drawer-section account-section">
@@ -85,9 +81,9 @@ export function AppShell() {
             <span className="eyebrow">{contextLabel}</span>
             <h1>{title}</h1>
           </div>
-          <div className="permission-summary">
-            <strong>{isSuperAdmin ? "SA" : auth?.permissions.length ?? 0}</strong>
-            <span>{isSuperAdmin ? "režimas" : "teisės"}</span>
+          <div className="topbar-context">
+            <strong>{isSuperAdmin ? "Sistemos valdymas" : auth?.name ?? "Vartotojas"}</strong>
+            <span>{isSuperAdmin ? "Visi tuntai" : auth?.email ?? ""}</span>
           </div>
         </header>
         <Outlet />
@@ -100,21 +96,22 @@ type NavItem = {
   to: string;
   label: string;
   icon: LucideIcon;
-  permission?: string;
+  anyPermission?: string[];
+  superAdminOnly?: boolean;
 };
 
 function DrawerSection({
   title,
   items,
   permissions,
-  forceAdmin = false
+  isSuperAdmin = false
 }: {
   title: string;
   items: NavItem[];
   permissions?: string[];
-  forceAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }) {
-  const visibleItems = items.filter((item) => forceAdmin ? item.to === "/admin" : !item.permission || hasPermission(permissions, item.permission));
+  const visibleItems = items.filter((item) => isVisibleNavItem(item, permissions, isSuperAdmin));
   if (visibleItems.length === 0) return null;
 
   return (
@@ -130,6 +127,17 @@ function DrawerSection({
       </div>
     </nav>
   );
+}
+
+function isVisibleNavItem(item: NavItem, permissions: string[] | undefined, isSuperAdmin: boolean) {
+  if (item.superAdminOnly) return isSuperAdmin;
+  if (isSuperAdmin) return false;
+  if (!item.anyPermission?.length) return true;
+  return item.anyPermission.some((permission) => hasPermission(permissions, permission));
+}
+
+function hasPermission(permissions: string[] | undefined, permission: string) {
+  return permissions?.some((value) => value === permission || value.startsWith(`${permission}:`)) ?? false;
 }
 
 function currentTitle(pathname: string) {

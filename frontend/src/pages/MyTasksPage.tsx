@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CheckCircle2, ClipboardCheck, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, CalendarDays, CheckCircle2, ClipboardCheck, Loader2, RefreshCw, TimerReset } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { MyTask, MyTaskListResponse } from "../api/types";
@@ -51,11 +51,14 @@ export function MyTasksPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, reloadKey]);
 
-  const groupedTasks = useMemo(() => groupTasks(tasksState?.tasks ?? []), [tasksState?.tasks]);
+  const tasks = tasksState?.tasks ?? [];
+  const groupedTasks = useMemo(() => groupTasks(tasks), [tasks]);
   const total = tasksState?.total ?? 0;
+  const urgentCount = tasks.filter((task) => task.urgency === "HIGH" || task.bucket === "URGENT").length;
+  const dueCount = tasks.filter((task) => Boolean(task.dueAt)).length;
 
   return (
-    <section className="inventory-page">
+    <section className="collection-page tasks-page">
       <div className="section-toolbar">
         <div className="list-summary">
           <strong>{total}</strong>
@@ -79,43 +82,79 @@ export function MyTasksPage() {
         </div>
       )}
 
-      <div className="data-panel">
-        <div className="data-panel-header">
-          <span>Mano darbo eilė</span>
-          <span>{formatDateTime(new Date().toISOString())}</span>
+      <div className="inner-page-grid">
+        <div className="data-panel">
+          <div className="data-panel-header">
+            <span>Mano darbo eilė</span>
+            <span>{formatDateTime(new Date().toISOString())}</span>
+          </div>
+
+          {isLoading && (
+            <div className="table-state">
+              <Loader2 className="spin" size={22} aria-hidden="true" />
+              Kraunamos užduotys...
+            </div>
+          )}
+
+          {!isLoading && !error && total === 0 && (
+            <div className="empty-state">
+              <CheckCircle2 size={28} aria-hidden="true" />
+              <strong>Aktyvių užduočių nėra</strong>
+              <span>Kai atsiras tvirtinimų, grąžinimų ar renginių darbų, jie bus rodomi čia.</span>
+            </div>
+          )}
+
+          {!isLoading && !error && total > 0 && (
+            <div className="task-board">
+              {bucketOrder
+                .filter((bucket) => groupedTasks[bucket]?.length)
+                .map((bucket) => (
+                  <section className="task-bucket" key={bucket}>
+                    <h3>{taskBucketLabel(bucket)}</h3>
+                    <div className="task-list">
+                      {groupedTasks[bucket].map((task) => (
+                        <TaskRow task={task} key={task.id} />
+                      ))}
+                    </div>
+                  </section>
+                ))}
+            </div>
+          )}
         </div>
 
-        {isLoading && (
-          <div className="table-state">
-            <Loader2 className="spin" size={22} aria-hidden="true" />
-            Kraunamos užduotys...
-          </div>
-        )}
+        <aside className="side-panel-stack">
+          <section className="side-panel">
+            <div className="side-panel-heading">
+              <ClipboardCheck size={18} aria-hidden="true" />
+              <h3>Darbo būsena</h3>
+            </div>
+            <div className="side-stat-list">
+              <SideStat label="Aktyvios" value={total} />
+              <SideStat label="Skubios" value={urgentCount} />
+              <SideStat label="Su terminu" value={dueCount} />
+            </div>
+          </section>
 
-        {!isLoading && !error && total === 0 && (
-          <div className="empty-state">
-            <CheckCircle2 size={28} aria-hidden="true" />
-            <strong>Aktyvių užduočių nėra</strong>
-            <span>Kai atsiras tvirtinimų, grąžinimų ar renginių darbų, jie bus rodomi čia.</span>
-          </div>
-        )}
-
-        {!isLoading && !error && total > 0 && (
-          <div className="task-board">
-            {bucketOrder
-              .filter((bucket) => groupedTasks[bucket]?.length)
-              .map((bucket) => (
-                <section className="task-bucket" key={bucket}>
-                  <h3>{taskBucketLabel(bucket)}</h3>
-                  <div className="task-list">
-                    {groupedTasks[bucket].map((task) => (
-                      <TaskRow task={task} key={task.id} />
-                    ))}
-                  </div>
-                </section>
-              ))}
-          </div>
-        )}
+          <section className="side-panel">
+            <div className="side-panel-heading">
+              <CalendarDays size={18} aria-hidden="true" />
+              <h3>Artimiausi veiksmai</h3>
+            </div>
+            {tasks.filter((task) => task.dueAt).slice(0, 4).length > 0 ? (
+              <div className="mini-action-list">
+                {tasks.filter((task) => task.dueAt).slice(0, 4).map((task) => (
+                  <Link key={task.id} to={taskRoutePath(task.routeTarget, task.entityId)}>
+                    <TimerReset size={16} aria-hidden="true" />
+                    <span>{task.title}</span>
+                    <small>{formatDateTime(task.dueAt)}</small>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="side-panel-muted">Šiuo metu nėra užduočių su konkrečiu terminu.</p>
+            )}
+          </section>
+        </aside>
       </div>
     </section>
   );
@@ -138,6 +177,15 @@ function TaskRow({ task }: { task: MyTask }) {
   );
 }
 
+function SideStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div>
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
 function groupTasks(tasks: MyTask[]) {
   return tasks.reduce<Record<string, MyTask[]>>((groups, task) => {
     groups[task.bucket] = groups[task.bucket] ?? [];
@@ -146,7 +194,8 @@ function groupTasks(tasks: MyTask[]) {
   }, {});
 }
 
-function formatDateTime(value: string) {
+function formatDateTime(value?: string | null) {
+  if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("lt-LT", {

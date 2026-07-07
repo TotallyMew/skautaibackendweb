@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, CalendarDays, ClipboardList, Flag, Inbox, Loader2, MapPin, Package, Plus, UsersRound, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
@@ -17,9 +17,25 @@ type DashboardData = {
   planningEvents: Event[];
 };
 
+const emptyDashboard: DashboardData = {
+  inventoryTotal: 0,
+  taskTotal: 0,
+  pendingReservationsTotal: 0,
+  planningEventsTotal: 0,
+  latestItems: [],
+  tasks: [],
+  planningEvents: []
+};
+
 export function DashboardPage() {
   const { auth } = useAuth();
   const activeTuntas = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId);
+  const permissions = auth?.permissions ?? [];
+  const canViewInventory = hasPermission(permissions, "items.view");
+  const canCreateInventory = hasPermission(permissions, "items.create");
+  const canViewReservations = hasPermission(permissions, "reservations.view");
+  const canViewEvents = hasPermission(permissions, "events.view");
+  const canViewMembers = hasPermission(permissions, "members.view");
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,28 +51,28 @@ export function DashboardPage() {
     setError(null);
 
     Promise.all([
-      api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 3, offset: 0 }),
-      api.listMyTasks(auth.token, auth.activeTuntasId),
-      api.listReservations(auth.token, auth.activeTuntasId, { status: "PENDING", limit: 3, offset: 0 }),
-      api.listEvents(auth.token, auth.activeTuntasId, { status: "PLANNING", limit: 3, offset: 0 })
+      canViewInventory ? api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
+      api.listMyTasks(auth.token, auth.activeTuntasId).catch(() => null),
+      canViewReservations ? api.listReservations(auth.token, auth.activeTuntasId, { status: "PENDING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
+      canViewEvents ? api.listEvents(auth.token, auth.activeTuntasId, { status: "PLANNING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null)
     ])
       .then(([items, tasks, reservations, events]) => {
         if (!isCancelled) {
           setDashboard({
-            inventoryTotal: items.total,
-            taskTotal: tasks.total,
-            pendingReservationsTotal: reservations.total,
-            planningEventsTotal: events.total,
-            latestItems: items.items,
-            tasks: tasks.tasks.slice(0, 4),
-            planningEvents: events.events
+            inventoryTotal: items?.total ?? 0,
+            taskTotal: tasks?.total ?? 0,
+            pendingReservationsTotal: reservations?.total ?? 0,
+            planningEventsTotal: events?.total ?? 0,
+            latestItems: items?.items ?? [],
+            tasks: tasks?.tasks.slice(0, 4) ?? [],
+            planningEvents: events?.events ?? []
           });
         }
       })
       .catch(() => {
         if (!isCancelled) {
           setError("Nepavyko įkelti pradžios suvestinės.");
-          setDashboard(null);
+          setDashboard(emptyDashboard);
         }
       })
       .finally(() => {
@@ -68,7 +84,14 @@ export function DashboardPage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token]);
+  }, [auth?.activeTuntasId, auth?.token, canViewEvents, canViewInventory, canViewReservations]);
+
+  const organizationTiles = useMemo(() => {
+    return [
+      canViewMembers ? <ActionTile key="members" to="/members" icon={UsersRound} title="Nariai" subtitle="Tunto narių katalogas ir vadovavimo vaidmenys." /> : null,
+      canViewEvents ? <ActionTile key="events" to="/events" icon={CalendarDays} title="Renginiai" subtitle="Renginių sąrašas, inventoriaus ir finansų suvestinės." /> : null
+    ].filter(Boolean);
+  }, [canViewEvents, canViewMembers]);
 
   return (
     <section className="home-page">
@@ -109,7 +132,7 @@ export function DashboardPage() {
                   icon={ClipboardList}
                   title={task.title}
                   meta={task.subtitle}
-                  badge={task.count != null ? `${task.count} · ${taskUrgencyLabel(task.urgency)}` : taskUrgencyLabel(task.urgency)}
+                  badge={task.count != null ? `${task.count} / ${taskUrgencyLabel(task.urgency)}` : taskUrgencyLabel(task.urgency)}
                 />
               ))
             ) : (
@@ -119,47 +142,49 @@ export function DashboardPage() {
         )}
       </section>
 
-      <section className="home-section">
-        <div className="section-heading">
-          <div>
-            <h2>Inventorius</h2>
-            <span className="eyebrow">Greita prieiga prie tunto, vieneto ir asmeninio inventoriaus.</span>
+      {canViewInventory && (
+        <section className="home-section">
+          <div className="section-heading">
+            <div>
+              <h2>Inventorius</h2>
+              <span className="eyebrow">Greita prieiga prie tunto, vieneto ir asmeninio inventoriaus.</span>
+            </div>
           </div>
-        </div>
-        <div className="home-action-grid">
-          <ActionTile to="/inventory" icon={Package} title="Atidaryti inventorių" subtitle="Bendras sąrašas, paieška ir filtrai." />
-          <ActionTile to="/inventory/new" icon={Plus} title="Naujas įrašas" subtitle="Sukurti bendro inventoriaus įrašą." />
-          <ActionTile to="/inventory" icon={MapPin} title="Naujausi įrašai" subtitle={summarizeItems(dashboard?.latestItems ?? [])} />
-        </div>
-      </section>
+          <div className="home-action-grid">
+            <ActionTile to="/inventory" icon={Package} title="Atidaryti inventorių" subtitle="Bendras sąrašas, paieška ir filtrai." />
+            {canCreateInventory && <ActionTile to="/inventory/new" icon={Plus} title="Naujas įrašas" subtitle="Sukurti bendro inventoriaus įrašą." />}
+            <ActionTile to="/inventory" icon={MapPin} title="Naujausi įrašai" subtitle={summarizeItems(dashboard?.latestItems ?? [])} />
+          </div>
+        </section>
+      )}
 
-      <section className="home-section">
-        <div className="section-heading">
-          <div>
-            <h2>Rezervacijos ir prašymai</h2>
-            <span className="eyebrow">Sek aktyvias rezervacijas, pirkimus ir paėmimo prašymus.</span>
+      {(canViewReservations || canViewEvents) && (
+        <section className="home-section">
+          <div className="section-heading">
+            <div>
+              <h2>Rezervacijos ir prašymai</h2>
+              <span className="eyebrow">Sek aktyvias rezervacijas, pirkimus ir paėmimo prašymus.</span>
+            </div>
           </div>
-        </div>
-        <div className="home-action-grid">
-          <ActionTile to="/requests" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />
-          <ActionTile to="/tasks" icon={ClipboardList} title="Mano užduotys" subtitle={formatCount(dashboard?.taskTotal, "aktyvi užduotis", "aktyvios užduotys", "aktyvių užduočių")} />
-          <ActionTile to="/events" icon={Inbox} title="Renginių planai" subtitle={formatCount(dashboard?.planningEventsTotal, "planuojamas renginys", "planuojami renginiai", "planuojamų renginių")} />
-        </div>
-      </section>
+          <div className="home-action-grid">
+            {canViewReservations && <ActionTile to="/requests" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
+            <ActionTile to="/tasks" icon={ClipboardList} title="Mano užduotys" subtitle={formatCount(dashboard?.taskTotal, "aktyvi užduotis", "aktyvios užduotys", "aktyvių užduočių")} />
+            {canViewEvents && <ActionTile to="/events" icon={Inbox} title="Renginių planai" subtitle={formatCount(dashboard?.planningEventsTotal, "planuojamas renginys", "planuojami renginiai", "planuojamų renginių")} />}
+          </div>
+        </section>
+      )}
 
-      <section className="home-section">
-        <div className="section-heading">
-          <div>
-            <h2>Organizacija</h2>
-            <span className="eyebrow">Nariai, renginiai ir administravimo sritys.</span>
+      {organizationTiles.length > 0 && (
+        <section className="home-section">
+          <div className="section-heading">
+            <div>
+              <h2>Organizacija</h2>
+              <span className="eyebrow">Nariai, renginiai ir vieneto kontekstas.</span>
+            </div>
           </div>
-        </div>
-        <div className="home-action-grid">
-          <ActionTile to="/members" icon={UsersRound} title="Nariai" subtitle="Tunto narių katalogas ir vadovavimo vaidmenys." />
-          <ActionTile to="/events" icon={CalendarDays} title="Renginiai" subtitle="Renginių sąrašas, inventoriaus ir finansų suvestinės." />
-          <ActionTile to="/admin" icon={Flag} title="Administravimas" subtitle="Tuntų tvirtinimas ir sistemos nustatymai." />
-        </div>
-      </section>
+          <div className="home-action-grid">{organizationTiles}</div>
+        </section>
+      )}
     </section>
   );
 }
@@ -268,4 +293,8 @@ function formatCount(count: number | undefined, one: string, few: string, many: 
 function summarizeItems(items: Item[]) {
   if (items.length === 0) return "Įrašų nėra";
   return items.slice(0, 2).map((item) => item.name).join(", ") + (items.length > 2 ? "..." : "");
+}
+
+function hasPermission(permissions: string[], permission: string) {
+  return permissions.some((value) => value === permission || value.startsWith(`${permission}:`));
 }

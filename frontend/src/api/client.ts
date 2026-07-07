@@ -1,5 +1,7 @@
 import type {
   ApiErrorBody,
+  EventListFilters,
+  EventListResponse,
   ItemListFilters,
   ItemListResponse,
   Item,
@@ -140,5 +142,12 @@ export const api = {
     request<MemberListResponse>("/api/members", {
       token,
       tuntasId
+    }),
+
+  listEvents: (token: string, tuntasId: string, filters: EventListFilters = {}) =>
+    request<EventListResponse>("/api/events", {
+      token,
+      tuntasId,
+      query: filters
     })
 };

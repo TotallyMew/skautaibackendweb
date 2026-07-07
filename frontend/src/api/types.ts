@@ -217,3 +217,66 @@ export type MemberListResponse = {
   members: Member[];
   total: number;
 };
+
+export type EventRole = {
+  id: string;
+  userId: string;
+  userName?: string | null;
+  role: string;
+  targetGroup?: string | null;
+  pastovykleId?: string | null;
+  assignedByUserId?: string | null;
+  assignedAt: string;
+};
+
+export type EventInventorySummary = {
+  totalPlannedQuantity: number;
+  totalAvailableQuantity: number;
+  totalShortageQuantity: number;
+  totalAllocatedQuantity: number;
+  itemsNeedingPurchase: number;
+};
+
+export type EventFinanceSummary = {
+  inventoryBudgetAmount?: number | null;
+  purchaseTotal: number;
+  extraCostTotal: number;
+  spentTotal: number;
+  remainingAmount?: number | null;
+  overBudget: boolean;
+};
+
+export type Event = {
+  id: string;
+  tuntasId: string;
+  name: string;
+  type: string;
+  customTypeLabel?: string | null;
+  startDate: string;
+  endDate: string;
+  locationId?: string | null;
+  organizationalUnitId?: string | null;
+  createdByUserId?: string | null;
+  status: string;
+  inventoryBudgetAmount?: number | null;
+  notes?: string | null;
+  createdAt: string;
+  eventRoles: EventRole[];
+  inventorySummary?: EventInventorySummary | null;
+  financeSummary?: EventFinanceSummary | null;
+};
+
+export type EventListResponse = {
+  events: Event[];
+  total: number;
+  limit?: number | null;
+  offset: number;
+  hasMore: boolean;
+};
+
+export type EventListFilters = {
+  type?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+};

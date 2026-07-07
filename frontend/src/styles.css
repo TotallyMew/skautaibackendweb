@@ -412,6 +412,10 @@ button {
   grid-template-columns: minmax(160px, 220px);
 }
 
+.compact-pair-filter-bar {
+  grid-template-columns: minmax(160px, 220px) minmax(160px, 220px);
+}
+
 .member-filter-bar {
   grid-template-columns: minmax(220px, 1fr) auto auto;
 }
@@ -565,7 +569,9 @@ button {
 
 .status-approved,
 .status-issued,
-.status-returned {
+.status-returned,
+.status-planning,
+.status-completed {
   background: #e5f3e8;
   color: #24543b;
 }

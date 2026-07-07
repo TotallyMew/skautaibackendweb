@@ -140,6 +140,26 @@ describe("api client", () => {
     expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
   });
 
+  it("fetches events with filters and tuntas context", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ events: [], total: 0, limit: 25, offset: 0, hasMore: false }));
+
+    await api.listEvents("access-token", "tuntas-1", {
+      status: "PLANNING",
+      type: "STOVYKLA",
+      limit: 25,
+      offset: 0
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/events?status=PLANNING&type=STOVYKLA&limit=25&offset=0");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+  });
+
   it("sends JSON bodies for login", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({

@@ -9,6 +9,7 @@ export function LoginPage() {
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginMode, setLoginMode] = useState<"user" | "super_admin">("user");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -23,8 +24,8 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login({ email, password });
-      navigate(from, { replace: true });
+      await login({ email, password }, loginMode);
+      navigate(loginMode === "super_admin" ? "/admin" : from, { replace: true });
     } catch {
       setError("Nepavyko prisijungti. Patikrink el. paštą ir slaptažodį.");
     } finally {
@@ -51,6 +52,23 @@ export function LoginPage() {
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
+            <div className="segmented-tabs auth-mode-tabs" aria-label="Prisijungimo tipas">
+              <button
+                className={`segmented-tab${loginMode === "user" ? " active" : ""}`}
+                type="button"
+                onClick={() => setLoginMode("user")}
+              >
+                Tunto vartotojas
+              </button>
+              <button
+                className={`segmented-tab${loginMode === "super_admin" ? " active" : ""}`}
+                type="button"
+                onClick={() => setLoginMode("super_admin")}
+              >
+                Superadmin
+              </button>
+            </div>
+
             <label>
               El. paštas
               <input

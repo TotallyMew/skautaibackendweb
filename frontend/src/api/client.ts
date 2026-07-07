@@ -1,4 +1,5 @@
 import type {
+  AdminTuntas,
   ApiErrorBody,
   CreateItemRequest,
   EventListFilters,
@@ -10,12 +11,14 @@ import type {
   Member,
   MemberListResponse,
   MyTaskListResponse,
+  MessageResponse,
   PermissionsResponse,
   Reservation,
   ReservationListFilters,
   ReservationListResponse,
   RequisitionListResponse,
   SharedInventoryRequestListResponse,
+  SuperAdminNotificationRequest,
   TokenResponse,
   UserTuntas
 } from "./types";
@@ -109,6 +112,12 @@ function normalizeMemberList(response: MemberListResponse): MemberListResponse {
 export const api = {
   login: (body: LoginRequest) =>
     request<TokenResponse>("/api/auth/login", {
+      method: "POST",
+      body
+    }),
+
+  superAdminLogin: (body: LoginRequest) =>
+    request<TokenResponse>("/api/super-admin/login", {
       method: "POST",
       body
     }),
@@ -217,5 +226,35 @@ export const api = {
     request<MyTaskListResponse>("/api/tasks/my", {
       token,
       tuntasId
+    }),
+
+  listAdminTuntai: (token: string) =>
+    request<AdminTuntas[]>("/api/super-admin/tuntai", {
+      token
+    }),
+
+  approveTuntas: (token: string, tuntasId: string) =>
+    request<MessageResponse>(`/api/super-admin/tuntai/${tuntasId}/approve`, {
+      token,
+      method: "POST"
+    }),
+
+  rejectTuntas: (token: string, tuntasId: string) =>
+    request<MessageResponse>(`/api/super-admin/tuntai/${tuntasId}/reject`, {
+      token,
+      method: "POST"
+    }),
+
+  deleteTuntas: (token: string, tuntasId: string) =>
+    request<MessageResponse>(`/api/super-admin/tuntai/${tuntasId}`, {
+      token,
+      method: "DELETE"
+    }),
+
+  sendSuperAdminNotification: (token: string, body: SuperAdminNotificationRequest) =>
+    request<MessageResponse>("/api/super-admin/notifications", {
+      token,
+      method: "POST",
+      body
     })
 };

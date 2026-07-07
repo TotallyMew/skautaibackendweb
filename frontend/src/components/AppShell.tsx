@@ -23,7 +23,9 @@ export function AppShell() {
   const { auth, logout, selectTuntas } = useAuth();
   const location = useLocation();
   const title = currentTitle(location.pathname);
+  const isSuperAdmin = auth?.type === "super_admin";
   const activeTuntasName = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name;
+  const contextLabel = isSuperAdmin ? "Visi tuntai" : activeTuntasName ?? "Tuntas dar nepasirinktas";
 
   return (
     <div className="app-shell">
@@ -31,7 +33,7 @@ export function AppShell() {
         <div className="drawer-identity">
           <strong>Skautų Inventorius</strong>
           <span>{auth?.name ?? "Vartotojas"}</span>
-          <span>{activeTuntasName ?? "Tuntas dar nepasirinktas"}</span>
+          <span>{contextLabel}</span>
         </div>
 
         <div className="brand compact-brand">
@@ -42,28 +44,34 @@ export function AppShell() {
           </div>
         </div>
 
-        <label className="field-label" htmlFor="tuntas-select">Tuntas</label>
-        <select
-          id="tuntas-select"
-          className="select"
-          value={auth?.activeTuntasId ?? ""}
-          onChange={(event) => selectTuntas(event.target.value)}
-        >
-          {auth?.tuntai.map((tuntas) => (
-            <option key={tuntas.id} value={tuntas.id}>{tuntas.name}</option>
-          ))}
-        </select>
+        {!isSuperAdmin && (
+          <>
+            <label className="field-label" htmlFor="tuntas-select">Tuntas</label>
+            <select
+              id="tuntas-select"
+              className="select"
+              value={auth?.activeTuntasId ?? ""}
+              onChange={(event) => selectTuntas(event.target.value)}
+            >
+              {auth?.tuntai.map((tuntas) => (
+                <option key={tuntas.id} value={tuntas.id}>{tuntas.name}</option>
+              ))}
+            </select>
+          </>
+        )}
 
-        <DrawerSection title="Greita prieiga" items={quickAccessItems} permissions={auth?.permissions} />
-        <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} />
+        {!isSuperAdmin && <DrawerSection title="Greita prieiga" items={quickAccessItems} permissions={auth?.permissions} />}
+        <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} forceAdmin={isSuperAdmin} />
 
-        <div className="drawer-section account-section">
-          <span className="drawer-section-title">Paskyra</span>
-          <button className="nav-link nav-button" type="button" onClick={() => document.getElementById("tuntas-select")?.focus()}>
-            <Shuffle size={18} aria-hidden="true" />
-            <span>Keisti tuntą</span>
-          </button>
-        </div>
+        {!isSuperAdmin && (
+          <div className="drawer-section account-section">
+            <span className="drawer-section-title">Paskyra</span>
+            <button className="nav-link nav-button" type="button" onClick={() => document.getElementById("tuntas-select")?.focus()}>
+              <Shuffle size={18} aria-hidden="true" />
+              <span>Keisti tuntą</span>
+            </button>
+          </div>
+        )}
 
         <button className="logout-button" type="button" onClick={() => void logout()}>
           <LogOut size={18} aria-hidden="true" />
@@ -74,12 +82,12 @@ export function AppShell() {
       <main className="content">
         <header className="topbar">
           <div>
-            <span className="eyebrow">{activeTuntasName ?? "Tuntas nepasirinktas"}</span>
+            <span className="eyebrow">{contextLabel}</span>
             <h1>{title}</h1>
           </div>
           <div className="permission-summary">
-            <strong>{auth?.permissions.length ?? 0}</strong>
-            <span>teisės</span>
+            <strong>{isSuperAdmin ? "SA" : auth?.permissions.length ?? 0}</strong>
+            <span>{isSuperAdmin ? "režimas" : "teisės"}</span>
           </div>
         </header>
         <Outlet />
@@ -95,8 +103,18 @@ type NavItem = {
   permission?: string;
 };
 
-function DrawerSection({ title, items, permissions }: { title: string; items: NavItem[]; permissions?: string[] }) {
-  const visibleItems = items.filter((item) => !item.permission || hasPermission(permissions, item.permission));
+function DrawerSection({
+  title,
+  items,
+  permissions,
+  forceAdmin = false
+}: {
+  title: string;
+  items: NavItem[];
+  permissions?: string[];
+  forceAdmin?: boolean;
+}) {
+  const visibleItems = items.filter((item) => forceAdmin ? item.to === "/admin" : !item.permission || hasPermission(permissions, item.permission));
   if (visibleItems.length === 0) return null;
 
   return (

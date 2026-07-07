@@ -7,7 +7,7 @@ type AuthContextValue = {
   auth: AuthState | null;
   isInitializing: boolean;
   isAuthenticated: boolean;
-  login: (request: LoginRequest) => Promise<void>;
+  login: (request: LoginRequest, mode?: "user" | "super_admin") => Promise<void>;
   logout: () => Promise<void>;
   selectTuntas: (tuntasId: string) => Promise<void>;
 };
@@ -23,8 +23,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     saveAuthState(next);
   }, []);
 
+  const isSuperAdmin = (state: AuthState) => state.type === "super_admin";
+
   const hydratePermissions = useCallback(async (state: AuthState) => {
-    if (!state.activeTuntasId || state.type === "superadmin") {
+    if (!state.activeTuntasId || isSuperAdmin(state)) {
       persist(state);
       return;
     }
@@ -32,8 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(withPermissions(state, permissions));
   }, [persist]);
 
-  const login = useCallback(async (request: LoginRequest) => {
-    const response = await api.login(request);
+  const login = useCallback(async (request: LoginRequest, mode: "user" | "super_admin" = "user") => {
+    const response = mode === "super_admin" ? await api.superAdminLogin(request) : await api.login(request);
     await hydratePermissions(authFromTokenResponse(response));
   }, [hydratePermissions]);
 

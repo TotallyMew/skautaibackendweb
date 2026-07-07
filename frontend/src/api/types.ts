@@ -26,9 +26,27 @@ export type LoginRequest = {
   password: string;
 };
 
+export type MessageResponse = {
+  message: string;
+};
+
 export type ApiErrorBody = {
   error?: string;
   message?: string;
+};
+
+export type AdminTuntas = {
+  id: string;
+  name: string;
+  krastas: string;
+  status: string;
+  contactEmail: string;
+};
+
+export type SuperAdminNotificationRequest = {
+  title: string;
+  body: string;
+  tuntasId?: string | null;
 };
 
 export type Item = {

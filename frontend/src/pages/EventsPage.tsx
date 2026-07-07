@@ -146,7 +146,7 @@ export function EventsPage() {
         )}
 
         {!isLoading && !error && Boolean(eventsState?.events.length) && (
-          <EventsTable events={eventsState?.events ?? []} />
+          <EventsList events={eventsState?.events ?? []} />
         )}
       </div>
 
@@ -176,40 +176,33 @@ export function EventsPage() {
   );
 }
 
-function EventsTable({ events }: { events: Event[] }) {
+function EventsList({ events }: { events: Event[] }) {
   return (
-    <div className="table-wrap">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Renginys</th>
-            <th>Laikotarpis</th>
-            <th>Vaidmenys</th>
-            <th>Inventorius</th>
-            <th>Finansai</th>
-            <th>Būsena</th>
-          </tr>
-        </thead>
-        <tbody>
-          {events.map((event) => (
-            <tr key={event.id}>
-              <td>
-                <strong>{event.name}</strong>
-                <span>{event.customTypeLabel ?? eventTypeLabel(event.type)}</span>
-                {event.notes && <span>{event.notes}</span>}
-              </td>
-              <td>
-                <strong>{formatDate(event.startDate)}</strong>
-                <span>iki {formatDate(event.endDate)}</span>
-              </td>
-              <td>{summarizeRoles(event)}</td>
-              <td>{inventorySummary(event)}</td>
-              <td>{financeSummary(event)}</td>
-              <td><StatusBadge status={event.status} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="record-list">
+      {events.map((event) => (
+        <article className="record-row" key={event.id}>
+          <div className="record-icon">R</div>
+          <div className="record-main">
+            <strong className="record-title">{event.name}</strong>
+            <span>{event.customTypeLabel ?? eventTypeLabel(event.type)}</span>
+            {event.notes && <span>{event.notes}</span>}
+            <div className="record-chip-row">
+              <span className="mini-chip">{summarizeRoles(event)}</span>
+            </div>
+          </div>
+          <div className="record-meta">
+            <strong>{formatDate(event.startDate)}</strong>
+            <span>iki {formatDate(event.endDate)}</span>
+          </div>
+          <div className="record-meta">
+            {inventorySummary(event)}
+          </div>
+          <div className="record-meta">
+            {financeSummary(event)}
+          </div>
+          <StatusBadge status={event.status} />
+        </article>
+      ))}
     </div>
   );
 }

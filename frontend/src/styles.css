@@ -691,6 +691,93 @@ button {
   font-weight: 700;
 }
 
+.record-list {
+  display: grid;
+  padding: 0 16px 16px;
+}
+
+.record-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+
+.record-row:last-child {
+  border-bottom: 0;
+}
+
+.record-icon {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--secondary-container);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.record-main,
+.record-meta {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.record-main {
+  flex: 1 1 240px;
+}
+
+.record-title {
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.record-title:hover {
+  text-decoration: underline;
+}
+
+.record-main span,
+.record-meta span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.record-meta {
+  flex: 0 1 150px;
+  text-align: right;
+}
+
+.record-meta strong {
+  color: var(--text-body);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.record-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mini-chip {
+  display: inline-flex;
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--surface-container);
+  color: var(--text-body);
+  padding: 3px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
 .chip-row {
   display: flex;
   flex-wrap: wrap;
@@ -1205,6 +1292,25 @@ button {
   .quantity-card {
     width: 100%;
     text-align: left;
+  }
+
+  .record-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .record-main {
+    flex-basis: calc(100% - 54px);
+  }
+
+  .record-meta {
+    flex: 1 1 100%;
+    margin-left: 54px;
+    text-align: left;
+  }
+
+  .record-row > .status-badge {
+    margin-left: 54px;
   }
 
   .member-row {

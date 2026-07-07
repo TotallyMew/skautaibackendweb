@@ -134,7 +134,7 @@ export function RequestsPage() {
         )}
 
         {!isLoading && !error && Boolean(reservationsState?.reservations.length) && (
-          <ReservationsTable reservations={reservationsState?.reservations ?? []} />
+          <ReservationsList reservations={reservationsState?.reservations ?? []} />
         )}
       </div>
 
@@ -164,46 +164,33 @@ export function RequestsPage() {
   );
 }
 
-function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
+function ReservationsList({ reservations }: { reservations: Reservation[] }) {
   return (
-    <div className="table-wrap">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Pavadinimas</th>
-            <th>Laikotarpis</th>
-            <th>Rezervavo</th>
-            <th>Inventorius</th>
-            <th>Peržiūra</th>
-            <th>Būsena</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reservations.map((reservation) => (
-            <tr key={reservation.id}>
-              <td>
-                <Link className="table-link" to={`/requests/reservations/${reservation.id}`}>{reservation.title}</Link>
-                <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prašymas"}</span>
-              </td>
-              <td>
-                <strong>{formatDate(reservation.startDate)}</strong>
-                <span>iki {formatDate(reservation.endDate)}</span>
-              </td>
-              <td>{reservation.reservedByName ?? "-"}</td>
-              <td>
-                <strong>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</strong>
-                <span>{reservation.totalQuantity} vnt.</span>
-                <span>{summarizeItems(reservation)}</span>
-              </td>
-              <td>
-                <ReviewBadge label="Padalinys" status={reservation.unitReviewStatus ?? "NOT_REQUIRED"} />
-                <ReviewBadge label="Tuntas" status={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
-              </td>
-              <td><StatusBadge status={reservation.status} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="record-list">
+      {reservations.map((reservation) => (
+        <article className="record-row" key={reservation.id}>
+          <div className="record-icon">P</div>
+          <div className="record-main">
+            <Link className="record-title" to={`/requests/reservations/${reservation.id}`}>{reservation.title}</Link>
+            <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prašymas"}</span>
+            <div className="record-chip-row">
+              <ReviewBadge label="Padalinys" status={reservation.unitReviewStatus ?? "NOT_REQUIRED"} />
+              <ReviewBadge label="Tuntas" status={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
+            </div>
+          </div>
+          <div className="record-meta">
+            <strong>{formatDate(reservation.startDate)}</strong>
+            <span>iki {formatDate(reservation.endDate)}</span>
+            <span>{reservation.reservedByName ?? "Rezervavęs narys nenurodytas"}</span>
+          </div>
+          <div className="record-meta">
+            <strong>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</strong>
+            <span>{reservation.totalQuantity} vnt.</span>
+            <span>{summarizeItems(reservation)}</span>
+          </div>
+          <StatusBadge status={reservation.status} />
+        </article>
+      ))}
     </div>
   );
 }

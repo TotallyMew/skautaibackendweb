@@ -195,7 +195,7 @@ export function InventoryPage() {
         )}
 
         {!isLoading && !error && Boolean(itemsState?.items.length) && (
-          <InventoryTable items={itemsState?.items ?? []} />
+          <InventoryList items={itemsState?.items ?? []} />
         )}
       </div>
 
@@ -225,44 +225,29 @@ export function InventoryPage() {
   );
 }
 
-function InventoryTable({ items }: { items: Item[] }) {
+function InventoryList({ items }: { items: Item[] }) {
   return (
-    <div className="table-wrap">
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>Pavadinimas</th>
-            <th>Kategorija</th>
-            <th>Kiekis</th>
-            <th>Saugotojas</th>
-            <th>Lokacija</th>
-            <th>Būsena</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => (
-            <tr key={item.id}>
-              <td>
-                <Link className="table-link" to={`/inventory/${item.id}`}>{item.name}</Link>
-                <span>{item.description || item.condition}</span>
-              </td>
-              <td>
-                <strong>{item.category}</strong>
-                <span>{itemTypeLabel(item.type)}</span>
-              </td>
-              <td>
-                <strong className={item.isLowStock ? "danger-text" : undefined}>
-                  {item.quantity} {item.unitOfMeasure ?? "vnt."}
-                </strong>
-                {item.minimumQuantity != null && <span>Min. {item.minimumQuantity}</span>}
-              </td>
-              <td>{item.custodianName ?? "Bendras tuntas"}</td>
-              <td>{item.locationPath ?? item.locationName ?? item.temporaryStorageLabel ?? "-"}</td>
-              <td><StatusBadge status={item.status} /></td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="record-list">
+      {items.map((item) => (
+        <article className="record-row" key={item.id}>
+          <div className="record-icon">I</div>
+          <div className="record-main">
+            <Link className="record-title" to={`/inventory/${item.id}`}>{item.name}</Link>
+            <span>{item.description || item.condition}</span>
+            <div className="record-chip-row">
+              <span className="mini-chip">{item.category}</span>
+              <span className="mini-chip">{itemTypeLabel(item.type)}</span>
+              <span className="mini-chip">{item.custodianName ?? "Bendras tuntas"}</span>
+            </div>
+          </div>
+          <div className="record-meta">
+            <strong className={item.isLowStock ? "danger-text" : undefined}>{item.quantity} {item.unitOfMeasure ?? "vnt."}</strong>
+            {item.minimumQuantity != null && <span>Min. {item.minimumQuantity}</span>}
+            <span>{item.locationPath ?? item.locationName ?? item.temporaryStorageLabel ?? "Lokacija nenurodyta"}</span>
+          </div>
+          <StatusBadge status={item.status} />
+        </article>
+      ))}
     </div>
   );
 }

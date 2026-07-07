@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useState } from "react";
-import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageSearch, RefreshCw, Search } from "lucide-react";
+import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageCheck, PackageSearch, RefreshCw, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
@@ -223,8 +223,10 @@ function InventoryList({ items }: { items: Item[] }) {
   return (
     <div className="record-list">
       {items.map((item) => (
-        <article className="record-row" key={item.id}>
-          <div className="record-icon">I</div>
+        <article className="record-row inventory-record-row" key={item.id}>
+          <div className="record-icon">
+            <PackageCheck size={18} aria-hidden="true" />
+          </div>
           <div className="record-main">
             <Link className="record-title" to={`/inventory/${item.id}`}>{item.name}</Link>
             <span>{item.description || item.condition}</span>

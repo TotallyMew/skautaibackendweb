@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { api } from "../api/client";
 import type { Event, EventListResponse } from "../api/types";
@@ -74,21 +74,16 @@ export function EventsPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, offset, reloadKey, status, type]);
 
-  const activeTuntasName = useMemo(
-    () => auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name,
-    [auth?.activeTuntasId, auth?.tuntai]
-  );
-
   const total = eventsState?.total ?? 0;
   const currentPage = Math.floor(offset / pageSize) + 1;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <section className="inventory-page">
-      <div className="section-heading">
-        <div>
-          <span className="eyebrow">{activeTuntasName ?? "Tuntas nepasirinktas"}</span>
-          <h2>Renginiai</h2>
+      <div className="section-toolbar">
+        <div className="list-summary">
+          <strong>{total}</strong>
+          <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
         <button
           className="secondary-button"
@@ -180,8 +175,10 @@ function EventsList({ events }: { events: Event[] }) {
   return (
     <div className="record-list">
       {events.map((event) => (
-        <article className="record-row" key={event.id}>
-          <div className="record-icon">R</div>
+        <article className="record-row event-record-row" key={event.id}>
+          <div className="record-icon">
+            <CalendarDays size={18} aria-hidden="true" />
+          </div>
           <div className="record-main">
             <strong className="record-title">{event.name}</strong>
             <span>{event.customTypeLabel ?? eventTypeLabel(event.type)}</span>

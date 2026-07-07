@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, ChevronLeft, ChevronRight, ClipboardList, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Reservation, ReservationListResponse } from "../api/types";
@@ -163,8 +163,10 @@ function ReservationsList({ reservations }: { reservations: Reservation[] }) {
   return (
     <div className="record-list">
       {reservations.map((reservation) => (
-        <article className="record-row" key={reservation.id}>
-          <div className="record-icon">P</div>
+        <article className="record-row request-record-row" key={reservation.id}>
+          <div className="record-icon">
+            <CalendarCheck size={18} aria-hidden="true" />
+          </div>
           <div className="record-main">
             <Link className="record-title" to={`/requests/reservations/${reservation.id}`}>{reservation.title}</Link>
             <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prašymas"}</span>

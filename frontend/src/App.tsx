@@ -8,6 +8,7 @@ import { InventoryDetailPage } from "./pages/InventoryDetailPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MembersPage } from "./pages/MembersPage";
+import { ReservationDetailPage } from "./pages/ReservationDetailPage";
 import { RequestsPage } from "./pages/RequestsPage";
 
 export function App() {
@@ -20,6 +21,7 @@ export function App() {
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
           <Route path="requests" element={<RequestsPage />} />
+          <Route path="requests/reservations/:reservationId" element={<ReservationDetailPage />} />
           <Route path="members" element={<MembersPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="admin" element={<AdminPage />} />

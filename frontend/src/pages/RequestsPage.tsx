@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, ClipboardList, Loader2, RefreshCw } from "lucide-react";
+import { Link } from "react-router-dom";
 import { ApiError, api } from "../api/client";
 import type { Reservation, ReservationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -180,7 +181,7 @@ function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
           {reservations.map((reservation) => (
             <tr key={reservation.id}>
               <td>
-                <strong>{reservation.title}</strong>
+                <Link className="table-link" to={`/requests/reservations/${reservation.id}`}>{reservation.title}</Link>
                 <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prasymas"}</span>
               </td>
               <td>

@@ -500,6 +500,15 @@ button {
   text-transform: uppercase;
 }
 
+.compact-data-table {
+  min-width: 680px;
+}
+
+.compact-data-table th,
+.compact-data-table td {
+  padding: 11px 12px;
+}
+
 .data-table td strong,
 .data-table td span {
   display: block;

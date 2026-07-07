@@ -6,10 +6,14 @@ const navItems = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/inventory", label: "Inventorius", icon: Package },
   { to: "/requests", label: "Prašymai", icon: ClipboardList },
-  { to: "/members", label: "Nariai", icon: UsersRound },
+  { to: "/members", label: "Nariai", icon: UsersRound, permission: "members.view" },
   { to: "/events", label: "Renginiai", icon: CalendarDays },
   { to: "/admin", label: "Administravimas", icon: ShieldCheck }
 ];
+
+function hasPermission(permissions: string[] | undefined, permission: string) {
+  return permissions?.some((value) => value === permission || value.startsWith(`${permission}:`)) ?? false;
+}
 
 export function AppShell() {
   const { auth, logout, selectTuntas } = useAuth();
@@ -38,7 +42,7 @@ export function AppShell() {
         </select>
 
         <nav className="nav-list">
-          {navItems.map(({ to, label, icon: Icon }) => (
+          {navItems.filter((item) => !item.permission || hasPermission(auth?.permissions, item.permission)).map(({ to, label, icon: Icon }) => (
             <NavLink key={to} to={to} end={to === "/"} className="nav-link">
               <Icon size={18} aria-hidden="true" />
               <span>{label}</span>

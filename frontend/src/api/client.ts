@@ -6,6 +6,7 @@ import type {
   ItemListResponse,
   Item,
   LoginRequest,
+  Member,
   MemberListResponse,
   PermissionsResponse,
   Reservation,
@@ -82,6 +83,25 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return (await response.json()) as T;
 }
 
+function normalizeMember(member: Member): Member {
+  return {
+    ...member,
+    unitAssignments: member.unitAssignments ?? [],
+    leadershipRoles: member.leadershipRoles ?? [],
+    leadershipRoleHistory: member.leadershipRoleHistory ?? [],
+    ranks: member.ranks ?? []
+  };
+}
+
+function normalizeMemberList(response: MemberListResponse): MemberListResponse {
+  const members = (response.members ?? []).map(normalizeMember);
+  return {
+    ...response,
+    members,
+    total: response.total ?? members.length
+  };
+}
+
 export const api = {
   login: (body: LoginRequest) =>
     request<TokenResponse>("/api/auth/login", {
@@ -142,7 +162,7 @@ export const api = {
     request<MemberListResponse>("/api/members", {
       token,
       tuntasId
-    }),
+    }).then(normalizeMemberList),
 
   listEvents: (token: string, tuntasId: string, filters: EventListFilters = {}) =>
     request<EventListResponse>("/api/events", {

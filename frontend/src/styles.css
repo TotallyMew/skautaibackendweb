@@ -1,6 +1,62 @@
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist_regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist_medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist_semibold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("./assets/fonts/geist_bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("./assets/fonts/space_grotesk_medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("./assets/fonts/space_grotesk_semibold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: url("./assets/fonts/space_grotesk_bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: light;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Geist", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #f0f5ee;
   color: #0d120e;
   font-synthesis: none;
@@ -58,6 +114,15 @@ select {
   font: inherit;
 }
 
+h1,
+.brand strong,
+.home-overview h2,
+.section-heading h2,
+.detail-title-row h3 {
+  font-family: "Space Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+}
+
 button {
   cursor: pointer;
 }
@@ -91,7 +156,7 @@ button {
   border-radius: 8px;
   background: var(--accent);
   color: var(--surface-lowest);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .brand strong,
@@ -103,7 +168,9 @@ button {
 .eyebrow,
 .field-label {
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .field-label {
@@ -179,7 +246,8 @@ button {
 
 .topbar h1 {
   margin: 4px 0 0;
-  font-size: 1.55rem;
+  font-size: 1.5rem;
+  line-height: 1.15;
 }
 
 .permission-summary {
@@ -198,7 +266,7 @@ button {
 
 .permission-summary span {
   color: var(--text-muted);
-  font-size: 0.82rem;
+  font-size: 0.75rem;
 }
 
 .page-grid {
@@ -267,7 +335,7 @@ button {
 .home-action-tile span,
 .home-empty-card span {
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
 }
 
 .summary-tile strong {
@@ -537,7 +605,8 @@ button {
 
 .section-heading h2 {
   margin: 4px 0 0;
-  font-size: 1.35rem;
+  font-size: 1.5rem;
+  line-height: 1.15;
 }
 
 .filter-bar {
@@ -618,8 +687,32 @@ button {
   border-bottom: 1px solid var(--border);
   padding: 0 16px;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-lowest);
+  color: var(--text-body);
+  padding: 7px 12px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.filter-chip.selected,
+.filter-chip:hover {
+  border-color: var(--accent-container);
+  background: var(--accent-container);
+  color: var(--accent-strong);
 }
 
 .table-wrap {
@@ -983,6 +1076,91 @@ button {
   overflow-wrap: anywhere;
 }
 
+.member-groups {
+  display: grid;
+  gap: 0;
+  padding: 0 16px 16px;
+}
+
+.member-group {
+  display: grid;
+  gap: 0;
+}
+
+.member-group h3 {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  background: var(--surface-lowest);
+  color: var(--accent);
+  padding: 16px 0 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.member-list {
+  display: grid;
+}
+
+.member-row {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+
+.member-avatar {
+  display: inline-grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--secondary-container);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.member-row-main,
+.member-row-meta {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.member-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.member-row-title strong {
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.member-row-main span,
+.member-row-meta span {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+}
+
+.member-row-meta {
+  text-align: right;
+}
+
+.member-row-meta strong {
+  color: var(--text-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1026,6 +1204,15 @@ button {
 
   .quantity-card {
     width: 100%;
+    text-align: left;
+  }
+
+  .member-row {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .member-row-meta {
+    grid-column: 2;
     text-align: left;
   }
 }

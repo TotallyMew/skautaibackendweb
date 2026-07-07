@@ -140,6 +140,30 @@ describe("api client", () => {
     expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
   });
 
+  it("normalizes missing member collection fields", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        members: [
+          {
+            userId: "user-1",
+            name: "Jonas",
+            surname: "Jonaitis",
+            email: "",
+            joinedAt: "2026-07-07T10:00:00Z"
+          }
+        ]
+      })
+    );
+
+    const response = await api.listMembers("access-token", "tuntas-1");
+
+    expect(response.total).toBe(1);
+    expect(response.members[0].unitAssignments).toEqual([]);
+    expect(response.members[0].leadershipRoles).toEqual([]);
+    expect(response.members[0].leadershipRoleHistory).toEqual([]);
+    expect(response.members[0].ranks).toEqual([]);
+  });
+
   it("fetches events with filters and tuntas context", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")

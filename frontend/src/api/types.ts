@@ -206,10 +206,10 @@ export type Member = {
   email: string;
   phone?: string | null;
   joinedAt: string;
-  unitAssignments: MemberUnitAssignment[];
-  leadershipRoles: MemberLeadershipRole[];
-  leadershipRoleHistory?: MemberLeadershipRole[];
-  ranks: MemberRank[];
+  unitAssignments?: MemberUnitAssignment[] | null;
+  leadershipRoles?: MemberLeadershipRole[] | null;
+  leadershipRoleHistory?: MemberLeadershipRole[] | null;
+  ranks?: MemberRank[] | null;
   isIdentityHidden?: boolean;
 };
 

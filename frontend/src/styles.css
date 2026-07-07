@@ -108,6 +108,10 @@ body {
   min-height: 100vh;
 }
 
+#root {
+  min-height: 100vh;
+}
+
 button,
 input,
 select {
@@ -502,10 +506,47 @@ button {
 
 .login-page {
   display: grid;
+  width: 100vw;
   min-height: 100vh;
-  place-items: center;
-  padding: 24px;
+  align-items: start;
+  justify-items: center;
+  padding: 20px;
   background: linear-gradient(135deg, #dde8da 0%, #e4ece1 100%);
+}
+
+.auth-stack {
+  display: grid;
+  width: min(calc(100vw - 40px), 460px);
+  gap: 18px;
+}
+
+.auth-hero {
+  display: grid;
+  gap: 10px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--secondary) 100%);
+  color: var(--surface-lowest);
+  padding: 24px;
+}
+
+.auth-hero span {
+  color: var(--accent-soft);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.auth-hero h1 {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.18;
+}
+
+.auth-hero p {
+  margin: 0;
+  color: var(--accent-soft);
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .route-loading {
@@ -518,8 +559,9 @@ button {
 }
 
 .login-panel {
-  width: min(100%, 420px);
-  padding: 28px;
+  width: 100%;
+  border-radius: 28px;
+  padding: 22px;
 }
 
 .login-brand {
@@ -535,16 +577,17 @@ button {
   display: grid;
   gap: 7px;
   color: var(--text-body);
-  font-weight: 700;
+  font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .primary-button {
   justify-content: center;
-  min-height: 44px;
+  min-height: 54px;
   border: 0;
   background: var(--accent);
   color: var(--surface-lowest);
-  font-weight: 800;
+  font-weight: 700;
   padding: 11px 14px;
 }
 

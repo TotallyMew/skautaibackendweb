@@ -34,46 +34,54 @@ export function LoginPage() {
 
   return (
     <main className="login-page">
-      <section className="login-panel">
-        <div className="brand login-brand">
+      <div className="auth-stack">
+        <section className="auth-hero">
+          <span>Skautų inventorius</span>
+          <h1>Prisijunk prie savo tunto inventoriaus</h1>
+          <p>Vienoje vietoje matysi bendrą tunto, vieneto ir savo siūlomą inventorių.</p>
+        </section>
+
+        <section className="login-panel">
+          <div className="brand login-brand">
             <span className="brand-mark">SI</span>
             <div>
-            <strong>Skautų inventorius</strong>
-            <small>Žiniatinklio sistema</small>
+              <strong>Prisijungimas</strong>
+              <small>Žiniatinklio sistema</small>
+            </div>
           </div>
-        </div>
 
-        <form className="login-form" onSubmit={handleSubmit}>
-          <label>
-            El. paštas
-            <input
-              autoComplete="email"
-              required
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-            />
-          </label>
+          <form className="login-form" onSubmit={handleSubmit}>
+            <label>
+              El. paštas
+              <input
+                autoComplete="email"
+                required
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+              />
+            </label>
 
-          <label>
-            Slaptažodis
-            <input
-              autoComplete="current-password"
-              required
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-            />
-          </label>
+            <label>
+              Slaptažodis
+              <input
+                autoComplete="current-password"
+                required
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
 
-          {error && <p className="error-text">{error}</p>}
+            {error && <p className="error-text">{error}</p>}
 
-          <button className="primary-button" disabled={isSubmitting} type="submit">
-            <LogIn size={18} aria-hidden="true" />
-            {isSubmitting ? "Jungiama..." : "Prisijungti"}
-          </button>
-        </form>
-      </section>
+            <button className="primary-button" disabled={isSubmitting} type="submit">
+              <LogIn size={18} aria-hidden="true" />
+              {isSubmitting ? "Jungiama..." : "Prisijungti"}
+            </button>
+          </form>
+        </section>
+      </div>
     </main>
   );
 }

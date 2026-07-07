@@ -125,6 +125,21 @@ describe("api client", () => {
     expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
   });
 
+  it("fetches members with tuntas context", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ members: [], total: 0 }));
+
+    await api.listMembers("access-token", "tuntas-1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/members");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+  });
+
   it("sends JSON bodies for login", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({

@@ -4,6 +4,7 @@ import type {
   ItemListResponse,
   Item,
   LoginRequest,
+  MemberListResponse,
   PermissionsResponse,
   Reservation,
   ReservationListFilters,
@@ -131,6 +132,12 @@ export const api = {
 
   getReservation: (token: string, tuntasId: string, reservationId: string) =>
     request<Reservation>(`/api/reservations/${reservationId}`, {
+      token,
+      tuntasId
+    }),
+
+  listMembers: (token: string, tuntasId: string) =>
+    request<MemberListResponse>("/api/members", {
       token,
       tuntasId
     })

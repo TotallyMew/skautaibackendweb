@@ -412,6 +412,10 @@ button {
   grid-template-columns: minmax(160px, 220px);
 }
 
+.member-filter-bar {
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+}
+
 .filter-bar select,
 .filter-bar input,
 .search-field {
@@ -649,6 +653,13 @@ button {
 
 .danger-text {
   color: var(--danger);
+}
+
+.muted-with-icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-muted);
 }
 
 .spin {

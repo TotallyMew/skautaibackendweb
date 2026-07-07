@@ -166,3 +166,54 @@ export type ReservationListFilters = {
   limit?: number;
   offset?: number;
 };
+
+export type MemberLeadershipRole = {
+  id: string;
+  roleId: string;
+  roleName: string;
+  organizationalUnitId?: string | null;
+  organizationalUnitName?: string | null;
+  assignedByUserId?: string | null;
+  assignedAt: string;
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  leftAt?: string | null;
+  termNumber: number;
+  termStatus: string;
+};
+
+export type MemberRank = {
+  id: string;
+  roleId: string;
+  roleName: string;
+  assignedByUserId?: string | null;
+  assignedAt: string;
+};
+
+export type MemberUnitAssignment = {
+  id: string;
+  organizationalUnitId: string;
+  organizationalUnitName: string;
+  assignmentType: string;
+  isPubliclyVisible?: boolean;
+  joinedAt: string;
+};
+
+export type Member = {
+  userId: string;
+  name: string;
+  surname: string;
+  email: string;
+  phone?: string | null;
+  joinedAt: string;
+  unitAssignments: MemberUnitAssignment[];
+  leadershipRoles: MemberLeadershipRole[];
+  leadershipRoleHistory?: MemberLeadershipRole[];
+  ranks: MemberRank[];
+  isIdentityHidden?: boolean;
+};
+
+export type MemberListResponse = {
+  members: Member[];
+  total: number;
+};

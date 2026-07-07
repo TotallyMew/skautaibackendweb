@@ -52,11 +52,39 @@ export type Item = {
   locationName?: string | null;
   locationPath?: string | null;
   temporaryStorageLabel?: string | null;
+  kitId?: string | null;
+  kitName?: string | null;
+  sourceSharedItemId?: string | null;
   responsibleUserId?: string | null;
   responsibleUserName?: string | null;
+  createdByUserId?: string | null;
+  createdByUserName?: string | null;
+  photoUrl?: string | null;
+  purchaseDate?: string | null;
+  purchasePrice?: number | null;
+  notes?: string | null;
+  customFields?: ItemCustomField[];
+  quantityBreakdown?: ItemDistribution[];
+  totalQuantityAcrossCustodians?: number;
+  submittedByUserId?: string | null;
+  submittedByUserName?: string | null;
+  targetScope?: string | null;
+  reviewedByUserId?: string | null;
+  rejectionReason?: string | null;
   status: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type ItemCustomField = {
+  id: string;
+  fieldName: string;
+  fieldValue?: string | null;
+};
+
+export type ItemDistribution = {
+  holderName: string;
+  quantity: number;
 };
 
 export type ItemListResponse = {

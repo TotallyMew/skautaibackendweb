@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageSearch, RefreshCw, Search } from "lucide-react";
+import { Link } from "react-router-dom";
 import { ApiError, api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -241,7 +242,7 @@ function InventoryTable({ items }: { items: Item[] }) {
           {items.map((item) => (
             <tr key={item.id}>
               <td>
-                <strong>{item.name}</strong>
+                <Link className="table-link" to={`/inventory/${item.id}`}>{item.name}</Link>
                 <span>{item.description || item.condition}</span>
               </td>
               <td>

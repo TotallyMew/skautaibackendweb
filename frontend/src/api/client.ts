@@ -2,6 +2,7 @@ import type {
   ApiErrorBody,
   ItemListFilters,
   ItemListResponse,
+  Item,
   LoginRequest,
   PermissionsResponse,
   TokenResponse,
@@ -110,5 +111,11 @@ export const api = {
       token,
       tuntasId,
       query: filters
+    }),
+
+  getItem: (token: string, tuntasId: string, itemId: string) =>
+    request<Item>(`/api/items/${itemId}`, {
+      token,
+      tuntasId
     })
 };

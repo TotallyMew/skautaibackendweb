@@ -50,6 +50,34 @@ describe("api client", () => {
     expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
   });
 
+  it("fetches inventory item detail with tuntas context", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        id: "item-1",
+        qrToken: "qr-1",
+        tuntasId: "tuntas-1",
+        origin: "UNIT_ACQUIRED",
+        name: "Palapine",
+        type: "SHARED",
+        category: "Stovyklavimas",
+        condition: "Gera",
+        quantity: 2,
+        status: "ACTIVE",
+        createdAt: "2026-07-07T10:00:00Z",
+        updatedAt: "2026-07-07T10:00:00Z"
+      })
+    );
+
+    await api.getItem("access-token", "tuntas-1", "item-1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/items/item-1");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+  });
+
   it("sends JSON bodies for login", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({

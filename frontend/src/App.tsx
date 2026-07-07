@@ -4,6 +4,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminPage } from "./pages/AdminPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventsPage } from "./pages/EventsPage";
+import { InventoryDetailPage } from "./pages/InventoryDetailPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MembersPage } from "./pages/MembersPage";
@@ -17,6 +18,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
           <Route path="inventory" element={<InventoryPage />} />
+          <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
           <Route path="requests" element={<RequestsPage />} />
           <Route path="members" element={<MembersPage />} />
           <Route path="events" element={<EventsPage />} />
@@ -27,4 +29,3 @@ export function App() {
     </Routes>
   );
 }
-

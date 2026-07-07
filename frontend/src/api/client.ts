@@ -1,4 +1,12 @@
-import type { ApiErrorBody, LoginRequest, PermissionsResponse, TokenResponse, UserTuntas } from "./types";
+import type {
+  ApiErrorBody,
+  ItemListFilters,
+  ItemListResponse,
+  LoginRequest,
+  PermissionsResponse,
+  TokenResponse,
+  UserTuntas
+} from "./types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8081";
 
@@ -16,6 +24,7 @@ export type RequestOptions = {
   tuntasId?: string | null;
   body?: unknown;
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+  query?: Record<string, string | number | boolean | null | undefined>;
 };
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -34,7 +43,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set("X-Tuntas-Id", options.tuntasId);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const query = new URLSearchParams();
+  Object.entries(options.query ?? {}).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      query.set(key, String(value));
+    }
+  });
+  const url = `${API_BASE_URL}${path}${query.size ? `?${query.toString()}` : ""}`;
+
+  const response = await fetch(url, {
     method: options.method ?? "GET",
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body)
@@ -86,6 +103,12 @@ export const api = {
     request<PermissionsResponse>("/api/users/me/permissions", {
       token,
       tuntasId
+    }),
+
+  listItems: (token: string, tuntasId: string, filters: ItemListFilters = {}) =>
+    request<ItemListResponse>("/api/items", {
+      token,
+      tuntasId,
+      query: filters
     })
 };
-

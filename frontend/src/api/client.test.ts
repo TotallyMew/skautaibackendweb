@@ -28,6 +28,28 @@ describe("api client", () => {
     expect(headers.get("Accept")).toBe("application/json");
   });
 
+  it("sends inventory filters as query parameters", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ items: [], total: 0, limit: 25, offset: 0, hasMore: false }));
+
+    await api.listItems("access-token", "tuntas-1", {
+      q: "palapine",
+      status: "ACTIVE",
+      type: "",
+      sharedOnly: true,
+      limit: 25,
+      offset: 50
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/items?q=palapine&status=ACTIVE&sharedOnly=true&limit=25&offset=50");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+  });
+
   it("sends JSON bodies for login", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({

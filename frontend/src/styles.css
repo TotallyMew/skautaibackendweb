@@ -968,7 +968,7 @@ button {
 .form-panel {
   display: grid;
   gap: 14px;
-  max-width: 980px;
+  width: 100%;
 }
 
 .form-section {
@@ -1329,7 +1329,6 @@ fieldset {
   display: flex;
   gap: 12px;
   align-items: flex-start;
-  max-width: 780px;
 }
 
 .notifications-summary-panel svg {
@@ -1350,7 +1349,6 @@ fieldset {
 .notification-list {
   display: grid;
   gap: 8px;
-  max-width: 880px;
 }
 
 .notification-row {
@@ -1864,7 +1862,8 @@ fieldset {
 }
 
 .data-panel {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface-lowest);

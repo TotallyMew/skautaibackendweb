@@ -13,6 +13,8 @@ import type {
   MyTaskListResponse,
   MessageResponse,
   PermissionsResponse,
+  RegisterTuntininkasRequest,
+  RegisterWithInviteRequest,
   Reservation,
   ReservationListFilters,
   ReservationListResponse,
@@ -116,8 +118,14 @@ export const api = {
       body
     }),
 
-  superAdminLogin: (body: LoginRequest) =>
-    request<TokenResponse>("/api/super-admin/login", {
+  registerTuntininkas: (body: RegisterTuntininkasRequest) =>
+    request<TokenResponse>("/api/auth/register", {
+      method: "POST",
+      body
+    }),
+
+  registerWithInvite: (body: RegisterWithInviteRequest) =>
+    request<TokenResponse>("/api/auth/register/invite", {
       method: "POST",
       body
     }),

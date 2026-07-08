@@ -1,13 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "../api/client";
-import type { LoginRequest } from "../api/types";
+import type { LoginRequest, RegisterTuntininkasRequest, RegisterWithInviteRequest } from "../api/types";
 import { authFromTokenResponse, loadAuthState, saveAuthState, withPermissions, type AuthState } from "./authStorage";
 
 type AuthContextValue = {
   auth: AuthState | null;
   isInitializing: boolean;
   isAuthenticated: boolean;
-  login: (request: LoginRequest, mode?: "user" | "super_admin") => Promise<void>;
+  login: (request: LoginRequest) => Promise<AuthState>;
+  registerTuntas: (request: RegisterTuntininkasRequest) => Promise<AuthState>;
+  registerInvite: (request: RegisterWithInviteRequest) => Promise<AuthState>;
   logout: () => Promise<void>;
   selectTuntas: (tuntasId: string) => Promise<void>;
 };
@@ -25,18 +27,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const isSuperAdmin = (state: AuthState) => state.type === "super_admin";
 
-  const hydratePermissions = useCallback(async (state: AuthState) => {
+  const hydratePermissions = useCallback(async (state: AuthState): Promise<AuthState> => {
     if (!state.activeTuntasId || isSuperAdmin(state)) {
       persist(state);
-      return;
+      return state;
     }
     const permissions = await api.myPermissions(state.token, state.activeTuntasId);
-    persist(withPermissions(state, permissions));
+    const nextState = withPermissions(state, permissions);
+    persist(nextState);
+    return nextState;
   }, [persist]);
 
-  const login = useCallback(async (request: LoginRequest, mode: "user" | "super_admin" = "user") => {
-    const response = mode === "super_admin" ? await api.superAdminLogin(request) : await api.login(request);
-    await hydratePermissions(authFromTokenResponse(response));
+  const login = useCallback(async (request: LoginRequest) => {
+    const response = await api.login(request);
+    return hydratePermissions(authFromTokenResponse(response));
+  }, [hydratePermissions]);
+
+  const registerTuntas = useCallback(async (request: RegisterTuntininkasRequest) => {
+    const response = await api.registerTuntininkas(request);
+    return hydratePermissions(authFromTokenResponse(response));
+  }, [hydratePermissions]);
+
+  const registerInvite = useCallback(async (request: RegisterWithInviteRequest) => {
+    const response = await api.registerWithInvite(request);
+    return hydratePermissions(authFromTokenResponse(response));
   }, [hydratePermissions]);
 
   useEffect(() => {
@@ -92,9 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isInitializing,
     isAuthenticated: Boolean(auth?.token),
     login,
+    registerTuntas,
+    registerInvite,
     logout,
     selectTuntas
-  }), [auth, isInitializing, login, logout, selectTuntas]);
+  }), [auth, isInitializing, login, logout, registerInvite, registerTuntas, selectTuntas]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

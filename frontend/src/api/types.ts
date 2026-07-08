@@ -26,6 +26,26 @@ export type LoginRequest = {
   password: string;
 };
 
+export type RegisterTuntininkasRequest = {
+  name: string;
+  surname: string;
+  email: string;
+  password: string;
+  phone?: string | null;
+  tuntasName: string;
+  tuntasKrastas?: string | null;
+  tuntasContactEmail?: string | null;
+};
+
+export type RegisterWithInviteRequest = {
+  name: string;
+  surname: string;
+  email: string;
+  password: string;
+  phone?: string | null;
+  inviteCode: string;
+};
+
 export type MessageResponse = {
   message: string;
 };

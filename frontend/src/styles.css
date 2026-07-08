@@ -827,21 +827,128 @@ button {
   gap: 16px;
 }
 
-.auth-mode-tabs {
-  width: 100%;
-}
-
-.auth-mode-tabs .segmented-tab {
-  flex: 1 1 0;
-  justify-content: center;
-}
-
 .login-form label {
   display: grid;
   gap: 7px;
   color: var(--text-body);
   font-size: 0.88rem;
   font-weight: 600;
+}
+
+.auth-subtle-link {
+  justify-self: end;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.auth-subtle-link:hover,
+.auth-link-stack a:hover {
+  text-decoration: underline;
+}
+
+.auth-link-stack {
+  display: grid;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.auth-link-stack p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.auth-link-stack a {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.auth-form-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: start center;
+  background: var(--surface-low);
+  padding: 28px;
+}
+
+.auth-form-panel {
+  width: min(100%, 760px);
+}
+
+.compact-auth-heading {
+  margin-top: 4px;
+}
+
+.compact-auth-heading h3 {
+  font-size: 1rem;
+}
+
+.auth-required-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tuntas-choice-list {
+  display: grid;
+  gap: 8px;
+}
+
+.tuntas-choice-list h3 {
+  margin: 4px 0;
+  color: var(--text-body);
+  font-size: 0.92rem;
+}
+
+.tuntas-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-lowest);
+  color: var(--text-body);
+  padding: 12px;
+  text-align: left;
+}
+
+.tuntas-choice:not(:disabled):hover,
+.tuntas-choice.selected {
+  border-color: var(--accent-container);
+  background: var(--accent-soft);
+}
+
+.tuntas-choice:disabled {
+  cursor: default;
+  opacity: 0.76;
+}
+
+.tuntas-choice svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.tuntas-choice span,
+.tuntas-choice small {
+  display: block;
+}
+
+.tuntas-choice small {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.compact-empty-state {
+  min-height: 128px;
 }
 
 .form-panel {

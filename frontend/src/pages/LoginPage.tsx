@@ -1,22 +1,22 @@
 import { FormEvent, useState } from "react";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { LogIn } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
+import type { AuthState } from "../auth/authStorage";
 
 export function LoginPage() {
-  const { isAuthenticated, login } = useAuth();
+  const { auth, isAuthenticated, login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loginMode, setLoginMode] = useState<"user" | "super_admin">("user");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const from = (location.state as { from?: Location } | null)?.from?.pathname ?? "/";
 
   if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={auth ? destinationForAuth(auth, from) : from} replace />;
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -24,8 +24,8 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login({ email, password }, loginMode);
-      navigate(loginMode === "super_admin" ? "/admin" : from, { replace: true });
+      const state = await login({ email, password });
+      navigate(destinationForAuth(state, from), { replace: true });
     } catch {
       setError("Nepavyko prisijungti. Patikrink el. paštą ir slaptažodį.");
     } finally {
@@ -52,23 +52,6 @@ export function LoginPage() {
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
-            <div className="segmented-tabs auth-mode-tabs" aria-label="Prisijungimo tipas">
-              <button
-                className={`segmented-tab${loginMode === "user" ? " active" : ""}`}
-                type="button"
-                onClick={() => setLoginMode("user")}
-              >
-                Tunto vartotojas
-              </button>
-              <button
-                className={`segmented-tab${loginMode === "super_admin" ? " active" : ""}`}
-                type="button"
-                onClick={() => setLoginMode("super_admin")}
-              >
-                Superadmin
-              </button>
-            </div>
-
             <label>
               El. paštas
               <input
@@ -91,6 +74,8 @@ export function LoginPage() {
               />
             </label>
 
+            <Link className="auth-subtle-link" to="/forgot-password">Pamiršote slaptažodį?</Link>
+
             {error && <p className="error-text">{error}</p>}
 
             <button className="primary-button" disabled={isSubmitting} type="submit">
@@ -98,8 +83,28 @@ export function LoginPage() {
               {isSubmitting ? "Jungiama..." : "Prisijungti"}
             </button>
           </form>
+
+          <div className="auth-link-stack">
+            <InlineAuthLink prompt="Turite pakvietimą?" action="Susikurkite paskyrą" to="/register/invite" />
+            <InlineAuthLink prompt="Tunto dar nėra?" action="Užregistruokite jį" to="/register" />
+          </div>
         </section>
       </div>
     </main>
   );
+}
+
+function InlineAuthLink({ prompt, action, to }: { prompt: string; action: string; to: string }) {
+  return (
+    <p>
+      <span>{prompt}</span>
+      <Link to={to}>{action}</Link>
+    </p>
+  );
+}
+
+function destinationForAuth(state: AuthState, fallback: string) {
+  if (state.type === "super_admin") return "/admin";
+  if (state.activeTuntasId) return fallback;
+  return "/tuntas";
 }

@@ -10,7 +10,7 @@ const quickAccessItems: NavItem[] = [
   { to: "/calendar", label: "Kalendorius", icon: CalendarDays },
   { to: "/inventory", label: "Inventorius", icon: Package, anyPermission: ["items.view", "items.create", "items.review"] },
   { to: "/locations", label: "Lokacijos", icon: MapPinned },
-  { to: "/requests", label: "Prašymai", icon: ClipboardList, anyPermission: ["reservations.view", "reservations.create", "requisitions.create", "items.request.bendras", "items.request.approve"] },
+  { to: "/requests", label: "Prašymai", icon: ClipboardList, anyPermission: ["reservations.view", "reservations.create", "requisitions.create", "requisitions.approve", "items.request.bendras", "items.request.approve.unit", "items.request.approve.bendras", "items.request.forward.bendras"] },
   { to: "/events", label: "Renginiai", icon: CalendarDays, anyPermission: ["events.view"] }
 ];
 

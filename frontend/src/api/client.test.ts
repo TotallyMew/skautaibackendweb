@@ -314,6 +314,56 @@ describe("api client", () => {
     expect(headers.get("Authorization")).toBe("Bearer access-token");
   });
 
+  it("fetches locations with tuntas context", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ locations: [], total: 0 }));
+
+    await api.listLocations("access-token", "tuntas-1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/locations");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+  });
+
+  it("creates a location with tuntas context", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        id: "location-1",
+        tuntasId: "tuntas-1",
+        name: "Garažas",
+        visibility: "PUBLIC",
+        fullPath: "Garažas",
+        hasChildren: false,
+        isLeafSelectable: true,
+        isEditable: true,
+        createdAt: "2026-07-08T10:00:00Z"
+      }, 201)
+    );
+
+    await api.createLocation("access-token", "tuntas-1", {
+      name: "Garažas",
+      visibility: "PUBLIC",
+      address: "Vilnius"
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/locations");
+    expect(init?.method).toBe("POST");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("X-Tuntas-Id")).toBe("tuntas-1");
+    expect(init?.body).toBe(JSON.stringify({
+      name: "Garažas",
+      visibility: "PUBLIC",
+      address: "Vilnius"
+    }));
+  });
+
   it("surfaces backend error messages", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "Bad credentials" }, 401));
 

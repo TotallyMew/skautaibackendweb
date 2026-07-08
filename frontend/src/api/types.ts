@@ -99,6 +99,44 @@ export type NotificationListResponse = {
   unreadCount: number;
 };
 
+export type Location = {
+  id: string;
+  tuntasId: string;
+  name: string;
+  visibility: string;
+  parentLocationId?: string | null;
+  ownerUserId?: string | null;
+  ownerUnitId?: string | null;
+  ownerUnitName?: string | null;
+  fullPath: string;
+  hasChildren: boolean;
+  isLeafSelectable: boolean;
+  isEditable: boolean;
+  address?: string | null;
+  description?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  createdAt: string;
+};
+
+export type LocationListResponse = {
+  locations: Location[];
+  total: number;
+};
+
+export type CreateLocationRequest = {
+  name: string;
+  visibility: string;
+  parentLocationId?: string | null;
+  ownerUnitId?: string | null;
+  address?: string | null;
+  description?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+};
+
+export type UpdateLocationRequest = Partial<CreateLocationRequest>;
+
 export type AcceptInvitationRequest = {
   code: string;
 };

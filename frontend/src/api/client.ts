@@ -11,6 +11,9 @@ import type {
   ItemListFilters,
   ItemListResponse,
   Item,
+  CreateLocationRequest,
+  Location,
+  LocationListResponse,
   LoginRequest,
   Member,
   MemberListResponse,
@@ -30,6 +33,7 @@ import type {
   SharedInventoryRequestListResponse,
   SuperAdminNotificationRequest,
   TokenResponse,
+  UpdateLocationRequest,
   UpdateMyProfileRequest,
   UserTuntas
 } from "./types";
@@ -216,6 +220,35 @@ export const api = {
     request<MessageResponse>("/api/notifications/read-all", {
       token,
       method: "POST"
+    }),
+
+  listLocations: (token: string, tuntasId: string) =>
+    request<LocationListResponse>("/api/locations", {
+      token,
+      tuntasId
+    }),
+
+  createLocation: (token: string, tuntasId: string, body: CreateLocationRequest) =>
+    request<Location>("/api/locations", {
+      token,
+      tuntasId,
+      method: "POST",
+      body
+    }),
+
+  updateLocation: (token: string, tuntasId: string, locationId: string, body: UpdateLocationRequest) =>
+    request<Location>(`/api/locations/${locationId}`, {
+      token,
+      tuntasId,
+      method: "PUT",
+      body
+    }),
+
+  deleteLocation: (token: string, tuntasId: string, locationId: string) =>
+    request<MessageResponse>(`/api/locations/${locationId}`, {
+      token,
+      tuntasId,
+      method: "DELETE"
     }),
 
   acceptInvitation: (token: string, body: AcceptInvitationRequest) =>

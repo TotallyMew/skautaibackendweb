@@ -1175,6 +1175,36 @@ button {
   width: 100%;
 }
 
+.locations-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.location-row {
+  grid-template-columns: minmax(260px, 1.35fr) minmax(110px, 0.45fr) minmax(170px, 0.7fr) minmax(96px, auto);
+}
+
+.muted-line {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.one-column-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+fieldset {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
 .calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);

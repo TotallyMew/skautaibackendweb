@@ -10,6 +10,7 @@ import { ForgotPasswordPage, ResetPasswordPage } from "./pages/ForgotPasswordPag
 import { InventoryCreatePage } from "./pages/InventoryCreatePage";
 import { InventoryDetailPage } from "./pages/InventoryDetailPage";
 import { InventoryPage } from "./pages/InventoryPage";
+import { LocationsPage } from "./pages/LocationsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MembersPage } from "./pages/MembersPage";
 import { MyTasksPage } from "./pages/MyTasksPage";
@@ -39,6 +40,7 @@ export function App() {
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="inventory/new" element={<InventoryCreatePage />} />
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
+          <Route path="locations" element={<LocationsPage />} />
           <Route path="requests" element={<RequestsPage />} />
           <Route path="requests/reservations/:reservationId" element={<ReservationDetailPage />} />
           <Route path="requests/requisitions/:requisitionId" element={<RequisitionDetailPage />} />

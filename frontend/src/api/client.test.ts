@@ -231,6 +231,56 @@ describe("api client", () => {
     expect(init?.body).toBe(JSON.stringify({ code: "ABC123" }));
   });
 
+  it("updates the authenticated user profile", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        userId: "user-1",
+        name: "Jonas",
+        surname: "Jonaitis",
+        email: "jonas@example.com",
+        phone: "+37060000000",
+        createdAt: "2026-07-07T10:00:00Z",
+        updatedAt: "2026-07-08T10:00:00Z"
+      })
+    );
+
+    await api.updateMyProfile("access-token", {
+      name: "Jonas",
+      surname: "Jonaitis",
+      email: "jonas@example.com",
+      phone: "+37060000000"
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/users/me/profile");
+    expect(init?.method).toBe("PUT");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(init?.body).toBe(JSON.stringify({
+      name: "Jonas",
+      surname: "Jonaitis",
+      email: "jonas@example.com",
+      phone: "+37060000000"
+    }));
+  });
+
+  it("requests account deletion with the current password", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ message: "Patvirtinimo nuoroda išsiųsta." }, 202));
+
+    await api.requestAccountDeletion("access-token", { password: "secret123" });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/users/me/account-deletion");
+    expect(init?.method).toBe("POST");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(init?.body).toBe(JSON.stringify({ password: "secret123" }));
+  });
+
   it("surfaces backend error messages", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "Bad credentials" }, 401));
 

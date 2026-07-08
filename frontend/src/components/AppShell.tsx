@@ -1,4 +1,4 @@
-import { CalendarDays, ClipboardList, Home, ListTodo, LogOut, Package, ShieldCheck, Shuffle, UsersRound, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardList, Home, ListTodo, LogOut, Package, ShieldCheck, Shuffle, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
@@ -13,6 +13,11 @@ const quickAccessItems: NavItem[] = [
 const managementItems: NavItem[] = [
   { to: "/members", label: "Nariai", icon: UsersRound, anyPermission: ["members.view"] },
   { to: "/admin", label: "Administravimas", icon: ShieldCheck, superAdminOnly: true }
+];
+
+const accountItems: NavItem[] = [
+  { to: "/profile", label: "Mano profilis", icon: UserRound },
+  { to: "/tuntas", label: "Keisti tuntą", icon: Shuffle }
 ];
 
 export function AppShell() {
@@ -61,13 +66,7 @@ export function AppShell() {
         <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} isSuperAdmin={isSuperAdmin} />
 
         {!isSuperAdmin && (
-          <div className="drawer-section account-section">
-            <span className="drawer-section-title">Paskyra</span>
-            <button className="nav-link nav-button" type="button" onClick={() => document.getElementById("tuntas-select")?.focus()}>
-              <Shuffle size={18} aria-hidden="true" />
-              <span>Keisti tuntą</span>
-            </button>
-          </div>
+          <DrawerSection title="Paskyra" items={accountItems} permissions={auth?.permissions} />
         )}
 
         <button className="logout-button" type="button" onClick={() => void logout()}>
@@ -144,6 +143,7 @@ function hasPermission(permissions: string[] | undefined, permission: string) {
 function currentTitle(pathname: string) {
   if (pathname === "/") return "Pradžia";
   if (pathname.startsWith("/tasks")) return "Mano užduotys";
+  if (pathname.startsWith("/profile")) return "Mano profilis";
   if (pathname.startsWith("/inventory")) return "Inventorius";
   if (pathname.startsWith("/requests")) return "Prašymai";
   if (pathname.startsWith("/members")) return "Nariai";

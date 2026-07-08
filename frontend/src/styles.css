@@ -1157,6 +1157,80 @@ button {
   width: 100%;
 }
 
+.profile-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.profile-main-stack,
+.profile-side-stack {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.profile-summary-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-avatar {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  align-items: center;
+  justify-items: center;
+  border-radius: 18px;
+  background: var(--accent-container);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.profile-summary-panel h3 {
+  margin: 0 0 2px;
+}
+
+.profile-summary-panel span,
+.danger-panel p {
+  color: var(--text-muted);
+}
+
+.profile-meta-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.profile-meta-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
+.profile-meta-list dt,
+.profile-meta-list dd {
+  margin: 0;
+}
+
+.profile-meta-list dt {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.profile-meta-list dd {
+  font-weight: 700;
+}
+
+.danger-panel {
+  display: grid;
+  gap: 14px;
+  border-color: var(--danger-container);
+}
+
 .inner-page-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.9fr) minmax(300px, 0.8fr);

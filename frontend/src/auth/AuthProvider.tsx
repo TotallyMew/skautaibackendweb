@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "../api/client";
-import type { LoginRequest, RegisterTuntininkasRequest, RegisterWithInviteRequest } from "../api/types";
+import type { LoginRequest, MyProfile, RegisterTuntininkasRequest, RegisterWithInviteRequest } from "../api/types";
 import { authFromTokenResponse, loadAuthState, saveAuthState, withPermissions, type AuthState } from "./authStorage";
 
 type AuthContextValue = {
@@ -11,6 +11,7 @@ type AuthContextValue = {
   registerTuntas: (request: RegisterTuntininkasRequest) => Promise<AuthState>;
   registerInvite: (request: RegisterWithInviteRequest) => Promise<AuthState>;
   acceptInvitation: (code: string) => Promise<AuthState>;
+  updateProfileSnapshot: (profile: MyProfile) => void;
   logout: () => Promise<void>;
   selectTuntas: (tuntasId: string) => Promise<void>;
 };
@@ -66,6 +67,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       leadershipUnitIds: []
     });
   }, [auth, hydratePermissions]);
+
+  const updateProfileSnapshot = useCallback((profile: MyProfile) => {
+    if (!auth) return;
+    persist({
+      ...auth,
+      name: `${profile.name} ${profile.surname}`.trim(),
+      email: profile.email
+    });
+  }, [auth, persist]);
 
   useEffect(() => {
     const current = loadAuthState();
@@ -123,9 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerTuntas,
     registerInvite,
     acceptInvitation,
+    updateProfileSnapshot,
     logout,
     selectTuntas
-  }), [acceptInvitation, auth, isInitializing, login, logout, registerInvite, registerTuntas, selectTuntas]);
+  }), [acceptInvitation, auth, isInitializing, login, logout, registerInvite, registerTuntas, selectTuntas, updateProfileSnapshot]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

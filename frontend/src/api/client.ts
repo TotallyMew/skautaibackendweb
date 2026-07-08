@@ -2,6 +2,7 @@ import type {
   AcceptInvitationRequest,
   AdminTuntas,
   ApiErrorBody,
+  ChangeMyPasswordRequest,
   CreateItemRequest,
   EventListFilters,
   EventListResponse,
@@ -13,6 +14,7 @@ import type {
   LoginRequest,
   Member,
   MemberListResponse,
+  MyProfile,
   MyTaskListResponse,
   MessageResponse,
   PermissionsResponse,
@@ -21,11 +23,13 @@ import type {
   Reservation,
   ReservationListFilters,
   ReservationListResponse,
+  RequestAccountDeletionRequest,
   ResetPasswordRequest,
   RequisitionListResponse,
   SharedInventoryRequestListResponse,
   SuperAdminNotificationRequest,
   TokenResponse,
+  UpdateMyProfileRequest,
   UserTuntas
 } from "./types";
 
@@ -161,6 +165,32 @@ export const api = {
   myTuntai: (token: string) =>
     request<UserTuntas[]>("/api/users/me/tuntai", {
       token
+    }),
+
+  myProfile: (token: string) =>
+    request<MyProfile>("/api/users/me", {
+      token
+    }),
+
+  updateMyProfile: (token: string, body: UpdateMyProfileRequest) =>
+    request<MyProfile>("/api/users/me/profile", {
+      token,
+      method: "PUT",
+      body
+    }),
+
+  changeMyPassword: (token: string, body: ChangeMyPasswordRequest) =>
+    request<MessageResponse>("/api/users/me/password", {
+      token,
+      method: "PUT",
+      body
+    }),
+
+  requestAccountDeletion: (token: string, body: RequestAccountDeletionRequest) =>
+    request<MessageResponse>("/api/users/me/account-deletion", {
+      token,
+      method: "POST",
+      body
     }),
 
   myPermissions: (token: string, tuntasId: string) =>

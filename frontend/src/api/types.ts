@@ -21,6 +21,16 @@ export type PermissionsResponse = {
   leadershipUnitIds: string[];
 };
 
+export type MyProfile = {
+  userId: string;
+  name: string;
+  surname: string;
+  email: string;
+  phone?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type LoginRequest = {
   email: string;
   password: string;
@@ -53,6 +63,22 @@ export type ForgotPasswordRequest = {
 export type ResetPasswordRequest = {
   token: string;
   newPassword: string;
+};
+
+export type UpdateMyProfileRequest = {
+  name: string;
+  surname: string;
+  email: string;
+  phone?: string | null;
+};
+
+export type ChangeMyPasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type RequestAccountDeletionRequest = {
+  password: string;
 };
 
 export type AcceptInvitationRequest = {

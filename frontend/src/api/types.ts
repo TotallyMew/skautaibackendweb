@@ -81,6 +81,24 @@ export type RequestAccountDeletionRequest = {
   password: string;
 };
 
+export type Notification = {
+  id: string;
+  tuntasId?: string | null;
+  title: string;
+  body: string;
+  resource?: string | null;
+  entityId?: string | null;
+  data: Record<string, string>;
+  readAt?: string | null;
+  createdAt: string;
+};
+
+export type NotificationListResponse = {
+  notifications: Notification[];
+  total: number;
+  unreadCount: number;
+};
+
 export type AcceptInvitationRequest = {
   code: string;
 };

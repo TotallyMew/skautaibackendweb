@@ -17,6 +17,7 @@ import type {
   MyProfile,
   MyTaskListResponse,
   MessageResponse,
+  NotificationListResponse,
   PermissionsResponse,
   RegisterTuntininkasRequest,
   RegisterWithInviteRequest,
@@ -197,6 +198,24 @@ export const api = {
     request<PermissionsResponse>("/api/users/me/permissions", {
       token,
       tuntasId
+    }),
+
+  listNotifications: (token: string, unreadOnly = false) =>
+    request<NotificationListResponse>("/api/notifications", {
+      token,
+      query: { unreadOnly }
+    }),
+
+  markNotificationRead: (token: string, notificationId: string) =>
+    request<MessageResponse>(`/api/notifications/${notificationId}/read`, {
+      token,
+      method: "POST"
+    }),
+
+  markAllNotificationsRead: (token: string) =>
+    request<MessageResponse>("/api/notifications/read-all", {
+      token,
+      method: "POST"
     }),
 
   acceptInvitation: (token: string, body: AcceptInvitationRequest) =>

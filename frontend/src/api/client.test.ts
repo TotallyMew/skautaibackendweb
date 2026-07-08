@@ -281,6 +281,39 @@ describe("api client", () => {
     expect(init?.body).toBe(JSON.stringify({ password: "secret123" }));
   });
 
+  it("fetches unread notifications with auth", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        notifications: [],
+        total: 0,
+        unreadCount: 0
+      })
+    );
+
+    await api.listNotifications("access-token", true);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/notifications?unreadOnly=true");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+  });
+
+  it("marks a notification as read", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ message: "Notification marked as read" }));
+
+    await api.markNotificationRead("access-token", "notification-1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/notifications/notification-1/read");
+    expect(init?.method).toBe("POST");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+  });
+
   it("surfaces backend error messages", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "Bad credentials" }, 401));
 

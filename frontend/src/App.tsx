@@ -12,6 +12,7 @@ import { InventoryPage } from "./pages/InventoryPage";
 import { LoginPage } from "./pages/LoginPage";
 import { MembersPage } from "./pages/MembersPage";
 import { MyTasksPage } from "./pages/MyTasksPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterInvitePage, RegisterPage } from "./pages/RegisterPage";
 import { RequisitionDetailPage } from "./pages/RequisitionDetailPage";
@@ -41,6 +42,7 @@ export function App() {
           <Route path="requests/requisitions/:requisitionId" element={<RequisitionDetailPage />} />
           <Route path="requests/shared/:requestId" element={<SharedInventoryRequestDetailPage />} />
           <Route path="tasks" element={<MyTasksPage />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="members" element={<MembersPage />} />
           <Route path="events" element={<EventsPage />} />

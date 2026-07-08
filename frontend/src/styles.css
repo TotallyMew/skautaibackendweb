@@ -1163,6 +1163,96 @@ button {
   width: 100%;
 }
 
+.notifications-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.notifications-summary-panel {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 780px;
+}
+
+.notifications-summary-panel svg {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+.notifications-summary-panel strong,
+.notifications-summary-panel span {
+  display: block;
+}
+
+.notifications-summary-panel span {
+  margin-top: 3px;
+  color: var(--text-muted);
+}
+
+.notification-list {
+  display: grid;
+  gap: 8px;
+  max-width: 880px;
+}
+
+.notification-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-lowest);
+  padding: 12px 14px;
+  color: var(--text-body);
+  text-align: left;
+}
+
+.notification-row:hover {
+  border-color: var(--accent-container);
+  background: var(--surface-low);
+}
+
+.notification-row.unread {
+  border-color: var(--accent-container);
+  background: var(--accent-soft);
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.notification-row.unread .notification-dot {
+  background: var(--accent);
+}
+
+.notification-row strong,
+.notification-row small,
+.notification-row em {
+  display: block;
+}
+
+.notification-row small {
+  margin-top: 4px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.notification-row em {
+  margin-top: 8px;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
 .profile-main-stack,
 .profile-side-stack {
   display: grid;

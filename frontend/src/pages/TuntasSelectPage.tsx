@@ -1,13 +1,17 @@
-import { useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
-import { CheckCircle2, Clock, LogOut, RefreshCw, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, LogOut, RefreshCw, ShieldCheck, TicketCheck } from "lucide-react";
+import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
 import type { UserTuntas } from "../api/types";
 
 export function TuntasSelectPage() {
-  const { auth, logout, selectTuntas } = useAuth();
+  const { auth, acceptInvitation, logout, selectTuntas } = useAuth();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [inviteCode, setInviteCode] = useState("");
+  const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const activeTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => tuntas.status === "ACTIVE") ?? [], [auth?.tuntai]);
@@ -19,6 +23,7 @@ export function TuntasSelectPage() {
   async function chooseTuntas(tuntasId: string) {
     setBusyId(tuntasId);
     setError(null);
+    setMessage(null);
     try {
       await selectTuntas(tuntasId);
       navigate("/", { replace: true });
@@ -26,6 +31,29 @@ export function TuntasSelectPage() {
       setError(cause instanceof Error ? cause.message : "Tunto pasirinkti nepavyko.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function submitInvite(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const code = inviteCode.trim().toUpperCase();
+    if (!code) {
+      setError("Įveskite pakvietimo kodą.");
+      return;
+    }
+
+    setIsAcceptingInvite(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const nextAuth = await acceptInvitation(code);
+      setInviteCode("");
+      setMessage("Pakvietimas priimtas.");
+      navigate(nextAuth.activeTuntasId ? "/" : "/tuntas", { replace: true });
+    } catch (cause) {
+      setError(cause instanceof ApiError || cause instanceof Error ? cause.message : "Nepavyko priimti pakvietimo.");
+    } finally {
+      setIsAcceptingInvite(false);
     }
   }
 
@@ -37,11 +65,12 @@ export function TuntasSelectPage() {
             <ShieldCheck size={20} aria-hidden="true" />
             <div>
               <h2>Pasirink tuntą</h2>
-              <span>Android programėlėje šis žingsnis rodomas, kai turi kelis tuntus arba dar nėra aktyvaus tunto.</span>
+              <span>Šis žingsnis rodomas, kai turi kelis tuntus arba dar nėra aktyvaus tunto.</span>
             </div>
           </div>
 
           {error && <p className="error-text">{error}</p>}
+          {message && <p className="success-text">{message}</p>}
 
           {activeTuntai.length > 0 && (
             <div className="tuntas-choice-list">
@@ -74,6 +103,30 @@ export function TuntasSelectPage() {
               <span>Jei ką tik sukūrei tuntą, jis atsiras čia kaip laukiantis patvirtinimo. Taip pat gali prisijungti su pakvietimu.</span>
             </div>
           )}
+
+          <form className="invite-accept-panel" onSubmit={submitInvite}>
+            <div className="form-section-heading compact-auth-heading">
+              <TicketCheck size={19} aria-hidden="true" />
+              <div>
+                <h3>Prisijungti su pakvietimu</h3>
+                <span>Įvesk tunto arba vieneto pakvietimo kodą, jeigu paskyrą jau turi.</span>
+              </div>
+            </div>
+            <div className="inline-form-row">
+              <label className="form-field">
+                <span>Pakvietimo kodas</span>
+                <input
+                  autoComplete="one-time-code"
+                  maxLength={20}
+                  value={inviteCode}
+                  onChange={(event) => setInviteCode(event.target.value.toUpperCase())}
+                />
+              </label>
+              <button className="primary-button compact-primary-button" type="submit" disabled={isAcceptingInvite || !inviteCode.trim()}>
+                {isAcceptingInvite ? "Priimama..." : "Priimti"}
+              </button>
+            </div>
+          </form>
 
           <div className="form-actions">
             <button className="secondary-button" type="button" onClick={() => window.location.reload()}>

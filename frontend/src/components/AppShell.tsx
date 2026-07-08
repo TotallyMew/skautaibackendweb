@@ -20,7 +20,8 @@ export function AppShell() {
   const location = useLocation();
   const title = currentTitle(location.pathname);
   const isSuperAdmin = auth?.type === "super_admin";
-  const activeTuntasName = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId)?.name;
+  const activeTuntai = auth?.tuntai.filter((tuntas) => tuntas.status === "ACTIVE") ?? [];
+  const activeTuntasName = activeTuntai.find((tuntas) => tuntas.id === auth?.activeTuntasId)?.name;
   const contextLabel = isSuperAdmin ? "Superadministratorius" : activeTuntasName ?? "Tuntas dar nepasirinktas";
 
   return (
@@ -47,9 +48,9 @@ export function AppShell() {
               id="tuntas-select"
               className="select"
               value={auth?.activeTuntasId ?? ""}
-              onChange={(event) => selectTuntas(event.target.value)}
+              onChange={(event) => void selectTuntas(event.target.value)}
             >
-              {auth?.tuntai.map((tuntas) => (
+              {activeTuntai.map((tuntas) => (
                 <option key={tuntas.id} value={tuntas.id}>{tuntas.name}</option>
               ))}
             </select>

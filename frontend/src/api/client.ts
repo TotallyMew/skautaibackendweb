@@ -1,10 +1,12 @@
 import type {
+  AcceptInvitationRequest,
   AdminTuntas,
   ApiErrorBody,
   CreateItemRequest,
   EventListFilters,
   EventListResponse,
   ForgotPasswordRequest,
+  InvitationResponse,
   ItemListFilters,
   ItemListResponse,
   Item,
@@ -165,6 +167,13 @@ export const api = {
     request<PermissionsResponse>("/api/users/me/permissions", {
       token,
       tuntasId
+    }),
+
+  acceptInvitation: (token: string, body: AcceptInvitationRequest) =>
+    request<InvitationResponse>("/api/invitations/accept", {
+      token,
+      method: "POST",
+      body
     }),
 
   listItems: (token: string, tuntasId: string, filters: ItemListFilters = {}) =>

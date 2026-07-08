@@ -208,6 +208,29 @@ describe("api client", () => {
     expect(init?.body).toBe(JSON.stringify({ email: "jonas@example.com", password: "secret" }));
   });
 
+  it("accepts invitations for an existing authenticated user", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        code: "ABC123",
+        tuntasId: "tuntas-2",
+        roleName: "skautas",
+        tuntasName: "Antras tuntas",
+        expiresAt: "2026-07-09T10:00:00Z"
+      })
+    );
+
+    await api.acceptInvitation("access-token", { code: "ABC123" });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    const headers = init?.headers as Headers;
+
+    expect(url).toBe("http://localhost:8081/api/invitations/accept");
+    expect(init?.method).toBe("POST");
+    expect(headers.get("Authorization")).toBe("Bearer access-token");
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(init?.body).toBe(JSON.stringify({ code: "ABC123" }));
+  });
+
   it("surfaces backend error messages", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "Bad credentials" }, 401));
 

@@ -10,6 +10,7 @@ type AuthContextValue = {
   login: (request: LoginRequest) => Promise<AuthState>;
   registerTuntas: (request: RegisterTuntininkasRequest) => Promise<AuthState>;
   registerInvite: (request: RegisterWithInviteRequest) => Promise<AuthState>;
+  acceptInvitation: (code: string) => Promise<AuthState>;
   logout: () => Promise<void>;
   selectTuntas: (tuntasId: string) => Promise<void>;
 };
@@ -52,6 +53,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const response = await api.registerWithInvite(request);
     return hydratePermissions(authFromTokenResponse(response));
   }, [hydratePermissions]);
+
+  const acceptInvitation = useCallback(async (code: string) => {
+    if (!auth) throw new Error("Neprisijungta.");
+    const invitation = await api.acceptInvitation(auth.token, { code: code.trim().toUpperCase() });
+    const tuntai = await api.myTuntai(auth.token);
+    return hydratePermissions({
+      ...auth,
+      tuntai,
+      activeTuntasId: invitation.tuntasId,
+      permissions: [],
+      leadershipUnitIds: []
+    });
+  }, [auth, hydratePermissions]);
 
   useEffect(() => {
     const current = loadAuthState();
@@ -108,9 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     registerTuntas,
     registerInvite,
+    acceptInvitation,
     logout,
     selectTuntas
-  }), [auth, isInitializing, login, logout, registerInvite, registerTuntas, selectTuntas]);
+  }), [acceptInvitation, auth, isInitializing, login, logout, registerInvite, registerTuntas, selectTuntas]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

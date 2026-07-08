@@ -55,6 +55,20 @@ export type ResetPasswordRequest = {
   newPassword: string;
 };
 
+export type AcceptInvitationRequest = {
+  code: string;
+};
+
+export type InvitationResponse = {
+  code: string;
+  tuntasId: string;
+  roleName: string;
+  tuntasName: string;
+  expiresAt: string;
+  organizationalUnitId?: string | null;
+  organizationalUnitName?: string | null;
+};
+
 export type MessageResponse = {
   message: string;
 };

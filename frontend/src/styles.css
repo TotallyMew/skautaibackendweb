@@ -1169,6 +1169,132 @@ button {
   width: 100%;
 }
 
+.calendar-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.calendar-board-panel,
+.calendar-day-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.calendar-title-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.calendar-title-row svg {
+  color: var(--accent);
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.calendar-weekdays span {
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.calendar-day {
+  display: grid;
+  grid-template-rows: auto minmax(48px, 1fr);
+  gap: 6px;
+  min-height: 96px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-lowest);
+  padding: 8px;
+  color: var(--text-body);
+  text-align: left;
+}
+
+.calendar-day:disabled {
+  background: var(--surface-low);
+  cursor: default;
+}
+
+.calendar-day:not(:disabled):hover,
+.calendar-day.selected {
+  border-color: var(--accent-container);
+  background: var(--accent-soft);
+}
+
+.calendar-day.today strong {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface-lowest);
+}
+
+.calendar-day span {
+  display: grid;
+  gap: 3px;
+  align-content: start;
+}
+
+.calendar-day i {
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--success-container);
+  color: var(--success);
+  padding: 2px 4px;
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-entry-list {
+  display: grid;
+  gap: 8px;
+}
+
+.calendar-entry-row {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-lowest);
+  padding: 12px;
+  color: var(--text-body);
+  text-align: left;
+}
+
+.calendar-entry-row:hover {
+  border-color: var(--accent-container);
+  background: var(--surface-low);
+}
+
+.calendar-entry-row small,
+.calendar-entry-row em {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-style: normal;
+}
+
 .notifications-summary-panel {
   display: flex;
   gap: 12px;

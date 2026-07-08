@@ -6,6 +6,7 @@ const quickAccessItems: NavItem[] = [
   { to: "/", label: "Pradžia", icon: Home },
   { to: "/tasks", label: "Mano užduotys", icon: ListTodo },
   { to: "/notifications", label: "Pranešimai", icon: Bell },
+  { to: "/calendar", label: "Kalendorius", icon: CalendarDays },
   { to: "/inventory", label: "Inventorius", icon: Package, anyPermission: ["items.view", "items.create", "items.review"] },
   { to: "/requests", label: "Prašymai", icon: ClipboardList, anyPermission: ["reservations.view", "reservations.create", "requisitions.create", "items.request.bendras", "items.request.approve"] },
   { to: "/events", label: "Renginiai", icon: CalendarDays, anyPermission: ["events.view"] }
@@ -145,6 +146,7 @@ function currentTitle(pathname: string) {
   if (pathname === "/") return "Pradžia";
   if (pathname.startsWith("/tasks")) return "Mano užduotys";
   if (pathname.startsWith("/notifications")) return "Pranešimai";
+  if (pathname.startsWith("/calendar")) return "Kalendorius";
   if (pathname.startsWith("/profile")) return "Mano profilis";
   if (pathname.startsWith("/inventory")) return "Inventorius";
   if (pathname.startsWith("/requests")) return "Prašymai";

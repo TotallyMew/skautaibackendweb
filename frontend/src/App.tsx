@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminPage } from "./pages/AdminPage";
+import { CalendarPage } from "./pages/CalendarPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventDetailPage } from "./pages/EventDetailPage";
 import { EventsPage } from "./pages/EventsPage";
@@ -34,6 +35,7 @@ export function App() {
         <Route path="tuntas" element={<TuntasSelectPage />} />
         <Route element={<AppShell />}>
           <Route index element={<DashboardPage />} />
+          <Route path="calendar" element={<CalendarPage />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="inventory/new" element={<InventoryCreatePage />} />
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />

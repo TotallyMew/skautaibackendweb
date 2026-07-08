@@ -4,6 +4,7 @@ import type {
   CreateItemRequest,
   EventListFilters,
   EventListResponse,
+  ForgotPasswordRequest,
   ItemListFilters,
   ItemListResponse,
   Item,
@@ -18,6 +19,7 @@ import type {
   Reservation,
   ReservationListFilters,
   ReservationListResponse,
+  ResetPasswordRequest,
   RequisitionListResponse,
   SharedInventoryRequestListResponse,
   SuperAdminNotificationRequest,
@@ -126,6 +128,18 @@ export const api = {
 
   registerWithInvite: (body: RegisterWithInviteRequest) =>
     request<TokenResponse>("/api/auth/register/invite", {
+      method: "POST",
+      body
+    }),
+
+  forgotPassword: (body: ForgotPasswordRequest) =>
+    request<MessageResponse>("/api/auth/forgot-password", {
+      method: "POST",
+      body
+    }),
+
+  resetPassword: (body: ResetPasswordRequest) =>
+    request<MessageResponse>("/api/auth/reset-password", {
       method: "POST",
       body
     }),

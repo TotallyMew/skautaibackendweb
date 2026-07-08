@@ -46,6 +46,15 @@ export type RegisterWithInviteRequest = {
   inviteCode: string;
 };
 
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ResetPasswordRequest = {
+  token: string;
+  newPassword: string;
+};
+
 export type MessageResponse = {
   message: string;
 };

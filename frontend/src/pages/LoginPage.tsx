@@ -24,7 +24,7 @@ export function LoginPage() {
     setError(null);
     setIsSubmitting(true);
     try {
-      const state = await login({ email, password });
+      const state = await login({ email: email.trim().toLowerCase(), password });
       navigate(destinationForAuth(state, from), { replace: true });
     } catch {
       setError("Nepavyko prisijungti. Patikrink el. paštą ir slaptažodį.");

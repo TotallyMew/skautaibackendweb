@@ -42,7 +42,7 @@ export function RegisterPage() {
 
   return (
     <AuthFormPage
-      title="Registracija - Tuntininkas"
+      title="Registracija - tuntininkas"
       subtitle="Sukurk paskyrą ir užregistruok tuntą patvirtinimui."
       icon={Building2}
       onSubmit={submit}

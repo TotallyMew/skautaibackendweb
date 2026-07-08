@@ -5,7 +5,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventDetailPage } from "./pages/EventDetailPage";
 import { EventsPage } from "./pages/EventsPage";
-import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ForgotPasswordPage, ResetPasswordPage } from "./pages/ForgotPasswordPage";
 import { InventoryCreatePage } from "./pages/InventoryCreatePage";
 import { InventoryDetailPage } from "./pages/InventoryDetailPage";
 import { InventoryPage } from "./pages/InventoryPage";
@@ -24,6 +24,8 @@ export function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/password-reset/open" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/register/invite" element={<RegisterInvitePage />} />
       <Route element={<ProtectedRoute />}>

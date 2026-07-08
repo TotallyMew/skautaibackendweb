@@ -15,14 +15,14 @@ const tokenResponse: TokenResponse = {
       name: "Pirmas tuntas",
       krastas: "Vilnius",
       contactEmail: "pirmas@example.com",
-      status: "APPROVED"
+      status: "ACTIVE"
     },
     {
       id: "tuntas-2",
       name: "Antras tuntas",
       krastas: "Kaunas",
       contactEmail: "antras@example.com",
-      status: "APPROVED"
+      status: "ACTIVE"
     }
   ]
 };
@@ -35,8 +35,17 @@ describe("authFromTokenResponse", () => {
     expect(state.refreshToken).toBe("refresh-token");
   });
 
-  it("falls back to the first tuntas when the preferred tuntas is unavailable", () => {
+  it("requires explicit tuntas selection when more than one active tuntas is available", () => {
     const state = authFromTokenResponse(tokenResponse, "missing-tuntas");
+
+    expect(state.activeTuntasId).toBeNull();
+  });
+
+  it("selects the only active tuntas automatically", () => {
+    const state = authFromTokenResponse({
+      ...tokenResponse,
+      tuntai: [tokenResponse.tuntai![0]]
+    });
 
     expect(state.activeTuntasId).toBe("tuntas-1");
   });

@@ -1105,6 +1105,19 @@ button {
   font-weight: 700;
 }
 
+.success-text {
+  margin: 0;
+  color: var(--success);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.success-text a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .inline-success {
   display: flex;
   align-items: flex-start;

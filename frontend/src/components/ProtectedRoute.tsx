@@ -62,6 +62,8 @@ function canAccessUserRoute(pathname: string, permissions: string[]) {
       hasPermission(permissions, "invitations.create");
   }
   if (pathname.startsWith("/members")) return canViewMembers(permissions);
+  if (pathname.startsWith("/events/new")) return hasPermission(permissions, "events.create");
+  if (pathname.startsWith("/events/") && pathname.endsWith("/edit")) return hasPermission(permissions, "events.manage");
   if (pathname.startsWith("/events")) return hasPermission(permissions, "events.view");
 
   return true;

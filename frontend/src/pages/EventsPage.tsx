@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, CalendarDays, ChevronLeft, ChevronRight, Loader2, Plus, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Event, EventListResponse } from "../api/types";
@@ -35,6 +35,7 @@ export function EventsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const canFetch = Boolean(auth?.token && auth.activeTuntasId);
+  const canCreate = auth?.permissions.some((permission) => permission === "events.create" || permission.startsWith("events.create:")) ?? false;
 
   useEffect(() => {
     if (!auth?.token || !auth.activeTuntasId) {
@@ -86,18 +87,26 @@ export function EventsPage() {
           <strong>{total}</strong>
           <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={() => {
-            setOffset(0);
-            setReloadKey((value) => value + 1);
-          }}
-          disabled={!canFetch || isLoading}
-        >
-          <RefreshCw size={17} aria-hidden="true" />
-          Atnaujinti
-        </button>
+        <div className="toolbar-actions">
+          {canCreate && (
+            <Link className="primary-button compact-primary-button" to="/events/new">
+              <Plus size={17} aria-hidden="true" />
+              Naujas renginys
+            </Link>
+          )}
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              setOffset(0);
+              setReloadKey((value) => value + 1);
+            }}
+            disabled={!canFetch || isLoading}
+          >
+            <RefreshCw size={17} aria-hidden="true" />
+            Atnaujinti
+          </button>
+        </div>
       </div>
 
       <div className="filter-bar compact-pair-filter-bar">

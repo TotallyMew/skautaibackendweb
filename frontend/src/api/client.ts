@@ -7,6 +7,7 @@ import type {
   CreateItemRequest,
   CreateLocationRequest,
   CreateOrganizationalUnitRequest,
+  CreateEventRequest,
   CreateReservationRequest,
   EventListFilters,
   EventListResponse,
@@ -40,6 +41,7 @@ import type {
   SuperAdminNotificationRequest,
   TokenResponse,
   UpdateLocationRequest,
+  UpdateEventRequest,
   UpdateMyProfileRequest,
   UpdateOrganizationalUnitRequest,
   UserTuntas
@@ -391,6 +393,22 @@ export const api = {
     request<EventListResponse["events"][number]>(`/api/events/${eventId}`, {
       token,
       tuntasId
+    }),
+
+  createEvent: (token: string, tuntasId: string, body: CreateEventRequest) =>
+    request<EventListResponse["events"][number]>("/api/events", {
+      token,
+      tuntasId,
+      method: "POST",
+      body
+    }),
+
+  updateEvent: (token: string, tuntasId: string, eventId: string, body: UpdateEventRequest) =>
+    request<EventListResponse["events"][number]>(`/api/events/${eventId}`, {
+      token,
+      tuntasId,
+      method: "PUT",
+      body
     }),
 
   listMyTasks: (token: string, tuntasId: string) =>

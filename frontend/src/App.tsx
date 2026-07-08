@@ -5,6 +5,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { EventDetailPage } from "./pages/EventDetailPage";
+import { EventFormPage } from "./pages/EventFormPage";
 import { EventsPage } from "./pages/EventsPage";
 import { ForgotPasswordPage, ResetPasswordPage } from "./pages/ForgotPasswordPage";
 import { InventoryCreatePage } from "./pages/InventoryCreatePage";
@@ -54,6 +55,8 @@ export function App() {
           <Route path="members" element={<MembersPage />} />
           <Route path="units" element={<UnitsPage />} />
           <Route path="events" element={<EventsPage />} />
+          <Route path="events/new" element={<EventFormPage />} />
+          <Route path="events/:eventId/edit" element={<EventFormPage />} />
           <Route path="events/:eventId" element={<EventDetailPage />} />
           <Route path="admin" element={<AdminPage />} />
         </Route>

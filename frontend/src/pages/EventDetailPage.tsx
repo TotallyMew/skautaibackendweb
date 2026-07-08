@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CalendarDays, ClipboardList, Euro, Loader2, PackageCheck, UsersRound, type LucideIcon } from "lucide-react";
+import { AlertCircle, ArrowLeft, CalendarDays, ClipboardList, Edit3, Euro, Loader2, PackageCheck, UsersRound, type LucideIcon } from "lucide-react";
 import { api } from "../api/client";
 import type { Event } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -12,6 +12,7 @@ export function EventDetailPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canManage = auth?.permissions.some((permission) => permission === "events.manage" || permission.startsWith("events.manage:")) ?? false;
 
   useEffect(() => {
     if (!eventId || !auth?.token || !auth.activeTuntasId) {
@@ -57,7 +58,15 @@ export function EventDetailPage() {
           </Link>
           <h2>{event?.name ?? "Renginys"}</h2>
         </div>
-        {event && <StatusBadge status={event.status} />}
+        <div className="toolbar-actions">
+          {event && canManage && (
+            <Link className="secondary-button" to={`/events/${event.id}/edit`}>
+              <Edit3 size={17} aria-hidden="true" />
+              Redaguoti
+            </Link>
+          )}
+          {event && <StatusBadge status={event.status} />}
+        </div>
       </div>
 
       {isLoading && (

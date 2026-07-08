@@ -589,6 +589,21 @@ export type EventListFilters = {
   offset?: number;
 };
 
+export type CreateEventRequest = {
+  name: string;
+  type: string;
+  customTypeLabel?: string | null;
+  startDate: string;
+  endDate: string;
+  locationId?: string | null;
+  organizationalUnitId?: string | null;
+  notes?: string | null;
+};
+
+export type UpdateEventRequest = Partial<CreateEventRequest> & {
+  status?: string | null;
+};
+
 export type MyTask = {
   id: string;
   type: string;

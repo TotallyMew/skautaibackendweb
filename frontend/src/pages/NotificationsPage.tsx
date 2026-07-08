@@ -163,7 +163,7 @@ function destinationForNotification(notification: Notification) {
   const data = notification.data ?? {};
   if (notification.resource === "reservations") {
     const id = data.reservationId ?? notification.entityId;
-    return id ? `/requests/reservations/${id}` : null;
+    return id ? `/reservations/${id}` : null;
   }
   if (notification.resource === "bendras_requests") {
     const id = data.requestId ?? notification.entityId;

@@ -49,11 +49,15 @@ function canAccessUserRoute(pathname: string, permissions: string[]) {
   if (pathname.startsWith("/inventory")) {
     return canViewInventory(permissions) || canCreateItems(permissions) || hasPermission(permissions, "items.review");
   }
+  if (pathname.startsWith("/reservations/new")) return hasPermission(permissions, "reservations.create");
+  if (pathname.startsWith("/reservations")) {
+    return canViewReservations(permissions) || hasPermission(permissions, "reservations.create");
+  }
+  if (pathname.startsWith("/requests/reservations")) {
+    return canViewReservations(permissions) || hasPermission(permissions, "reservations.create");
+  }
   if (pathname.startsWith("/requests")) {
-    if (pathname.startsWith("/requests/reservations/new")) return hasPermission(permissions, "reservations.create");
-    return canViewReservations(permissions) ||
-      hasPermission(permissions, "reservations.create") ||
-      canUseRequisitions(permissions) ||
+    return canUseRequisitions(permissions) ||
       canUseSharedInventoryRequests(permissions);
   }
   if (pathname.startsWith("/units")) {

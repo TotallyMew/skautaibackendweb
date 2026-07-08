@@ -149,7 +149,7 @@ export function ReservationCreatePage() {
         returnLocationId: optional(form.returnLocationId),
         notes: optional(form.notes)
       });
-      navigate(`/requests/reservations/${reservation.id}`);
+      navigate(`/reservations/${reservation.id}`);
     } catch (cause) {
       setError(cause instanceof ApiError || cause instanceof Error ? cause.message : "Rezervacijos sukurti nepavyko.");
     } finally {
@@ -164,7 +164,7 @@ export function ReservationCreatePage() {
         <div>
           <h2>Rezervacijos kūrimui reikia teisės</h2>
           <p>Šis veiksmas rodomas tik vartotojams, kurie Android programėlėje gali kurti rezervacijas.</p>
-          <Link className="secondary-button" to="/requests">Grįžti į prašymus</Link>
+          <Link className="secondary-button" to="/reservations">Grįžti į rezervacijas</Link>
         </div>
       </section>
     );
@@ -174,7 +174,7 @@ export function ReservationCreatePage() {
     <section className="detail-page">
       <div className="section-heading">
         <div>
-          <Link className="back-link" to="/requests">
+          <Link className="back-link" to="/reservations">
             <ArrowLeft size={17} aria-hidden="true" />
             Grįžti į prašymus
           </Link>
@@ -302,7 +302,7 @@ export function ReservationCreatePage() {
         </section>
 
         <div className="form-actions">
-          <Link className="secondary-button" to="/requests">Atšaukti</Link>
+          <Link className="secondary-button" to="/reservations">Atšaukti</Link>
           <button className="primary-button compact-primary-button" type="submit" disabled={!canSubmit || isSubmitting}>
             <Save size={17} aria-hidden="true" />
             {isSubmitting ? "Kuriama..." : "Sukurti rezervaciją"}

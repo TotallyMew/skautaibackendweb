@@ -75,7 +75,7 @@ export function CalendarPage() {
 
   function openEntry(entry: CalendarEntry) {
     if (entry.kind === "event") navigate(`/events/${entry.id}`);
-    else navigate(`/requests/reservations/${entry.id}`);
+    else navigate(`/reservations/${entry.id}`);
   }
 
   return (

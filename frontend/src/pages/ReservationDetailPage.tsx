@@ -51,9 +51,9 @@ export function ReservationDetailPage() {
     <section className="detail-page">
       <div className="section-heading">
         <div>
-          <Link className="back-link" to="/requests">
+          <Link className="back-link" to="/reservations">
             <ArrowLeft size={17} aria-hidden="true" />
-            Grįžti į prašymus
+            Grįžti į rezervacijas
           </Link>
           <h2>{reservation?.title ?? "Rezervacija"}</h2>
         </div>

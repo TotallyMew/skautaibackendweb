@@ -1,44 +1,27 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, PackageCheck, Plus, RefreshCw, ShieldCheck, ShoppingCart, type LucideProps } from "lucide-react";
+import { AlertCircle, Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart, type LucideProps } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import type { Requisition, RequisitionListResponse, Reservation, ReservationListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
+import type { Requisition, RequisitionListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
-import { canUseRequisitions, canUseSharedInventoryRequests, canViewReservations } from "../utils/permissions";
+import { canUseRequisitions, canUseSharedInventoryRequests } from "../utils/permissions";
 
-const pageSize = 25;
-
-type RequestTab = "reservations" | "requisitions" | "shared";
-
-const statusOptions = [
-  { value: "", label: "Visos būsenos" },
-  { value: "PENDING", label: "Laukia" },
-  { value: "APPROVED", label: "Patvirtintos" },
-  { value: "REJECTED", label: "Atmestos" },
-  { value: "ISSUED", label: "Išduotos" },
-  { value: "RETURNED", label: "Grąžintos" },
-  { value: "CANCELLED", label: "Atsauktos" }
-];
+type RequestTab = "requisitions" | "shared";
 
 export function RequestsPage() {
   const { auth } = useAuth();
   const permissions = auth?.permissions;
   const visibleTabs = useMemo(() => {
     return [
-      canViewReservations(permissions) ? "reservations" as const : null,
       canUseRequisitions(permissions) ? "requisitions" as const : null,
       canUseSharedInventoryRequests(permissions) ? "shared" as const : null
     ].filter((tab): tab is RequestTab => Boolean(tab));
   }, [permissions]);
-  const canCreateReservation = permissions?.some((permission) => permission === "reservations.create" || permission.startsWith("reservations.create:")) ?? false;
 
-  const [reservationsState, setReservationsState] = useState<ReservationListResponse | null>(null);
   const [requisitionsState, setRequisitionsState] = useState<RequisitionListResponse | null>(null);
   const [sharedRequestsState, setSharedRequestsState] = useState<SharedInventoryRequestListResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<RequestTab>(visibleTabs[0] ?? "reservations");
-  const [status, setStatus] = useState("");
-  const [offset, setOffset] = useState(0);
+  const [activeTab, setActiveTab] = useState<RequestTab>(visibleTabs[0] ?? "requisitions");
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -48,13 +31,11 @@ export function RequestsPage() {
   useEffect(() => {
     if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
       setActiveTab(visibleTabs[0]);
-      setOffset(0);
     }
   }, [activeTab, visibleTabs]);
 
   useEffect(() => {
     if (!auth?.token || !auth.activeTuntasId || visibleTabs.length === 0) {
-      setReservationsState(null);
       setRequisitionsState(null);
       setSharedRequestsState(null);
       return;
@@ -65,9 +46,6 @@ export function RequestsPage() {
     setError(null);
 
     Promise.all([
-      visibleTabs.includes("reservations")
-        ? api.listReservations(auth.token, auth.activeTuntasId, { status, limit: pageSize, offset }).catch(() => null)
-        : Promise.resolve(null),
       visibleTabs.includes("requisitions")
         ? api.listRequisitions(auth.token, auth.activeTuntasId).catch(() => null)
         : Promise.resolve(null),
@@ -75,34 +53,26 @@ export function RequestsPage() {
         ? api.listSharedInventoryRequests(auth.token, auth.activeTuntasId).catch(() => null)
         : Promise.resolve(null)
     ])
-      .then(([reservations, requisitions, sharedRequests]) => {
+      .then(([requisitions, sharedRequests]) => {
         if (isCancelled) return;
-        setReservationsState(reservations);
         setRequisitionsState(requisitions);
         setSharedRequestsState(sharedRequests);
       })
       .catch(() => {
-        if (!isCancelled) {
-          setError("Nepavyko užkrauti prašymų.");
-        }
+        if (!isCancelled) setError("Nepavyko užkrauti prašymų.");
       })
       .finally(() => {
-        if (!isCancelled) {
-          setIsLoading(false);
-        }
+        if (!isCancelled) setIsLoading(false);
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, offset, reloadKey, status, visibleTabs]);
+  }, [auth?.activeTuntasId, auth?.token, reloadKey, visibleTabs]);
 
-  const reservationTotal = reservationsState?.total ?? 0;
   const requisitionTotal = requisitionsState?.total ?? 0;
   const sharedTotal = sharedRequestsState?.total ?? 0;
-  const total = activeTab === "reservations" ? reservationTotal : activeTab === "requisitions" ? requisitionTotal : sharedTotal;
-  const currentPage = Math.floor(offset / pageSize) + 1;
-  const pageCount = Math.max(1, Math.ceil(reservationTotal / pageSize));
+  const total = activeTab === "requisitions" ? requisitionTotal : sharedTotal;
 
   if (visibleTabs.length === 0) {
     return (
@@ -110,7 +80,7 @@ export function RequestsPage() {
         <ShieldCheck size={34} aria-hidden="true" />
         <div>
           <h2>Prašymų sritis nepasiekiama</h2>
-          <p>Android programėlėje ši sritis rodoma tik vartotojams, kurie gali peržiūrėti rezervacijas, pirkimus arba bendro inventoriaus paėmimo prašymus.</p>
+          <p>Ši sritis skirta pirkimo/papildymo ir bendro inventoriaus paėmimo prašymams.</p>
         </div>
       </section>
     );
@@ -123,43 +93,21 @@ export function RequestsPage() {
           <strong>{total}</strong>
           <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
-        <div className="toolbar-actions">
-          {canCreateReservation && (
-            <Link className="primary-button compact-primary-button" to="/requests/reservations/new">
-              <Plus size={17} aria-hidden="true" />
-              Nauja rezervacija
-            </Link>
-          )}
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => {
-              setOffset(0);
-              setReloadKey((value) => value + 1);
-            }}
-            disabled={!canFetch || isLoading}
-          >
-            <RefreshCw size={17} aria-hidden="true" />
-            Atnaujinti
-          </button>
-        </div>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => setReloadKey((value) => value + 1)}
+          disabled={!canFetch || isLoading}
+        >
+          <RefreshCw size={17} aria-hidden="true" />
+          Atnaujinti
+        </button>
       </div>
 
       <div className="segmented-tabs" role="tablist" aria-label="Prašymų tipai">
-        {visibleTabs.includes("reservations") && <TabButton active={activeTab === "reservations"} onClick={() => setActiveTab("reservations")} label="Rezervacijos" count={reservationTotal} />}
         {visibleTabs.includes("requisitions") && <TabButton active={activeTab === "requisitions"} onClick={() => setActiveTab("requisitions")} label="Pirkimai" count={requisitionTotal} />}
         {visibleTabs.includes("shared") && <TabButton active={activeTab === "shared"} onClick={() => setActiveTab("shared")} label="Bendras inventorius" count={sharedTotal} />}
       </div>
-
-      {activeTab === "reservations" && (
-        <div className="filter-bar compact-filter-bar">
-          <select value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0); }}>
-            {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {error && (
         <div className="inline-alert">
@@ -171,7 +119,7 @@ export function RequestsPage() {
       <div className="data-panel">
         <div className="data-panel-header">
           <span>{total} {countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
-          <span>{headerMeta(activeTab, currentPage, pageCount)}</span>
+          <span>{headerMeta(activeTab)}</span>
         </div>
 
         {isLoading && (
@@ -179,14 +127,6 @@ export function RequestsPage() {
             <Loader2 className="spin" size={22} aria-hidden="true" />
             Kraunami prašymai...
           </div>
-        )}
-
-        {!isLoading && !error && activeTab === "reservations" && reservationsState?.reservations.length === 0 && (
-          <RequestEmptyState icon={ClipboardList} title="Rezervacijų pagal šį filtrą nerasta" description="Pakeisk būseną arba atnaujink sąrašą." />
-        )}
-
-        {!isLoading && !error && activeTab === "reservations" && Boolean(reservationsState?.reservations.length) && (
-          <ReservationsList reservations={reservationsState?.reservations ?? []} />
         )}
 
         {!isLoading && !error && activeTab === "requisitions" && requisitionsState?.requests.length === 0 && (
@@ -205,31 +145,6 @@ export function RequestsPage() {
           <SharedRequestsList requests={sharedRequestsState?.requests ?? []} />
         )}
       </div>
-
-      {activeTab === "reservations" && (
-        <div className="pagination-row">
-          <button
-            className="icon-button"
-            type="button"
-            disabled={offset === 0 || isLoading}
-            onClick={() => setOffset(Math.max(0, offset - pageSize))}
-            aria-label="Ankstesnis puslapis"
-            title="Ankstesnis puslapis"
-          >
-            <ChevronLeft size={18} aria-hidden="true" />
-          </button>
-          <button
-            className="icon-button"
-            type="button"
-            disabled={!reservationsState?.hasMore || isLoading}
-            onClick={() => setOffset(offset + pageSize)}
-            aria-label="Kitas puslapis"
-            title="Kitas puslapis"
-          >
-            <ChevronRight size={18} aria-hidden="true" />
-          </button>
-        </div>
-      )}
     </section>
   );
 }
@@ -240,46 +155,6 @@ function TabButton({ active, onClick, label, count }: { active: boolean; onClick
       {label}
       <span>{count}</span>
     </button>
-  );
-}
-
-function ReservationsList({ reservations }: { reservations: Reservation[] }) {
-  return (
-    <div className="record-list">
-      <div className="record-header request-record-row" aria-hidden="true">
-        <span />
-        <span>Prašymas</span>
-        <span>Laikas</span>
-        <span>Kiekis</span>
-        <span>Būsena</span>
-      </div>
-      {reservations.map((reservation) => (
-        <article className="record-row request-record-row" key={reservation.id}>
-          <div className="record-icon">
-            <CalendarCheck size={18} aria-hidden="true" />
-          </div>
-          <div className="record-main">
-            <Link className="record-title" to={`/requests/reservations/${reservation.id}`}>{reservation.title}</Link>
-            <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendras prašymas"}</span>
-            <div className="record-chip-row">
-              <ReviewBadge label="Padalinys" status={reservation.unitReviewStatus ?? "NOT_REQUIRED"} />
-              <ReviewBadge label="Tuntas" status={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
-            </div>
-          </div>
-          <div className="record-meta record-date">
-            <strong>{formatDate(reservation.startDate)}</strong>
-            <span>iki {formatDate(reservation.endDate)}</span>
-            <span>{reservation.reservedByName ?? "Rezervavęs narys nenurodytas"}</span>
-          </div>
-          <div className="record-meta record-quantity">
-            <strong>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</strong>
-            <span>{reservation.totalQuantity} vnt.</span>
-            <span>{summarizeItems(reservation)}</span>
-          </div>
-          <StatusBadge status={reservation.status} />
-        </article>
-      ))}
-    </div>
   );
 }
 
@@ -383,15 +258,9 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
 }
 
-function headerMeta(tab: RequestTab, currentPage: number, pageCount: number) {
-  if (tab === "reservations") return `Puslapis ${currentPage} / ${pageCount}`;
+function headerMeta(tab: RequestTab) {
   if (tab === "requisitions") return "Pirkimo ir papildymo prašymai";
   return "Bendro inventoriaus paėmimo prašymai";
-}
-
-function summarizeItems(reservation: Reservation) {
-  if (reservation.items.length === 0) return "Be inventoriaus įrašų";
-  return reservation.items.slice(0, 2).map((item) => item.itemName).join(", ") + (reservation.items.length > 2 ? "..." : "");
 }
 
 function requestTitle(request: Requisition) {

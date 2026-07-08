@@ -168,7 +168,7 @@ export function DashboardPage() {
             </div>
           </div>
           <div className="home-action-grid">
-            {canViewReservationArea && <ActionTile to="/requests" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
+            {canViewReservationArea && <ActionTile to="/reservations" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
             <ActionTile to="/tasks" icon={ClipboardList} title="Mano užduotys" subtitle={formatCount(dashboard?.taskTotal, "aktyvi užduotis", "aktyvios užduotys", "aktyvių užduočių")} />
             {canViewEvents && <ActionTile to="/events" icon={Inbox} title="Renginių planai" subtitle={formatCount(dashboard?.planningEventsTotal, "planuojamas renginys", "planuojami renginiai", "planuojamų renginių")} />}
           </div>

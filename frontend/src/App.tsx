@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminPage } from "./pages/AdminPage";
@@ -21,6 +21,7 @@ import { RegisterInvitePage, RegisterPage } from "./pages/RegisterPage";
 import { ReservationCreatePage } from "./pages/ReservationCreatePage";
 import { RequisitionDetailPage } from "./pages/RequisitionDetailPage";
 import { ReservationDetailPage } from "./pages/ReservationDetailPage";
+import { ReservationsPage } from "./pages/ReservationsPage";
 import { RequestsPage } from "./pages/RequestsPage";
 import { SharedInventoryRequestDetailPage } from "./pages/SharedInventoryRequestDetailPage";
 import { TuntasSelectPage } from "./pages/TuntasSelectPage";
@@ -44,9 +45,12 @@ export function App() {
           <Route path="inventory/new" element={<InventoryCreatePage />} />
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
           <Route path="locations" element={<LocationsPage />} />
+          <Route path="reservations" element={<ReservationsPage />} />
+          <Route path="reservations/new" element={<ReservationCreatePage />} />
+          <Route path="reservations/:reservationId" element={<ReservationDetailPage />} />
           <Route path="requests" element={<RequestsPage />} />
-          <Route path="requests/reservations/new" element={<ReservationCreatePage />} />
-          <Route path="requests/reservations/:reservationId" element={<ReservationDetailPage />} />
+          <Route path="requests/reservations/new" element={<Navigate to="/reservations/new" replace />} />
+          <Route path="requests/reservations/:reservationId" element={<LegacyReservationRedirect />} />
           <Route path="requests/requisitions/:requisitionId" element={<RequisitionDetailPage />} />
           <Route path="requests/shared/:requestId" element={<SharedInventoryRequestDetailPage />} />
           <Route path="tasks" element={<MyTasksPage />} />
@@ -64,4 +68,9 @@ export function App() {
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
+}
+
+function LegacyReservationRedirect() {
+  const { reservationId } = useParams();
+  return <Navigate to={reservationId ? `/reservations/${reservationId}` : "/reservations"} replace />;
 }

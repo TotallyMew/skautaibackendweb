@@ -12,6 +12,8 @@ import lt.skautai.models.requests.RegisterWithInviteRequest
 import lt.skautai.models.responses.MessageResponse
 import lt.skautai.models.responses.TokenResponse
 import lt.skautai.models.responses.TuntasInfo
+import lt.skautai.util.isSelectableTuntasStatus
+import lt.skautai.util.normalizeSelectableTuntasStatus
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -231,7 +233,7 @@ class AuthService(
             val tuntas = Tuntai.selectAll()
                 .where { Tuntai.id eq tuntasId }
                 .firstOrNull()
-            if (tuntas == null || tuntas[Tuntai.status] != "ACTIVE") {
+            if (tuntas == null || !isSelectableTuntasStatus(tuntas[Tuntai.status])) {
                 return@transaction Result.failure(Exception("Tuntas is not active"))
             }
 
@@ -725,7 +727,7 @@ class AuthService(
                     name = it[Tuntai.name],
                     krastas = it[Tuntai.krastas] ?: "",
                     contactEmail = it[Tuntai.contactEmail] ?: "",
-                    status = it[Tuntai.status]
+                    status = normalizeSelectableTuntasStatus(it[Tuntai.status])
                 )
             }
     }

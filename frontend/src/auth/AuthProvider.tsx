@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "../api/client";
 import type { LoginRequest, MyProfile, RegisterTuntininkasRequest, RegisterWithInviteRequest } from "../api/types";
-import { authFromTokenResponse, loadAuthState, saveAuthState, withPermissions, type AuthState } from "./authStorage";
+import { authFromTokenResponse, isActiveTuntasStatus, loadAuthState, saveAuthState, withPermissions, type AuthState } from "./authStorage";
 
 type AuthContextValue = {
   auth: AuthState | null;
@@ -11,9 +11,10 @@ type AuthContextValue = {
   registerTuntas: (request: RegisterTuntininkasRequest) => Promise<AuthState>;
   registerInvite: (request: RegisterWithInviteRequest) => Promise<AuthState>;
   acceptInvitation: (code: string) => Promise<AuthState>;
+  refreshTuntai: () => Promise<AuthState | null>;
   updateProfileSnapshot: (profile: MyProfile) => void;
   logout: () => Promise<void>;
-  selectTuntas: (tuntasId: string) => Promise<void>;
+  selectTuntas: (tuntasId: string) => Promise<AuthState | null>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -66,6 +67,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissions: [],
       leadershipUnitIds: []
     });
+  }, [auth, hydratePermissions]);
+
+  const refreshTuntai = useCallback(async () => {
+    if (!auth || isSuperAdmin(auth)) return auth;
+    const tuntai = await api.myTuntai(auth.token);
+    const next = await hydratePermissions({
+      ...auth,
+      tuntai,
+      activeTuntasId: auth.activeTuntasId && tuntai.some((tuntas) => tuntas.id === auth.activeTuntasId && isActiveTuntasStatus(tuntas.status))
+        ? auth.activeTuntasId
+        : null,
+      permissions: [],
+      leadershipUnitIds: []
+    });
+    return next;
   }, [auth, hydratePermissions]);
 
   const updateProfileSnapshot = useCallback((profile: MyProfile) => {
@@ -121,8 +137,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [auth?.refreshToken, persist]);
 
   const selectTuntas = useCallback(async (tuntasId: string) => {
-    if (!auth) return;
-    await hydratePermissions({ ...auth, activeTuntasId: tuntasId });
+    if (!auth) return null;
+    return hydratePermissions({ ...auth, activeTuntasId: tuntasId });
   }, [auth, hydratePermissions]);
 
   const value = useMemo<AuthContextValue>(() => ({
@@ -133,10 +149,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     registerTuntas,
     registerInvite,
     acceptInvitation,
+    refreshTuntai,
     updateProfileSnapshot,
     logout,
     selectTuntas
-  }), [acceptInvitation, auth, isInitializing, login, logout, registerInvite, registerTuntas, selectTuntas, updateProfileSnapshot]);
+  }), [acceptInvitation, auth, isInitializing, login, logout, refreshTuntai, registerInvite, registerTuntas, selectTuntas, updateProfileSnapshot]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -5,6 +5,7 @@ import lt.skautai.models.requests.AcceptInvitationRequest
 import lt.skautai.models.requests.CreateInvitationRequest
 import lt.skautai.models.responses.InvitationResponse
 import lt.skautai.plugins.resolveUserPermissions
+import lt.skautai.util.isSelectableTuntasStatus
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 import kotlinx.datetime.Clock
@@ -26,7 +27,7 @@ class InvitationService {
                 .firstOrNull()
                 ?: return@transaction Result.failure(Exception("Tuntas not found"))
 
-            if (tuntas[Tuntai.status] != "ACTIVE") {
+            if (!isSelectableTuntasStatus(tuntas[Tuntai.status])) {
                 return@transaction Result.failure(Exception("Tuntas is not active"))
             }
 
@@ -140,7 +141,7 @@ class InvitationService {
                 .firstOrNull()
                 ?: return@transaction Result.failure(Exception("Tuntas not found"))
 
-            if (tuntas[Tuntai.status] != "ACTIVE") {
+            if (!isSelectableTuntasStatus(tuntas[Tuntai.status])) {
                 return@transaction Result.failure(Exception("Tuntas is not active"))
             }
 

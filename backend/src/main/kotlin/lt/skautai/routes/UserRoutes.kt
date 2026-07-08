@@ -19,6 +19,7 @@ import lt.skautai.models.responses.ErrorResponse
 import lt.skautai.models.responses.MessageResponse
 import lt.skautai.models.responses.MyProfileResponse
 import lt.skautai.plugins.resolveUserPermissions
+import lt.skautai.util.normalizeSelectableTuntasStatus
 import kotlinx.datetime.Clock
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.innerJoin
@@ -224,7 +225,7 @@ fun Route.userRoutes(apiPrefix: String = "/api") {
                                 "name" to it[Tuntai.name],
                                 "krastas" to (it[Tuntai.krastas] ?: ""),
                                 "contactEmail" to (it[Tuntai.contactEmail] ?: ""),
-                                "status" to it[Tuntai.status]
+                                "status" to normalizeSelectableTuntasStatus(it[Tuntai.status])
                             )
                         }
                 }

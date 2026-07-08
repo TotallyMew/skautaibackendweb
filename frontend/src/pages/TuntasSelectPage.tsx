@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { CheckCircle2, Clock, LogOut, RefreshCw, ShieldCheck, TicketCheck } from "lucide-react";
 import { ApiError } from "../api/client";
@@ -7,16 +7,24 @@ import { isActiveTuntasStatus } from "../auth/authStorage";
 import type { UserTuntas } from "../api/types";
 
 export function TuntasSelectPage() {
-  const { auth, acceptInvitation, logout, selectTuntas } = useAuth();
+  const { auth, acceptInvitation, logout, refreshTuntai, selectTuntas } = useAuth();
   const navigate = useNavigate();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState("");
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasLoadedFreshTuntai, setHasLoadedFreshTuntai] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const activeTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [], [auth?.tuntai]);
   const pendingTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => !isActiveTuntasStatus(tuntas.status)) ?? [], [auth?.tuntai]);
+
+  useEffect(() => {
+    if (!auth || auth.type === "super_admin" || hasLoadedFreshTuntai) return;
+    setHasLoadedFreshTuntai(true);
+    void refreshTuntai().catch(() => undefined);
+  }, [auth, hasLoadedFreshTuntai, refreshTuntai]);
 
   if (!auth) return <Navigate to="/login" replace />;
   if (auth.type === "super_admin") return <Navigate to="/admin" replace />;
@@ -26,12 +34,31 @@ export function TuntasSelectPage() {
     setError(null);
     setMessage(null);
     try {
-      await selectTuntas(tuntasId);
-      navigate("/", { replace: true });
+      const nextAuth = await selectTuntas(tuntasId);
+      if (nextAuth?.activeTuntasId) {
+        navigate("/", { replace: true });
+      } else {
+        setError("Tunto pasirinkimas neišsisaugojo. Atnaujink sąrašą ir bandyk dar kartą.");
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Tunto pasirinkti nepavyko.");
     } finally {
       setBusyId(null);
+    }
+  }
+
+  async function reloadTuntai() {
+    setIsRefreshing(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const nextAuth = await refreshTuntai();
+      const hasActiveTuntai = nextAuth?.tuntai.some((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? false;
+      setMessage(hasActiveTuntai ? "Tuntų sąrašas atnaujintas." : "Tuntų sąrašas atnaujintas, bet aktyvių tuntų dar nėra.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Tuntų sąrašo atnaujinti nepavyko.");
+    } finally {
+      setIsRefreshing(false);
     }
   }
 
@@ -130,9 +157,9 @@ export function TuntasSelectPage() {
           </form>
 
           <div className="form-actions">
-            <button className="secondary-button" type="button" onClick={() => window.location.reload()}>
+            <button className="secondary-button" type="button" onClick={() => void reloadTuntai()} disabled={isRefreshing}>
               <RefreshCw size={17} aria-hidden="true" />
-              Atnaujinti
+              {isRefreshing ? "Atnaujinama..." : "Atnaujinti"}
             </button>
             <button className="secondary-button" type="button" onClick={() => void logout()}>
               <LogOut size={17} aria-hidden="true" />

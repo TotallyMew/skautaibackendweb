@@ -151,6 +151,55 @@ export type InvitationResponse = {
   organizationalUnitName?: string | null;
 };
 
+export type CreateInvitationRequest = {
+  roleId: string;
+  organizationalUnitId?: string | null;
+  expiresInHours?: number;
+  expiresAt?: string | null;
+};
+
+export type Role = {
+  id: string;
+  name: string;
+  roleType: string;
+  isSystemRole: boolean;
+};
+
+export type RoleListResponse = {
+  roles: Role[];
+  total: number;
+};
+
+export type OrganizationalUnit = {
+  id: string;
+  tuntasId: string;
+  name: string;
+  type: string;
+  subType?: string | null;
+  acceptedRankId?: string | null;
+  acceptedRankName?: string | null;
+  memberCount: number;
+  itemCount: number;
+  createdAt: string;
+};
+
+export type OrganizationalUnitListResponse = {
+  units: OrganizationalUnit[];
+  total: number;
+};
+
+export type CreateOrganizationalUnitRequest = {
+  name: string;
+  type: string;
+  subType?: string | null;
+  acceptedRankId?: string | null;
+};
+
+export type UpdateOrganizationalUnitRequest = {
+  name?: string | null;
+  acceptedRankId?: string | null;
+};
+
 export type MessageResponse = {
   message: string;
 };

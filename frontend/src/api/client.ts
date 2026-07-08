@@ -3,15 +3,17 @@ import type {
   AdminTuntas,
   ApiErrorBody,
   ChangeMyPasswordRequest,
+  CreateInvitationRequest,
   CreateItemRequest,
+  CreateLocationRequest,
+  CreateOrganizationalUnitRequest,
   EventListFilters,
   EventListResponse,
   ForgotPasswordRequest,
   InvitationResponse,
+  Item,
   ItemListFilters,
   ItemListResponse,
-  Item,
-  CreateLocationRequest,
   Location,
   LocationListResponse,
   LoginRequest,
@@ -21,6 +23,8 @@ import type {
   MyTaskListResponse,
   MessageResponse,
   NotificationListResponse,
+  OrganizationalUnit,
+  OrganizationalUnitListResponse,
   PermissionsResponse,
   RegisterTuntininkasRequest,
   RegisterWithInviteRequest,
@@ -30,11 +34,13 @@ import type {
   RequestAccountDeletionRequest,
   ResetPasswordRequest,
   RequisitionListResponse,
+  RoleListResponse,
   SharedInventoryRequestListResponse,
   SuperAdminNotificationRequest,
   TokenResponse,
   UpdateLocationRequest,
   UpdateMyProfileRequest,
+  UpdateOrganizationalUnitRequest,
   UserTuntas
 } from "./types";
 
@@ -256,6 +262,49 @@ export const api = {
       token,
       method: "POST",
       body
+    }),
+
+  createInvitation: (token: string, tuntasId: string, body: CreateInvitationRequest) =>
+    request<InvitationResponse>("/api/invitations", {
+      token,
+      tuntasId,
+      method: "POST",
+      body
+    }),
+
+  listRoles: (token: string, tuntasId: string) =>
+    request<RoleListResponse>("/api/roles", {
+      token,
+      tuntasId
+    }),
+
+  listOrganizationalUnits: (token: string, tuntasId: string) =>
+    request<OrganizationalUnitListResponse>("/api/organizational-units", {
+      token,
+      tuntasId
+    }),
+
+  createOrganizationalUnit: (token: string, tuntasId: string, body: CreateOrganizationalUnitRequest) =>
+    request<OrganizationalUnit>("/api/organizational-units", {
+      token,
+      tuntasId,
+      method: "POST",
+      body
+    }),
+
+  updateOrganizationalUnit: (token: string, tuntasId: string, unitId: string, body: UpdateOrganizationalUnitRequest) =>
+    request<OrganizationalUnit>(`/api/organizational-units/${unitId}`, {
+      token,
+      tuntasId,
+      method: "PUT",
+      body
+    }),
+
+  deleteOrganizationalUnit: (token: string, tuntasId: string, unitId: string) =>
+    request<MessageResponse>(`/api/organizational-units/${unitId}`, {
+      token,
+      tuntasId,
+      method: "DELETE"
     }),
 
   listItems: (token: string, tuntasId: string, filters: ItemListFilters = {}) =>

@@ -22,6 +22,7 @@ import { ReservationDetailPage } from "./pages/ReservationDetailPage";
 import { RequestsPage } from "./pages/RequestsPage";
 import { SharedInventoryRequestDetailPage } from "./pages/SharedInventoryRequestDetailPage";
 import { TuntasSelectPage } from "./pages/TuntasSelectPage";
+import { UnitsPage } from "./pages/UnitsPage";
 
 export function App() {
   return (
@@ -49,6 +50,7 @@ export function App() {
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<ProfilePage />} />
           <Route path="members" element={<MembersPage />} />
+          <Route path="units" element={<UnitsPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="events/:eventId" element={<EventDetailPage />} />
           <Route path="admin" element={<AdminPage />} />

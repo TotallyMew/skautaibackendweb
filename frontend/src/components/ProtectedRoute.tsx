@@ -55,6 +55,11 @@ function canAccessUserRoute(pathname: string, permissions: string[]) {
       canUseRequisitions(permissions) ||
       canUseSharedInventoryRequests(permissions);
   }
+  if (pathname.startsWith("/units")) {
+    return hasPermission(permissions, "organizational_units.view") ||
+      hasPermission(permissions, "organizational_units.manage") ||
+      hasPermission(permissions, "invitations.create");
+  }
   if (pathname.startsWith("/members")) return canViewMembers(permissions);
   if (pathname.startsWith("/events")) return hasPermission(permissions, "events.view");
 

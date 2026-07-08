@@ -1181,8 +1181,18 @@ button {
   width: 100%;
 }
 
+.units-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
 .location-row {
   grid-template-columns: minmax(260px, 1.35fr) minmax(110px, 0.45fr) minmax(170px, 0.7fr) minmax(96px, auto);
+}
+
+.unit-row {
+  grid-template-columns: minmax(280px, 1.4fr) minmax(120px, 0.52fr) minmax(96px, 0.42fr) minmax(112px, 0.45fr) minmax(96px, max-content);
 }
 
 .muted-line {
@@ -1473,6 +1483,29 @@ fieldset {
   display: grid;
   gap: 14px;
   border-color: var(--danger-container);
+}
+
+.invite-code-card {
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--accent-container);
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  padding: 14px;
+}
+
+.invite-code-card span,
+.invite-code-card small {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.invite-code-card strong {
+  font-family: "Space Grotesk", "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.45rem;
+  letter-spacing: 0.08em;
 }
 
 .inner-page-grid {

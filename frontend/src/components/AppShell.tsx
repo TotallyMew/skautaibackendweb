@@ -1,4 +1,4 @@
-import { Bell, CalendarDays, ClipboardList, Home, ListTodo, LogOut, MapPinned, Package, ShieldCheck, Shuffle, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, ClipboardList, Home, ListTodo, LogOut, MapPinned, Network, Package, ShieldCheck, Shuffle, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { isActiveTuntasStatus } from "../auth/authStorage";
@@ -15,6 +15,7 @@ const quickAccessItems: NavItem[] = [
 ];
 
 const managementItems: NavItem[] = [
+  { to: "/units", label: "Vienetai", icon: Network, anyPermission: ["organizational_units.view", "organizational_units.manage", "invitations.create"] },
   { to: "/members", label: "Nariai", icon: UsersRound, anyPermission: ["members.view"] },
   { to: "/admin", label: "Administravimas", icon: ShieldCheck, superAdminOnly: true }
 ];
@@ -154,6 +155,7 @@ function currentTitle(pathname: string) {
   if (pathname.startsWith("/locations")) return "Lokacijos";
   if (pathname.startsWith("/requests")) return "Prašymai";
   if (pathname.startsWith("/members")) return "Nariai";
+  if (pathname.startsWith("/units")) return "Vienetai";
   if (pathname.startsWith("/events")) return "Renginiai";
   if (pathname.startsWith("/admin")) return "Administravimas";
   return "Skautų inventorius";

@@ -16,7 +16,7 @@ export type AuthState = {
 };
 
 export function authFromTokenResponse(response: TokenResponse, preferredTuntasId?: string | null): AuthState {
-  const activeTuntai = response.tuntai?.filter((tuntas) => tuntas.status === "ACTIVE") ?? [];
+  const activeTuntai = response.tuntai?.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [];
   const hasPreferredTuntas = activeTuntai.some((tuntas) => tuntas.id === preferredTuntasId);
 
   return {
@@ -31,6 +31,10 @@ export function authFromTokenResponse(response: TokenResponse, preferredTuntasId
     permissions: [],
     leadershipUnitIds: []
   };
+}
+
+export function isActiveTuntasStatus(status: string) {
+  return status === "ACTIVE" || status === "APPROVED";
 }
 
 export function withPermissions(state: AuthState, permissions: PermissionsResponse): AuthState {

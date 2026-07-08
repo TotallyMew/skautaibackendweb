@@ -49,6 +49,15 @@ describe("authFromTokenResponse", () => {
 
     expect(state.activeTuntasId).toBe("tuntas-1");
   });
+
+  it("treats APPROVED tuntas as an active legacy status", () => {
+    const state = authFromTokenResponse({
+      ...tokenResponse,
+      tuntai: [{ ...tokenResponse.tuntai![0], status: "APPROVED" }]
+    });
+
+    expect(state.activeTuntasId).toBe("tuntas-1");
+  });
 });
 
 describe("withPermissions", () => {

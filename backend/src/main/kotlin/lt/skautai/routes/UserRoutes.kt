@@ -216,7 +216,7 @@ fun Route.userRoutes(apiPrefix: String = "/api") {
                         .where {
                             (UserTuntasMemberships.userId eq userId) and
                                     (UserTuntasMemberships.leftAt.isNull()) and
-                                    (Tuntai.status inList listOf("ACTIVE", "PENDING", "REJECTED"))
+                                    (Tuntai.status inList listOf("ACTIVE", "APPROVED", "PENDING", "REJECTED"))
                         }
                         .map {
                             mapOf(

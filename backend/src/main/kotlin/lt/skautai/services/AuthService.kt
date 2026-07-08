@@ -717,7 +717,7 @@ class AuthService(
             .where {
                 (UserTuntasMemberships.userId eq userId) and
                         (UserTuntasMemberships.leftAt.isNull()) and
-                        (Tuntai.status eq "ACTIVE")
+                        (Tuntai.status inList listOf("ACTIVE", "APPROVED"))
             }
             .map {
                 TuntasInfo(

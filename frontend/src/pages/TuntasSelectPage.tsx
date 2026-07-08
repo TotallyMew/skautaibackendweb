@@ -3,6 +3,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { CheckCircle2, Clock, LogOut, RefreshCw, ShieldCheck, TicketCheck } from "lucide-react";
 import { ApiError } from "../api/client";
 import { useAuth } from "../auth/AuthProvider";
+import { isActiveTuntasStatus } from "../auth/authStorage";
 import type { UserTuntas } from "../api/types";
 
 export function TuntasSelectPage() {
@@ -14,8 +15,8 @@ export function TuntasSelectPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const activeTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => tuntas.status === "ACTIVE") ?? [], [auth?.tuntai]);
-  const pendingTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => tuntas.status !== "ACTIVE") ?? [], [auth?.tuntai]);
+  const activeTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [], [auth?.tuntai]);
+  const pendingTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => !isActiveTuntasStatus(tuntas.status)) ?? [], [auth?.tuntai]);
 
   if (!auth) return <Navigate to="/login" replace />;
   if (auth.type === "super_admin") return <Navigate to="/admin" replace />;
@@ -171,6 +172,7 @@ function TuntasChoice({
 function statusLabel(status: string) {
   const labels: Record<string, string> = {
     ACTIVE: "Aktyvus",
+    APPROVED: "Aktyvus",
     PENDING: "Laukia patvirtinimo",
     REJECTED: "Atmestas",
     DELETED: "Ištrintas"

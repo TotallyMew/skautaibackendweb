@@ -1,6 +1,7 @@
 import { Bell, CalendarDays, ClipboardList, Home, ListTodo, LogOut, MapPinned, Package, ShieldCheck, Shuffle, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { isActiveTuntasStatus } from "../auth/authStorage";
 
 const quickAccessItems: NavItem[] = [
   { to: "/", label: "Pradžia", icon: Home },
@@ -28,7 +29,7 @@ export function AppShell() {
   const location = useLocation();
   const title = currentTitle(location.pathname);
   const isSuperAdmin = auth?.type === "super_admin";
-  const activeTuntai = auth?.tuntai.filter((tuntas) => tuntas.status === "ACTIVE") ?? [];
+  const activeTuntai = auth?.tuntai.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [];
   const activeTuntasName = activeTuntai.find((tuntas) => tuntas.id === auth?.activeTuntasId)?.name;
   const contextLabel = isSuperAdmin ? "Superadministratorius" : activeTuntasName ?? "Tuntas dar nepasirinktas";
 

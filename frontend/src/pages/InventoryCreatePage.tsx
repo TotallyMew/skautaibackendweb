@@ -1,9 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CheckCircle2, PackagePlus, Save } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, PackagePlus, Save, ShieldCheck } from "lucide-react";
 import { ApiError, api } from "../api/client";
 import type { CreateItemRequest } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { canCreateItems } from "../utils/permissions";
 
 type FormState = {
   name: string;
@@ -44,7 +45,8 @@ export function InventoryCreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canSubmit = Boolean(auth?.token && auth.activeTuntasId && form.name.trim() && form.category.trim() && Number(form.quantity) > 0);
+  const hasCreateAccess = canCreateItems(auth?.permissions);
+  const canSubmit = Boolean(auth?.token && auth.activeTuntasId && hasCreateAccess && form.name.trim() && form.category.trim() && Number(form.quantity) > 0);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -52,7 +54,7 @@ export function InventoryCreatePage() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!auth?.token || !auth.activeTuntasId) return;
+    if (!auth?.token || !auth.activeTuntasId || !hasCreateAccess) return;
 
     const payload = toPayload(form);
     if (!payload.name || !payload.category || payload.quantity <= 0) {
@@ -71,6 +73,19 @@ export function InventoryCreatePage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  if (!hasCreateAccess) {
+    return (
+      <section className="work-area">
+        <ShieldCheck size={34} aria-hidden="true" />
+        <div>
+          <h2>Inventoriaus kūrimui reikia teisės</h2>
+          <p>Android programėlėje šis veiksmas rodomas tik vartotojams, kurie gali kurti įrašus arba teikti juos tvirtinimui.</p>
+          <Link className="secondary-button" to="/inventory">Grįžti į inventorių</Link>
+        </div>
+      </section>
+    );
   }
 
   return (

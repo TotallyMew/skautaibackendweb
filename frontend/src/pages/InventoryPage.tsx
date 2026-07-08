@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { countLabel, itemTypeLabel, statusLabel } from "../utils/display";
+import { canCreateItems } from "../utils/permissions";
 
 const pageSize = 25;
 
@@ -36,6 +37,7 @@ export function InventoryPage() {
   const [error, setError] = useState<string | null>(null);
 
   const canFetch = Boolean(auth?.token && auth.activeTuntasId);
+  const canCreate = canCreateItems(auth?.permissions);
 
   useEffect(() => {
     if (!auth?.token || !auth.activeTuntasId) {
@@ -107,10 +109,12 @@ export function InventoryPage() {
           <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
         <div className="toolbar-actions">
-          <Link className="primary-button compact-primary-button" to="/inventory/new">
-            <Plus size={17} aria-hidden="true" />
-            Naujas įrašas
-          </Link>
+          {canCreate && (
+            <Link className="primary-button compact-primary-button" to="/inventory/new">
+              <Plus size={17} aria-hidden="true" />
+              Naujas įrašas
+            </Link>
+          )}
           <button className="secondary-button" type="button" onClick={() => setOffset(0)} disabled={!canFetch || isLoading}>
             <RefreshCw size={17} aria-hidden="true" />
             Atnaujinti

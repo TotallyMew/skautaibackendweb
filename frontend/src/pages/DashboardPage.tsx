@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { Event, Item, MyTask } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { countLabel } from "../utils/display";
+import { canCreateItems, canViewInventory, canViewMembers, canViewReservations, hasPermission } from "../utils/permissions";
 import { taskRoutePath, taskUrgencyLabel } from "../utils/tasks";
 
 type DashboardData = {
@@ -31,11 +32,11 @@ export function DashboardPage() {
   const { auth } = useAuth();
   const activeTuntas = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId);
   const permissions = auth?.permissions ?? [];
-  const canViewInventory = hasPermission(permissions, "items.view");
-  const canCreateInventory = hasPermission(permissions, "items.create");
-  const canViewReservations = hasPermission(permissions, "reservations.view");
+  const canViewInventoryArea = canViewInventory(permissions);
+  const canCreateInventory = canCreateItems(permissions);
+  const canViewReservationArea = canViewReservations(permissions);
   const canViewEvents = hasPermission(permissions, "events.view");
-  const canViewMembers = hasPermission(permissions, "members.view");
+  const canViewMemberArea = canViewMembers(permissions);
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,9 +52,9 @@ export function DashboardPage() {
     setError(null);
 
     Promise.all([
-      canViewInventory ? api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
+      canViewInventoryArea ? api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
       api.listMyTasks(auth.token, auth.activeTuntasId).catch(() => null),
-      canViewReservations ? api.listReservations(auth.token, auth.activeTuntasId, { status: "PENDING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
+      canViewReservationArea ? api.listReservations(auth.token, auth.activeTuntasId, { status: "PENDING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
       canViewEvents ? api.listEvents(auth.token, auth.activeTuntasId, { status: "PLANNING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null)
     ])
       .then(([items, tasks, reservations, events]) => {
@@ -84,14 +85,14 @@ export function DashboardPage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, canViewEvents, canViewInventory, canViewReservations]);
+  }, [auth?.activeTuntasId, auth?.token, canViewEvents, canViewInventoryArea, canViewReservationArea]);
 
   const organizationTiles = useMemo(() => {
     return [
-      canViewMembers ? <ActionTile key="members" to="/members" icon={UsersRound} title="Nariai" subtitle="Tunto narių katalogas ir vadovavimo vaidmenys." /> : null,
+      canViewMemberArea ? <ActionTile key="members" to="/members" icon={UsersRound} title="Nariai" subtitle="Tunto narių katalogas ir vadovavimo vaidmenys." /> : null,
       canViewEvents ? <ActionTile key="events" to="/events" icon={CalendarDays} title="Renginiai" subtitle="Renginių sąrašas, inventoriaus ir finansų suvestinės." /> : null
     ].filter(Boolean);
-  }, [canViewEvents, canViewMembers]);
+  }, [canViewEvents, canViewMemberArea]);
 
   return (
     <section className="home-page">
@@ -142,7 +143,7 @@ export function DashboardPage() {
         )}
       </section>
 
-      {canViewInventory && (
+      {canViewInventoryArea && (
         <section className="home-section">
           <div className="section-heading">
             <div>
@@ -158,7 +159,7 @@ export function DashboardPage() {
         </section>
       )}
 
-      {(canViewReservations || canViewEvents) && (
+      {(canViewReservationArea || canViewEvents) && (
         <section className="home-section">
           <div className="section-heading">
             <div>
@@ -167,7 +168,7 @@ export function DashboardPage() {
             </div>
           </div>
           <div className="home-action-grid">
-            {canViewReservations && <ActionTile to="/requests" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
+            {canViewReservationArea && <ActionTile to="/requests" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
             <ActionTile to="/tasks" icon={ClipboardList} title="Mano užduotys" subtitle={formatCount(dashboard?.taskTotal, "aktyvi užduotis", "aktyvios užduotys", "aktyvių užduočių")} />
             {canViewEvents && <ActionTile to="/events" icon={Inbox} title="Renginių planai" subtitle={formatCount(dashboard?.planningEventsTotal, "planuojamas renginys", "planuojami renginiai", "planuojamų renginių")} />}
           </div>
@@ -293,8 +294,4 @@ function formatCount(count: number | undefined, one: string, few: string, many: 
 function summarizeItems(items: Item[]) {
   if (items.length === 0) return "Įrašų nėra";
   return items.slice(0, 2).map((item) => item.name).join(", ") + (items.length > 2 ? "..." : "");
-}
-
-function hasPermission(permissions: string[], permission: string) {
-  return permissions.some((value) => value === permission || value.startsWith(`${permission}:`));
 }

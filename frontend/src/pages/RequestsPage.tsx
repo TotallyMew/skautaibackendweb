@@ -1,10 +1,11 @@
-import { useEffect, useState, type ComponentType } from "react";
-import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, PackageCheck, RefreshCw, ShoppingCart, type LucideProps } from "lucide-react";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart, type LucideProps } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Requisition, RequisitionListResponse, Reservation, ReservationListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
+import { canUseRequisitions, canUseSharedInventoryRequests, canViewReservations } from "../utils/permissions";
 
 const pageSize = 25;
 
@@ -22,20 +23,36 @@ const statusOptions = [
 
 export function RequestsPage() {
   const { auth } = useAuth();
+  const permissions = auth?.permissions;
+  const visibleTabs = useMemo(() => {
+    return [
+      canViewReservations(permissions) ? "reservations" as const : null,
+      canUseRequisitions(permissions) ? "requisitions" as const : null,
+      canUseSharedInventoryRequests(permissions) ? "shared" as const : null
+    ].filter((tab): tab is RequestTab => Boolean(tab));
+  }, [permissions]);
+
   const [reservationsState, setReservationsState] = useState<ReservationListResponse | null>(null);
   const [requisitionsState, setRequisitionsState] = useState<RequisitionListResponse | null>(null);
   const [sharedRequestsState, setSharedRequestsState] = useState<SharedInventoryRequestListResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<RequestTab>("reservations");
+  const [activeTab, setActiveTab] = useState<RequestTab>(visibleTabs[0] ?? "reservations");
   const [status, setStatus] = useState("");
   const [offset, setOffset] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canFetch = Boolean(auth?.token && auth.activeTuntasId);
+  const canFetch = Boolean(auth?.token && auth.activeTuntasId && visibleTabs.length > 0);
 
   useEffect(() => {
-    if (!auth?.token || !auth.activeTuntasId) {
+    if (visibleTabs.length > 0 && !visibleTabs.includes(activeTab)) {
+      setActiveTab(visibleTabs[0]);
+      setOffset(0);
+    }
+  }, [activeTab, visibleTabs]);
+
+  useEffect(() => {
+    if (!auth?.token || !auth.activeTuntasId || visibleTabs.length === 0) {
       setReservationsState(null);
       setRequisitionsState(null);
       setSharedRequestsState(null);
@@ -46,27 +63,27 @@ export function RequestsPage() {
     setIsLoading(true);
     setError(null);
 
-    Promise.allSettled([
-      api.listReservations(auth.token, auth.activeTuntasId, {
-        status,
-        limit: pageSize,
-        offset
-      }),
-      api.listRequisitions(auth.token, auth.activeTuntasId),
-      api.listSharedInventoryRequests(auth.token, auth.activeTuntasId)
+    Promise.all([
+      visibleTabs.includes("reservations")
+        ? api.listReservations(auth.token, auth.activeTuntasId, { status, limit: pageSize, offset }).catch(() => null)
+        : Promise.resolve(null),
+      visibleTabs.includes("requisitions")
+        ? api.listRequisitions(auth.token, auth.activeTuntasId).catch(() => null)
+        : Promise.resolve(null),
+      visibleTabs.includes("shared")
+        ? api.listSharedInventoryRequests(auth.token, auth.activeTuntasId).catch(() => null)
+        : Promise.resolve(null)
     ])
       .then(([reservations, requisitions, sharedRequests]) => {
         if (isCancelled) return;
-
-        if (reservations.status === "fulfilled") {
-          setReservationsState(reservations.value);
-        } else {
-          setError("Nepavyko užkrauti rezervacijų.");
-          setReservationsState(null);
+        setReservationsState(reservations);
+        setRequisitionsState(requisitions);
+        setSharedRequestsState(sharedRequests);
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setError("Nepavyko užkrauti prašymų.");
         }
-
-        setRequisitionsState(requisitions.status === "fulfilled" ? requisitions.value : null);
-        setSharedRequestsState(sharedRequests.status === "fulfilled" ? sharedRequests.value : null);
       })
       .finally(() => {
         if (!isCancelled) {
@@ -77,7 +94,7 @@ export function RequestsPage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, offset, reloadKey, status]);
+  }, [auth?.activeTuntasId, auth?.token, offset, reloadKey, status, visibleTabs]);
 
   const reservationTotal = reservationsState?.total ?? 0;
   const requisitionTotal = requisitionsState?.total ?? 0;
@@ -85,6 +102,18 @@ export function RequestsPage() {
   const total = activeTab === "reservations" ? reservationTotal : activeTab === "requisitions" ? requisitionTotal : sharedTotal;
   const currentPage = Math.floor(offset / pageSize) + 1;
   const pageCount = Math.max(1, Math.ceil(reservationTotal / pageSize));
+
+  if (visibleTabs.length === 0) {
+    return (
+      <section className="work-area">
+        <ShieldCheck size={34} aria-hidden="true" />
+        <div>
+          <h2>Prašymų sritis nepasiekiama</h2>
+          <p>Android programėlėje ši sritis rodoma tik vartotojams, kurie gali peržiūrėti rezervacijas, pirkimus arba bendro inventoriaus paėmimo prašymus.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="inventory-page">
@@ -108,9 +137,9 @@ export function RequestsPage() {
       </div>
 
       <div className="segmented-tabs" role="tablist" aria-label="Prašymų tipai">
-        <TabButton active={activeTab === "reservations"} onClick={() => setActiveTab("reservations")} label="Rezervacijos" count={reservationTotal} />
-        <TabButton active={activeTab === "requisitions"} onClick={() => setActiveTab("requisitions")} label="Pirkimai" count={requisitionTotal} />
-        <TabButton active={activeTab === "shared"} onClick={() => setActiveTab("shared")} label="Bendras inventorius" count={sharedTotal} />
+        {visibleTabs.includes("reservations") && <TabButton active={activeTab === "reservations"} onClick={() => setActiveTab("reservations")} label="Rezervacijos" count={reservationTotal} />}
+        {visibleTabs.includes("requisitions") && <TabButton active={activeTab === "requisitions"} onClick={() => setActiveTab("requisitions")} label="Pirkimai" count={requisitionTotal} />}
+        {visibleTabs.includes("shared") && <TabButton active={activeTab === "shared"} onClick={() => setActiveTab("shared")} label="Bendras inventorius" count={sharedTotal} />}
       </div>
 
       {activeTab === "reservations" && (
@@ -151,20 +180,20 @@ export function RequestsPage() {
           <ReservationsList reservations={reservationsState?.reservations ?? []} />
         )}
 
-        {!isLoading && !error && activeTab === "requisitions" && (
-          requisitionsState ? (
-            requisitionsState.requests.length > 0 ? <RequisitionsList requests={requisitionsState.requests} /> : <RequestEmptyState icon={ShoppingCart} title="Pirkimo prašymų nėra" description="Kai vienetai pateiks pirkimo ar papildymo prašymus, jie bus rodomi čia." />
-          ) : (
-            <RequestEmptyState icon={ShoppingCart} title="Pirkimo prašymai nepasiekiami" description="Šiam sąrašui gali reikėti papildomų teisių." />
-          )
+        {!isLoading && !error && activeTab === "requisitions" && requisitionsState?.requests.length === 0 && (
+          <RequestEmptyState icon={ShoppingCart} title="Pirkimo prašymų nėra" description="Kai vienetai pateiks pirkimo ar papildymo prašymus, jie bus rodomi čia." />
         )}
 
-        {!isLoading && !error && activeTab === "shared" && (
-          sharedRequestsState ? (
-            sharedRequestsState.requests.length > 0 ? <SharedRequestsList requests={sharedRequestsState.requests} /> : <RequestEmptyState icon={PackageCheck} title="Bendro inventoriaus prašymų nėra" description="Bendro inventoriaus paėmimo užklausos bus rodomos čia." />
-          ) : (
-            <RequestEmptyState icon={PackageCheck} title="Bendro inventoriaus prašymai nepasiekiami" description="Šiam sąrašui gali reikėti papildomų teisių." />
-          )
+        {!isLoading && !error && activeTab === "requisitions" && Boolean(requisitionsState?.requests.length) && (
+          <RequisitionsList requests={requisitionsState?.requests ?? []} />
+        )}
+
+        {!isLoading && !error && activeTab === "shared" && sharedRequestsState?.requests.length === 0 && (
+          <RequestEmptyState icon={PackageCheck} title="Bendro inventoriaus prašymų nėra" description="Bendro inventoriaus paėmimo užklausos bus rodomos čia." />
+        )}
+
+        {!isLoading && !error && activeTab === "shared" && Boolean(sharedRequestsState?.requests.length) && (
+          <SharedRequestsList requests={sharedRequestsState?.requests ?? []} />
         )}
       </div>
 

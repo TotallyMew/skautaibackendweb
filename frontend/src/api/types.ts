@@ -386,6 +386,23 @@ export type ReservationListFilters = {
   offset?: number;
 };
 
+export type CreateReservationItemRequest = {
+  itemId: string;
+  quantity: number;
+};
+
+export type CreateReservationRequest = {
+  title: string;
+  items: CreateReservationItemRequest[];
+  startDate: string;
+  endDate: string;
+  requestingUnitId?: string | null;
+  eventId?: string | null;
+  pickupLocationId?: string | null;
+  returnLocationId?: string | null;
+  notes?: string | null;
+};
+
 export type RequisitionItem = {
   id: string;
   itemId?: string | null;

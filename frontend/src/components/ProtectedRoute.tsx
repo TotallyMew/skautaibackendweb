@@ -50,6 +50,7 @@ function canAccessUserRoute(pathname: string, permissions: string[]) {
     return canViewInventory(permissions) || canCreateItems(permissions) || hasPermission(permissions, "items.review");
   }
   if (pathname.startsWith("/requests")) {
+    if (pathname.startsWith("/requests/reservations/new")) return hasPermission(permissions, "reservations.create");
     return canViewReservations(permissions) ||
       hasPermission(permissions, "reservations.create") ||
       canUseRequisitions(permissions) ||

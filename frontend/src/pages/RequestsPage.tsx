@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart, type LucideProps } from "lucide-react";
+import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, PackageCheck, Plus, RefreshCw, ShieldCheck, ShoppingCart, type LucideProps } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Requisition, RequisitionListResponse, Reservation, ReservationListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
@@ -31,6 +31,7 @@ export function RequestsPage() {
       canUseSharedInventoryRequests(permissions) ? "shared" as const : null
     ].filter((tab): tab is RequestTab => Boolean(tab));
   }, [permissions]);
+  const canCreateReservation = permissions?.some((permission) => permission === "reservations.create" || permission.startsWith("reservations.create:")) ?? false;
 
   const [reservationsState, setReservationsState] = useState<ReservationListResponse | null>(null);
   const [requisitionsState, setRequisitionsState] = useState<RequisitionListResponse | null>(null);
@@ -122,18 +123,26 @@ export function RequestsPage() {
           <strong>{total}</strong>
           <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
         </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={() => {
-            setOffset(0);
-            setReloadKey((value) => value + 1);
-          }}
-          disabled={!canFetch || isLoading}
-        >
-          <RefreshCw size={17} aria-hidden="true" />
-          Atnaujinti
-        </button>
+        <div className="toolbar-actions">
+          {canCreateReservation && (
+            <Link className="primary-button compact-primary-button" to="/requests/reservations/new">
+              <Plus size={17} aria-hidden="true" />
+              Nauja rezervacija
+            </Link>
+          )}
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={() => {
+              setOffset(0);
+              setReloadKey((value) => value + 1);
+            }}
+            disabled={!canFetch || isLoading}
+          >
+            <RefreshCw size={17} aria-hidden="true" />
+            Atnaujinti
+          </button>
+        </div>
       </div>
 
       <div className="segmented-tabs" role="tablist" aria-label="Prašymų tipai">

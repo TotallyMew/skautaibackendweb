@@ -7,6 +7,7 @@ import type {
   CreateItemRequest,
   CreateLocationRequest,
   CreateOrganizationalUnitRequest,
+  CreateReservationRequest,
   EventListFilters,
   EventListResponse,
   ForgotPasswordRequest,
@@ -339,6 +340,14 @@ export const api = {
     request<Reservation>(`/api/reservations/${reservationId}`, {
       token,
       tuntasId
+    }),
+
+  createReservation: (token: string, tuntasId: string, body: CreateReservationRequest) =>
+    request<Reservation>("/api/reservations", {
+      token,
+      tuntasId,
+      method: "POST",
+      body
     }),
 
   listRequisitions: (token: string, tuntasId: string) =>

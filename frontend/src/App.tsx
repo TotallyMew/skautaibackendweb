@@ -17,6 +17,7 @@ import { MyTasksPage } from "./pages/MyTasksPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { RegisterInvitePage, RegisterPage } from "./pages/RegisterPage";
+import { ReservationCreatePage } from "./pages/ReservationCreatePage";
 import { RequisitionDetailPage } from "./pages/RequisitionDetailPage";
 import { ReservationDetailPage } from "./pages/ReservationDetailPage";
 import { RequestsPage } from "./pages/RequestsPage";
@@ -43,6 +44,7 @@ export function App() {
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="requests" element={<RequestsPage />} />
+          <Route path="requests/reservations/new" element={<ReservationCreatePage />} />
           <Route path="requests/reservations/:reservationId" element={<ReservationDetailPage />} />
           <Route path="requests/requisitions/:requisitionId" element={<RequisitionDetailPage />} />
           <Route path="requests/shared/:requestId" element={<SharedInventoryRequestDetailPage />} />

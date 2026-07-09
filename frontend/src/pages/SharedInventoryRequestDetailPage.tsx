@@ -47,7 +47,7 @@ export function SharedInventoryRequestDetailPage() {
     <section className="detail-page">
       <div className="section-heading">
         <div>
-          <Link className="back-link" to="/requests">
+          <Link className="back-link" to="/pickup-requests">
             <ArrowLeft size={17} aria-hidden="true" />
             Grįžti į prašymus
           </Link>

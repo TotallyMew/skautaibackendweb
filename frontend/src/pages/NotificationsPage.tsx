@@ -167,11 +167,11 @@ function destinationForNotification(notification: Notification) {
   }
   if (notification.resource === "bendras_requests") {
     const id = data.requestId ?? notification.entityId;
-    return id ? `/requests/shared/${id}` : null;
+    return id ? `/pickup-requests/${id}` : "/pickup-requests";
   }
   if (notification.resource === "requisitions") {
     const id = data.requestId ?? notification.entityId;
-    return id ? `/requests/requisitions/${id}` : null;
+    return id ? `/purchases/${id}` : "/purchases";
   }
   return null;
 }

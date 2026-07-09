@@ -8,20 +8,28 @@ import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
 import { canUseRequisitions, canUseSharedInventoryRequests } from "../utils/permissions";
 
 type RequestTab = "requisitions" | "shared";
+type RequestMode = RequestTab | "all";
 
-export function RequestsPage() {
+export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
   const { auth } = useAuth();
   const permissions = auth?.permissions;
   const visibleTabs = useMemo(() => {
-    return [
+    const tabs = [
       canUseRequisitions(permissions) ? "requisitions" as const : null,
       canUseSharedInventoryRequests(permissions) ? "shared" as const : null
     ].filter((tab): tab is RequestTab => Boolean(tab));
-  }, [permissions]);
+
+    if (mode === "all") return tabs;
+    return tabs.includes(mode) ? [mode] : [];
+  }, [mode, permissions]);
+
+  const canFetchRequisitions = visibleTabs.includes("requisitions");
+  const canFetchSharedRequests = visibleTabs.includes("shared");
+  const shouldShowTabs = mode === "all" && visibleTabs.length > 1;
 
   const [requisitionsState, setRequisitionsState] = useState<RequisitionListResponse | null>(null);
   const [sharedRequestsState, setSharedRequestsState] = useState<SharedInventoryRequestListResponse | null>(null);
-  const [activeTab, setActiveTab] = useState<RequestTab>(visibleTabs[0] ?? "requisitions");
+  const [activeTab, setActiveTab] = useState<RequestTab>(visibleTabs[0] ?? (mode === "shared" ? "shared" : "requisitions"));
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,10 +54,10 @@ export function RequestsPage() {
     setError(null);
 
     Promise.all([
-      visibleTabs.includes("requisitions")
+      canFetchRequisitions
         ? api.listRequisitions(auth.token, auth.activeTuntasId).catch(() => null)
         : Promise.resolve(null),
-      visibleTabs.includes("shared")
+      canFetchSharedRequests
         ? api.listSharedInventoryRequests(auth.token, auth.activeTuntasId).catch(() => null)
         : Promise.resolve(null)
     ])
@@ -59,7 +67,7 @@ export function RequestsPage() {
         setSharedRequestsState(sharedRequests);
       })
       .catch(() => {
-        if (!isCancelled) setError("Nepavyko užkrauti prašymų.");
+        if (!isCancelled) setError(`Nepavyko užkrauti ${modeLabel(mode, activeTab).toLowerCase()}.`);
       })
       .finally(() => {
         if (!isCancelled) setIsLoading(false);
@@ -68,7 +76,7 @@ export function RequestsPage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, reloadKey, visibleTabs]);
+  }, [activeTab, auth?.activeTuntasId, auth?.token, canFetchRequisitions, canFetchSharedRequests, mode, reloadKey, visibleTabs.length]);
 
   const requisitionTotal = requisitionsState?.total ?? 0;
   const sharedTotal = sharedRequestsState?.total ?? 0;
@@ -79,8 +87,8 @@ export function RequestsPage() {
       <section className="work-area">
         <ShieldCheck size={34} aria-hidden="true" />
         <div>
-          <h2>Prašymų sritis nepasiekiama</h2>
-          <p>Ši sritis skirta pirkimo/papildymo ir bendro inventoriaus paėmimo prašymams.</p>
+          <h2>{unavailableTitle(mode)}</h2>
+          <p>{modeUnavailableDescription(mode)}</p>
         </div>
       </section>
     );
@@ -104,10 +112,12 @@ export function RequestsPage() {
         </button>
       </div>
 
-      <div className="segmented-tabs" role="tablist" aria-label="Prašymų tipai">
-        {visibleTabs.includes("requisitions") && <TabButton active={activeTab === "requisitions"} onClick={() => setActiveTab("requisitions")} label="Pirkimai" count={requisitionTotal} />}
-        {visibleTabs.includes("shared") && <TabButton active={activeTab === "shared"} onClick={() => setActiveTab("shared")} label="Bendras inventorius" count={sharedTotal} />}
-      </div>
+      {shouldShowTabs && (
+        <div className="segmented-tabs" role="tablist" aria-label="Prašymų tipai">
+          {visibleTabs.includes("requisitions") && <TabButton active={activeTab === "requisitions"} onClick={() => setActiveTab("requisitions")} label="Pirkimai" count={requisitionTotal} />}
+          {visibleTabs.includes("shared") && <TabButton active={activeTab === "shared"} onClick={() => setActiveTab("shared")} label="Paėmimai" count={sharedTotal} />}
+        </div>
+      )}
 
       {error && (
         <div className="inline-alert">
@@ -125,7 +135,7 @@ export function RequestsPage() {
         {isLoading && (
           <div className="table-state">
             <Loader2 className="spin" size={22} aria-hidden="true" />
-            Kraunami prašymai...
+            Kraunami {modeLabel(mode, activeTab).toLowerCase()}...
           </div>
         )}
 
@@ -138,7 +148,7 @@ export function RequestsPage() {
         )}
 
         {!isLoading && !error && activeTab === "shared" && sharedRequestsState?.requests.length === 0 && (
-          <RequestEmptyState icon={PackageCheck} title="Bendro inventoriaus prašymų nėra" description="Bendro inventoriaus paėmimo užklausos bus rodomos čia." />
+          <RequestEmptyState icon={PackageCheck} title="Paėmimo prašymų nėra" description="Bendro inventoriaus paėmimo užklausos bus rodomos čia." />
         )}
 
         {!isLoading && !error && activeTab === "shared" && Boolean(sharedRequestsState?.requests.length) && (
@@ -174,7 +184,7 @@ function RequisitionsList({ requests }: { requests: Requisition[] }) {
             <ShoppingCart size={18} aria-hidden="true" />
           </div>
           <div className="record-main">
-            <Link className="record-title" to={`/requests/requisitions/${request.id}`}>{requestTitle(request)}</Link>
+            <Link className="record-title" to={`/purchases/${request.id}`}>{requestTitle(request)}</Link>
             <span>{request.requestingUnitName ?? "Tunto prašymas"}</span>
             <div className="record-chip-row">
               <ReviewBadge label="Padalinys" status={request.unitReviewStatus} />
@@ -201,7 +211,7 @@ function SharedRequestsList({ requests }: { requests: SharedInventoryRequest[] }
     <div className="record-list">
       <div className="record-header request-record-row" aria-hidden="true">
         <span />
-        <span>Bendro inventoriaus prašymas</span>
+        <span>Paėmimo prašymas</span>
         <span>Terminas</span>
         <span>Kiekis</span>
         <span>Būsena</span>
@@ -212,8 +222,8 @@ function SharedRequestsList({ requests }: { requests: SharedInventoryRequest[] }
             <PackageCheck size={18} aria-hidden="true" />
           </div>
           <div className="record-main">
-            <Link className="record-title" to={`/requests/shared/${request.id}`}>{sharedRequestTitle(request)}</Link>
-            <span>{request.requestingUnitName ?? request.requestedByUserName ?? "Bendras prašymas"}</span>
+            <Link className="record-title" to={`/pickup-requests/${request.id}`}>{sharedRequestTitle(request)}</Link>
+            <span>{request.requestingUnitName ?? request.requestedByUserName ?? "Bendro inventoriaus prašymas"}</span>
             <div className="record-chip-row">
               {request.needsDraugininkasApproval && <ReviewBadge label="Padalinys" status={request.draugininkasStatus ?? "PENDING"} />}
               <ReviewBadge label="Tuntas" status={request.topLevelStatus} />
@@ -260,6 +270,24 @@ function StatusBadge({ status }: { status: string }) {
 function headerMeta(tab: RequestTab) {
   if (tab === "requisitions") return "Pirkimo ir papildymo prašymai";
   return "Bendro inventoriaus paėmimo prašymai";
+}
+
+function modeLabel(mode: RequestMode, activeTab: RequestTab) {
+  if (mode === "requisitions" || activeTab === "requisitions") return "pirkimai";
+  if (mode === "shared" || activeTab === "shared") return "paėmimai";
+  return "prašymai";
+}
+
+function unavailableTitle(mode: RequestMode) {
+  if (mode === "shared") return "Paėmimai nepasiekiami";
+  if (mode === "requisitions") return "Pirkimai nepasiekiami";
+  return "Prašymų sritis nepasiekiama";
+}
+
+function modeUnavailableDescription(mode: RequestMode) {
+  if (mode === "shared") return "Ši sritis skirta bendro inventoriaus paėmimo prašymams.";
+  if (mode === "requisitions") return "Ši sritis skirta pirkimo ir papildymo prašymams.";
+  return "Ši sritis skirta pirkimo, papildymo ir bendro inventoriaus paėmimo prašymams.";
 }
 
 function requestTitle(request: Requisition) {

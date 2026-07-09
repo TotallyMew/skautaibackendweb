@@ -1,8 +1,11 @@
 export function taskRoutePath(routeTarget: string, entityId?: string | null) {
   if (routeTarget === "inventory_list" || routeTarget.startsWith("inventory_")) return "/inventory";
   if (routeTarget === "reservation_list" || routeTarget.startsWith("reservation_list")) return "/reservations";
-  if (routeTarget === "request_list" || routeTarget.startsWith("request_list")) return "/requests";
-  if (routeTarget === "shared_request_list") return "/requests";
+  if (routeTarget === "requisition_list") return "/purchases";
+  if (routeTarget.startsWith("requisition_")) return entityId ? `/purchases/${entityId}` : "/purchases";
+  if (routeTarget === "shared_request_list") return "/pickup-requests";
+  if (routeTarget.startsWith("shared_request_")) return entityId ? `/pickup-requests/${entityId}` : "/pickup-requests";
+  if (routeTarget === "request_list" || routeTarget.startsWith("request_list")) return "/purchases";
   if (routeTarget === "event_list" || routeTarget.startsWith("event_")) return "/events";
   if (routeTarget === "my_tasks") return "/tasks";
   if (entityId && routeTarget.startsWith("event_")) return "/events";

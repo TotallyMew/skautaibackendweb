@@ -1,23 +1,34 @@
-import { Bell, CalendarDays, ClipboardList, Home, ListTodo, LogOut, MapPinned, Network, Package, ShieldCheck, Shuffle, UserRound, UsersRound, type LucideIcon } from "lucide-react";
+import { Bell, CalendarDays, Home, ListTodo, LogOut, MapPinned, Network, Package, PackageCheck, ShieldCheck, ShoppingCart, Shuffle, UserRound, UsersRound, type LucideIcon } from "lucide-react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { isActiveTuntasStatus } from "../auth/authStorage";
+import {
+  canUseEvents,
+  canUseInventory,
+  canUseLocations,
+  canUseMembers,
+  canUseRequisitions,
+  canUseReservations,
+  canUseSharedInventoryRequests,
+  canUseUnits
+} from "../utils/permissions";
 
-const quickAccessItems: NavItem[] = [
+const workspaceItems: NavItem[] = [
   { to: "/", label: "Pradžia", icon: Home },
-  { to: "/tasks", label: "Mano užduotys", icon: ListTodo },
-  { to: "/notifications", label: "Pranešimai", icon: Bell },
+  { to: "/inventory", label: "Inventorius", icon: Package, canShow: canUseInventory },
+  { to: "/reservations", label: "Rezervacijos", icon: CalendarDays, canShow: canUseReservations },
+  { to: "/events", label: "Renginiai", icon: CalendarDays, canShow: canUseEvents },
+  { to: "/purchases", label: "Pirkimai", icon: ShoppingCart, canShow: canUseRequisitions },
+  { to: "/pickup-requests", label: "Paėmimai", icon: PackageCheck, canShow: canUseSharedInventoryRequests },
   { to: "/calendar", label: "Kalendorius", icon: CalendarDays },
-  { to: "/inventory", label: "Inventorius", icon: Package, anyPermission: ["items.view", "items.create", "items.review"] },
-  { to: "/locations", label: "Lokacijos", icon: MapPinned },
-  { to: "/reservations", label: "Rezervacijos", icon: CalendarDays, anyPermission: ["reservations.view", "reservations.create"] },
-  { to: "/requests", label: "Prašymai", icon: ClipboardList, anyPermission: ["requisitions.create", "requisitions.approve", "items.request.bendras", "items.request.approve.unit", "items.request.approve.bendras", "items.request.forward.bendras"] },
-  { to: "/events", label: "Renginiai", icon: CalendarDays, anyPermission: ["events.view"] }
+  { to: "/tasks", label: "Mano užduotys", icon: ListTodo },
+  { to: "/notifications", label: "Pranešimai", icon: Bell }
 ];
 
-const managementItems: NavItem[] = [
-  { to: "/units", label: "Vienetai", icon: Network, anyPermission: ["organizational_units.view", "organizational_units.manage", "invitations.create"] },
-  { to: "/members", label: "Nariai", icon: UsersRound, anyPermission: ["members.view"] },
+const organizationItems: NavItem[] = [
+  { to: "/locations", label: "Lokacijos", icon: MapPinned, canShow: canUseLocations },
+  { to: "/members", label: "Nariai", icon: UsersRound, canShow: canUseMembers },
+  { to: "/units", label: "Vienetai", icon: Network, canShow: canUseUnits },
   { to: "/admin", label: "Administravimas", icon: ShieldCheck, superAdminOnly: true }
 ];
 
@@ -68,8 +79,8 @@ export function AppShell() {
           </>
         )}
 
-        {!isSuperAdmin && <DrawerSection title="Greita prieiga" items={quickAccessItems} permissions={auth?.permissions} />}
-        <DrawerSection title="Valdymas" items={managementItems} permissions={auth?.permissions} isSuperAdmin={isSuperAdmin} />
+        {!isSuperAdmin && <DrawerSection title="Darbas" items={workspaceItems} permissions={auth?.permissions} />}
+        <DrawerSection title="Organizacija" items={organizationItems} permissions={auth?.permissions} isSuperAdmin={isSuperAdmin} />
 
         {!isSuperAdmin && (
           <DrawerSection title="Paskyra" items={accountItems} permissions={auth?.permissions} />
@@ -102,7 +113,7 @@ type NavItem = {
   to: string;
   label: string;
   icon: LucideIcon;
-  anyPermission?: string[];
+  canShow?: (permissions: string[] | undefined) => boolean;
   superAdminOnly?: boolean;
 };
 
@@ -138,12 +149,7 @@ function DrawerSection({
 function isVisibleNavItem(item: NavItem, permissions: string[] | undefined, isSuperAdmin: boolean) {
   if (item.superAdminOnly) return isSuperAdmin;
   if (isSuperAdmin) return false;
-  if (!item.anyPermission?.length) return true;
-  return item.anyPermission.some((permission) => hasPermission(permissions, permission));
-}
-
-function hasPermission(permissions: string[] | undefined, permission: string) {
-  return permissions?.some((value) => value === permission || value.startsWith(`${permission}:`)) ?? false;
+  return item.canShow ? item.canShow(permissions) : true;
 }
 
 function currentTitle(pathname: string) {
@@ -155,7 +161,9 @@ function currentTitle(pathname: string) {
   if (pathname.startsWith("/inventory")) return "Inventorius";
   if (pathname.startsWith("/locations")) return "Lokacijos";
   if (pathname.startsWith("/reservations")) return "Rezervacijos";
-  if (pathname.startsWith("/requests")) return "Prašymai";
+  if (pathname.startsWith("/purchases") || pathname.startsWith("/requests/requisitions")) return "Pirkimai";
+  if (pathname.startsWith("/pickup-requests") || pathname.startsWith("/requests/shared")) return "Paėmimai";
+  if (pathname.startsWith("/requests")) return "Pirkimai ir paėmimai";
   if (pathname.startsWith("/members")) return "Nariai";
   if (pathname.startsWith("/units")) return "Vienetai";
   if (pathname.startsWith("/events")) return "Renginiai";

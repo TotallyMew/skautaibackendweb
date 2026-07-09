@@ -648,6 +648,135 @@ button {
   color: var(--danger);
 }
 
+.skautai-page-shell,
+.skautai-card,
+.skautai-hero-card {
+  min-width: 0;
+}
+
+.skautai-page-shell {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.skautai-card,
+.skautai-hero-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-lowest);
+  box-shadow: 0 8px 22px var(--shadow);
+}
+
+.skautai-card {
+  padding: 18px;
+}
+
+.skautai-card-flat {
+  box-shadow: none;
+}
+
+.skautai-card-dense {
+  padding: 14px;
+}
+
+.skautai-hero-card {
+  display: grid;
+  gap: 18px;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  color: var(--surface-lowest);
+  padding: 24px;
+}
+
+.skautai-hero-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.skautai-hero-card h2,
+.skautai-hero-card p {
+  margin: 0;
+}
+
+.skautai-hero-card p {
+  margin-top: 6px;
+  color: rgba(249, 252, 248, 0.78);
+  line-height: 1.45;
+}
+
+.skautai-hero-card .eyebrow {
+  color: rgba(249, 252, 248, 0.68);
+}
+
+.skautai-hero-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.skautai-action-tile {
+  position: relative;
+  min-width: 0;
+}
+
+.skautai-action-meta {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.skautai-search-bar {
+  width: 100%;
+}
+
+.skautai-empty-state {
+  border-radius: 8px;
+}
+
+.skautai-error-state {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.skautai-error-state strong,
+.skautai-error-state span {
+  display: block;
+}
+
+.skautai-error-state span {
+  margin-top: 3px;
+}
+
+.skautai-status-pill.tone-success {
+  background: var(--ok-container);
+  color: #102016;
+}
+
+.skautai-status-pill.tone-warning {
+  background: var(--gold-soft);
+  color: var(--gold-warning-text);
+}
+
+.skautai-status-pill.tone-danger {
+  background: var(--danger-container);
+  color: var(--danger);
+}
+
+.skautai-status-pill.tone-muted {
+  background: var(--surface-highest);
+  color: var(--text-muted);
+}
+
+.skautai-status-pill.tone-info {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
 .overview-panel,
 .work-area,
 .login-panel {
@@ -2644,6 +2773,7 @@ fieldset {
   .context-list,
   .filter-bar,
   .detail-grid,
+  .skautai-hero-row,
   .info-grid,
   .home-overview-row,
   .home-summary-grid,

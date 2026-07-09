@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { useAuth } from "./auth/AuthProvider";
 import { AdminPage } from "./pages/AdminPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -26,6 +27,7 @@ import { RequestsPage } from "./pages/RequestsPage";
 import { SharedInventoryRequestDetailPage } from "./pages/SharedInventoryRequestDetailPage";
 import { TuntasSelectPage } from "./pages/TuntasSelectPage";
 import { UnitsPage } from "./pages/UnitsPage";
+import { canUseRequisitions, canUseSharedInventoryRequests } from "./utils/permissions";
 
 export function App() {
   return (
@@ -48,11 +50,17 @@ export function App() {
           <Route path="reservations" element={<ReservationsPage />} />
           <Route path="reservations/new" element={<ReservationCreatePage />} />
           <Route path="reservations/:reservationId" element={<ReservationDetailPage />} />
-          <Route path="requests" element={<RequestsPage />} />
+          <Route path="purchases" element={<RequestsPage mode="requisitions" />} />
+          <Route path="purchases/:requisitionId" element={<RequisitionDetailPage />} />
+          <Route path="pickup-requests" element={<RequestsPage mode="shared" />} />
+          <Route path="pickup-requests/:requestId" element={<SharedInventoryRequestDetailPage />} />
+          <Route path="requests" element={<LegacyRequestsRedirect />} />
           <Route path="requests/reservations/new" element={<Navigate to="/reservations/new" replace />} />
           <Route path="requests/reservations/:reservationId" element={<LegacyReservationRedirect />} />
-          <Route path="requests/requisitions/:requisitionId" element={<RequisitionDetailPage />} />
-          <Route path="requests/shared/:requestId" element={<SharedInventoryRequestDetailPage />} />
+          <Route path="requests/requisitions" element={<Navigate to="/purchases" replace />} />
+          <Route path="requests/requisitions/:requisitionId" element={<LegacyRequisitionRedirect />} />
+          <Route path="requests/shared" element={<Navigate to="/pickup-requests" replace />} />
+          <Route path="requests/shared/:requestId" element={<LegacySharedRequestRedirect />} />
           <Route path="tasks" element={<MyTasksPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="profile" element={<ProfilePage />} />
@@ -73,4 +81,23 @@ export function App() {
 function LegacyReservationRedirect() {
   const { reservationId } = useParams();
   return <Navigate to={reservationId ? `/reservations/${reservationId}` : "/reservations"} replace />;
+}
+
+function LegacyRequestsRedirect() {
+  const { auth } = useAuth();
+  const permissions = auth?.permissions;
+
+  if (canUseRequisitions(permissions)) return <Navigate to="/purchases" replace />;
+  if (canUseSharedInventoryRequests(permissions)) return <Navigate to="/pickup-requests" replace />;
+  return <Navigate to="/" replace />;
+}
+
+function LegacyRequisitionRedirect() {
+  const { requisitionId } = useParams();
+  return <Navigate to={requisitionId ? `/purchases/${requisitionId}` : "/purchases"} replace />;
+}
+
+function LegacySharedRequestRedirect() {
+  const { requestId } = useParams();
+  return <Navigate to={requestId ? `/pickup-requests/${requestId}` : "/pickup-requests"} replace />;
 }

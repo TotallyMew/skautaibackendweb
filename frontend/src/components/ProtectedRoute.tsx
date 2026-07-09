@@ -1,6 +1,19 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
-import { canCreateItems, canUseRequisitions, canUseSharedInventoryRequests, canViewInventory, canViewMembers, canViewReservations, hasPermission } from "../utils/permissions";
+import {
+  canCreateEvents,
+  canCreateItems,
+  canCreateReservations,
+  canManageEvents,
+  canUseEvents,
+  canUseInventory,
+  canUseLocations,
+  canUseMembers,
+  canUseRequisitions,
+  canUseReservations,
+  canUseSharedInventoryRequests,
+  canUseUnits
+} from "../utils/permissions";
 
 export function ProtectedRoute() {
   const { auth, isAuthenticated, isInitializing } = useAuth();
@@ -43,32 +56,30 @@ function canAccessUserRoute(pathname: string, permissions: string[]) {
   if (pathname.startsWith("/tasks")) return true;
   if (pathname.startsWith("/notifications")) return true;
   if (pathname.startsWith("/calendar")) return true;
-  if (pathname.startsWith("/locations")) return true;
+  if (pathname.startsWith("/locations")) return canUseLocations(permissions);
 
   if (pathname.startsWith("/inventory/new")) return canCreateItems(permissions);
-  if (pathname.startsWith("/inventory")) {
-    return canViewInventory(permissions) || canCreateItems(permissions) || hasPermission(permissions, "items.review");
-  }
-  if (pathname.startsWith("/reservations/new")) return hasPermission(permissions, "reservations.create");
-  if (pathname.startsWith("/reservations")) {
-    return canViewReservations(permissions) || hasPermission(permissions, "reservations.create");
-  }
+  if (pathname.startsWith("/inventory")) return canUseInventory(permissions);
+  if (pathname.startsWith("/reservations/new")) return canCreateReservations(permissions);
+  if (pathname.startsWith("/reservations")) return canUseReservations(permissions);
   if (pathname.startsWith("/requests/reservations")) {
-    return canViewReservations(permissions) || hasPermission(permissions, "reservations.create");
+    return canUseReservations(permissions);
+  }
+  if (pathname.startsWith("/purchases") || pathname.startsWith("/requests/requisitions")) {
+    return canUseRequisitions(permissions);
+  }
+  if (pathname.startsWith("/pickup-requests") || pathname.startsWith("/requests/shared")) {
+    return canUseSharedInventoryRequests(permissions);
   }
   if (pathname.startsWith("/requests")) {
     return canUseRequisitions(permissions) ||
       canUseSharedInventoryRequests(permissions);
   }
-  if (pathname.startsWith("/units")) {
-    return hasPermission(permissions, "organizational_units.view") ||
-      hasPermission(permissions, "organizational_units.manage") ||
-      hasPermission(permissions, "invitations.create");
-  }
-  if (pathname.startsWith("/members")) return canViewMembers(permissions);
-  if (pathname.startsWith("/events/new")) return hasPermission(permissions, "events.create");
-  if (pathname.startsWith("/events/") && pathname.endsWith("/edit")) return hasPermission(permissions, "events.manage");
-  if (pathname.startsWith("/events")) return hasPermission(permissions, "events.view");
+  if (pathname.startsWith("/units")) return canUseUnits(permissions);
+  if (pathname.startsWith("/members")) return canUseMembers(permissions);
+  if (pathname.startsWith("/events/new")) return canCreateEvents(permissions);
+  if (pathname.startsWith("/events/") && pathname.endsWith("/edit")) return canManageEvents(permissions);
+  if (pathname.startsWith("/events")) return canUseEvents(permissions);
 
   return true;
 }

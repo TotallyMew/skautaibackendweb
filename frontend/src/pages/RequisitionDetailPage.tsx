@@ -47,7 +47,7 @@ export function RequisitionDetailPage() {
     <section className="detail-page">
       <div className="section-heading">
         <div>
-          <Link className="back-link" to="/requests">
+          <Link className="back-link" to="/purchases">
             <ArrowLeft size={17} aria-hidden="true" />
             Grįžti į prašymus
           </Link>

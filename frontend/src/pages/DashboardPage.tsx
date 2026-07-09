@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, CalendarDays, ClipboardList, Flag, Inbox, Loader2, MapPin, Package, Plus, UsersRound, type LucideIcon } from "lucide-react";
+import { AlertCircle, CalendarDays, ClipboardList, Flag, Loader2, MapPin, Network, Package, PackageCheck, Plus, ShoppingCart, UsersRound, type LucideIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Event, Item, MyTask } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiActionTile } from "../components/ui/Skautai";
 import { countLabel } from "../utils/display";
-import { canCreateItems, canViewInventory, canViewMembers, canViewReservations, hasPermission } from "../utils/permissions";
+import { getPermissionSet } from "../utils/permissions";
 import { taskRoutePath, taskUrgencyLabel } from "../utils/tasks";
 
 type DashboardData = {
@@ -32,11 +33,13 @@ export function DashboardPage() {
   const { auth } = useAuth();
   const activeTuntas = auth?.tuntai.find((tuntas) => tuntas.id === auth.activeTuntasId);
   const permissions = auth?.permissions ?? [];
-  const canViewInventoryArea = canViewInventory(permissions);
-  const canCreateInventory = canCreateItems(permissions);
-  const canViewReservationArea = canViewReservations(permissions);
-  const canViewEvents = hasPermission(permissions, "events.view");
-  const canViewMemberArea = canViewMembers(permissions);
+  const permissionSet = useMemo(() => getPermissionSet(permissions), [permissions]);
+  const canViewInventoryArea = permissionSet.inventory;
+  const canCreateInventory = permissionSet.inventoryCreate;
+  const canViewReservationArea = permissionSet.reservations;
+  const canViewEvents = permissionSet.events;
+  const canUsePurchases = permissionSet.requisitions;
+  const canUsePickupRequests = permissionSet.sharedRequests;
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,10 +92,11 @@ export function DashboardPage() {
 
   const organizationTiles = useMemo(() => {
     return [
-      canViewMemberArea ? <ActionTile key="members" to="/members" icon={UsersRound} title="Nariai" subtitle="Tunto narių katalogas ir vadovavimo vaidmenys." /> : null,
-      canViewEvents ? <ActionTile key="events" to="/events" icon={CalendarDays} title="Renginiai" subtitle="Renginių sąrašas, inventoriaus ir finansų suvestinės." /> : null
+      permissionSet.locations ? <SkautaiActionTile key="locations" to="/locations" icon={MapPin} title="Lokacijos" subtitle="Sandėliai, laikinos vietos ir inventoriaus priskyrimas." /> : null,
+      permissionSet.members ? <SkautaiActionTile key="members" to="/members" icon={UsersRound} title="Nariai" subtitle="Tunto narių katalogas ir vadovavimo vaidmenys." /> : null,
+      permissionSet.units ? <SkautaiActionTile key="units" to="/units" icon={Network} title="Vienetai" subtitle="Draugovių ir kitų vienetų struktūra." /> : null
     ].filter(Boolean);
-  }, [canViewEvents, canViewMemberArea]);
+  }, [permissionSet.locations, permissionSet.members, permissionSet.units]);
 
   return (
     <section className="home-page">
@@ -152,25 +156,27 @@ export function DashboardPage() {
             </div>
           </div>
           <div className="home-action-grid">
-            <ActionTile to="/inventory" icon={Package} title="Atidaryti inventorių" subtitle="Bendras sąrašas, paieška ir filtrai." />
-            {canCreateInventory && <ActionTile to="/inventory/new" icon={Plus} title="Naujas įrašas" subtitle="Sukurti bendro inventoriaus įrašą." />}
-            <ActionTile to="/inventory" icon={MapPin} title="Naujausi įrašai" subtitle={summarizeItems(dashboard?.latestItems ?? [])} />
+            <SkautaiActionTile to="/inventory" icon={Package} title="Atidaryti inventorių" subtitle="Bendras sąrašas, paieška ir filtrai." />
+            {canCreateInventory && <SkautaiActionTile to="/inventory/new" icon={Plus} title="Naujas įrašas" subtitle="Sukurti bendro inventoriaus įrašą." />}
+            <SkautaiActionTile to="/inventory" icon={MapPin} title="Naujausi įrašai" subtitle={summarizeItems(dashboard?.latestItems ?? [])} />
           </div>
         </section>
       )}
 
-      {(canViewReservationArea || canViewEvents) && (
+      {(canViewReservationArea || canUsePurchases || canUsePickupRequests || canViewEvents) && (
         <section className="home-section">
           <div className="section-heading">
             <div>
-              <h2>Rezervacijos ir prašymai</h2>
-              <span className="eyebrow">Sek aktyvias rezervacijas, pirkimus ir paėmimo prašymus.</span>
+              <h2>Darbų srautai</h2>
+              <span className="eyebrow">Sek rezervacijas, pirkimus, paėmimus ir renginių planus.</span>
             </div>
           </div>
           <div className="home-action-grid">
-            {canViewReservationArea && <ActionTile to="/reservations" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
-            <ActionTile to="/tasks" icon={ClipboardList} title="Mano užduotys" subtitle={formatCount(dashboard?.taskTotal, "aktyvi užduotis", "aktyvios užduotys", "aktyvių užduočių")} />
-            {canViewEvents && <ActionTile to="/events" icon={Inbox} title="Renginių planai" subtitle={formatCount(dashboard?.planningEventsTotal, "planuojamas renginys", "planuojami renginiai", "planuojamų renginių")} />}
+            {canViewReservationArea && <SkautaiActionTile to="/reservations" icon={CalendarDays} title="Rezervacijos" subtitle="Peržiūra, būsena ir išdavimo eiga." />}
+            {canUsePurchases && <SkautaiActionTile to="/purchases" icon={ShoppingCart} title="Pirkimai" subtitle="Pirkimo ir papildymo prašymų eilė." />}
+            {canUsePickupRequests && <SkautaiActionTile to="/pickup-requests" icon={PackageCheck} title="Paėmimai" subtitle="Bendro inventoriaus paėmimo prašymai." />}
+            <SkautaiActionTile to="/tasks" icon={ClipboardList} title="Mano užduotys" subtitle={formatCount(dashboard?.taskTotal, "aktyvi užduotis", "aktyvios užduotys", "aktyvių užduočių")} />
+            {canViewEvents && <SkautaiActionTile to="/events" icon={CalendarDays} title="Renginių planai" subtitle={formatCount(dashboard?.planningEventsTotal, "planuojamas renginys", "planuojami renginiai", "planuojamų renginių")} />}
           </div>
         </section>
       )}
@@ -261,28 +267,6 @@ function SummaryTile({ label, value }: { label: string; value: string }) {
       <span>{label}</span>
       <strong>{value}</strong>
     </div>
-  );
-}
-
-function ActionTile({
-  to,
-  icon: Icon,
-  title,
-  subtitle
-}: {
-  to: string;
-  icon: LucideIcon;
-  title: string;
-  subtitle: string;
-}) {
-  return (
-    <Link className="home-action-tile" to={to}>
-      <Icon size={22} aria-hidden="true" />
-      <div>
-        <strong>{title}</strong>
-        <span>{subtitle}</span>
-      </div>
-    </Link>
   );
 }
 

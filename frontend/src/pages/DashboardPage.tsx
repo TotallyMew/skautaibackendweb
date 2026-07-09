@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Event, Item, MyTask } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { SkautaiActionTile } from "../components/ui/Skautai";
+import { SkautaiActionTile, SkautaiHeroCard, SkautaiStatusPill } from "../components/ui/Skautai";
 import { countLabel } from "../utils/display";
 import { getPermissionSet } from "../utils/permissions";
 import { taskRoutePath, taskUrgencyLabel } from "../utils/tasks";
@@ -100,24 +100,24 @@ export function DashboardPage() {
 
   return (
     <section className="home-page">
-      <article className="home-overview">
-        <span className="eyebrow">Pagrindinė apžvalga</span>
-        <div className="home-overview-row">
-          <div>
-            <h2>Sveiki, {auth?.name ?? "Vartotojau"}</h2>
-            <p>{activeTuntas?.name ?? "Pasirink tuntą, kad matytum aktyvų kontekstą."}</p>
-          </div>
+      <SkautaiHeroCard
+        className="home-overview"
+        eyebrow="Pagrindinė apžvalga"
+        title={`Sveiki, ${auth?.name ?? "Vartotojau"}`}
+        subtitle={activeTuntas?.name ?? "Pasirink tuntą, kad matytum aktyvų kontekstą."}
+        actions={
           <Link className="secondary-button" to="/tasks">
             <Flag size={17} aria-hidden="true" />
             Mano veiksmai
           </Link>
-        </div>
+        }
+      >
         <div className="home-summary-grid">
           <SummaryTile label="Inventorius" value={formatCount(dashboard?.inventoryTotal, "įrašas", "įrašai", "įrašų")} />
           <SummaryTile label="Mano užduotys" value={formatCount(dashboard?.taskTotal, "užduotis", "užduotys", "užduočių")} />
           <SummaryTile label="Planuojami renginiai" value={formatCount(dashboard?.planningEventsTotal, "renginys", "renginiai", "renginių")} />
         </div>
-      </article>
+      </SkautaiHeroCard>
 
       <section className="home-section">
         <div className="section-heading">
@@ -256,7 +256,7 @@ function PreviewRow({
         <strong>{title}</strong>
         <span>{meta}</span>
       </div>
-      <span className="status-badge">{badge}</span>
+      <SkautaiStatusPill tone="info">{badge}</SkautaiStatusPill>
     </Link>
   );
 }

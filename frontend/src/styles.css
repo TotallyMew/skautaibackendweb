@@ -62,10 +62,17 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --background: #f0f5ee;
-  --surface: #f0f5ee;
+  --skautai-forest: #1f3a2a;
+  --skautai-forest-dark: #0b1710;
+  --skautai-moss: #415e47;
+  --skautai-sage: #f0f5ee;
+  --skautai-paper: #f9fcf8;
+  --skautai-gold: #7a5c1e;
+  --skautai-clay: #9b2f27;
+  --background: var(--skautai-sage);
+  --surface: var(--skautai-sage);
   --surface-bright: #f7fbf5;
-  --surface-lowest: #f9fcf8;
+  --surface-lowest: var(--skautai-paper);
   --surface-low: #ebf2e8;
   --surface-container: #e2ebdd;
   --surface-high: #d8e4d4;
@@ -78,13 +85,13 @@
   --text-body: #1a1f1b;
   --text-muted: #56645c;
   --text-faint: #869188;
-  --accent: #1f3a2a;
-  --accent-strong: #0b1710;
+  --accent: var(--skautai-forest);
+  --accent-strong: var(--skautai-forest-dark);
   --accent-container: #afc7ae;
   --accent-soft: #dde8da;
-  --secondary: #415e47;
+  --secondary: var(--skautai-moss);
   --secondary-container: #c9d8c6;
-  --gold: #7a5c1e;
+  --gold: var(--skautai-gold);
   --gold-soft: #e9deaf;
   --gold-warning: #ffe08a;
   --gold-warning-text: #4a3700;
@@ -94,7 +101,7 @@
   --ok-container: #d5e3d0;
   --success: #406b3f;
   --success-container: #d5e3d0;
-  --danger: #9b2f27;
+  --danger: var(--skautai-clay);
   --danger-container: #f5d7d3;
   --danger-text: #3a0f0b;
   --shadow: rgba(13, 18, 14, 0.08);
@@ -736,6 +743,10 @@ button {
 
 .skautai-empty-state {
   border-radius: 8px;
+}
+
+.skautai-empty-state .lucide-loader-2 {
+  animation: spin 0.8s linear infinite;
 }
 
 .skautai-error-state {
@@ -2323,6 +2334,18 @@ fieldset {
   margin-top: 3px;
   color: var(--text-muted);
   font-size: 0.86rem;
+}
+
+.table-title-cell {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 260px;
+}
+
+.table-cell-icon {
+  margin-top: 1px;
 }
 
 .status-badge {

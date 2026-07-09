@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Notification, NotificationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiCard, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell } from "../components/ui/Skautai";
 
 export function NotificationsPage() {
   const { auth } = useAuth();
@@ -93,7 +94,7 @@ export function NotificationsPage() {
   }
 
   return (
-    <section className="notifications-page">
+    <SkautaiPageShell className="notifications-page">
       <div className="page-heading-row">
         <div>
           <span className="section-kicker">PASKYRA</span>
@@ -114,27 +115,20 @@ export function NotificationsPage() {
         </div>
       </div>
 
-      <section className="data-panel notifications-summary-panel">
+      <SkautaiCard className="notifications-summary-panel" variant="dense">
         <Bell size={20} aria-hidden="true" />
         <div>
           <strong>{summaryText}</strong>
           <span>Čia lieka pranešimai net tada, kai push pranešimas buvo praleistas.</span>
         </div>
-      </section>
+      </SkautaiCard>
 
-      {error && <p className="error-text">{error}</p>}
+      {error && <SkautaiErrorState description={error} />}
 
       {isLoading && notifications.length === 0 ? (
-        <div className="empty-state">
-          <Loader2 className="spin-icon" size={28} aria-hidden="true" />
-          <strong>Kraunami pranešimai</strong>
-        </div>
+        <SkautaiEmptyState icon={Loader2} title="Kraunami pranešimai" />
       ) : notifications.length === 0 ? (
-        <div className="empty-state">
-          <Bell size={28} aria-hidden="true" />
-          <strong>Pranešimų dar nėra</strong>
-          <span>Čia matysi patvirtinimus, prašymų eigą ir sistemos žinutes.</span>
-        </div>
+        <SkautaiEmptyState icon={Bell} title="Pranešimų dar nėra" description="Čia matysi patvirtinimus, prašymų eigą ir sistemos žinutes." />
       ) : (
         <div className="notification-list">
           {notifications.map((notification) => (
@@ -155,7 +149,7 @@ export function NotificationsPage() {
           ))}
         </div>
       )}
-    </section>
+    </SkautaiPageShell>
   );
 }
 

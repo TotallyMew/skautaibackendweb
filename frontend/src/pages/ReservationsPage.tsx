@@ -1,9 +1,10 @@
-import { useEffect, useState, type ComponentType } from "react";
-import { AlertCircle, CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, Plus, RefreshCw, ShieldCheck, type LucideProps } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Reservation, ReservationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill } from "../components/ui/Skautai";
 import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
 import { canViewReservations, hasPermission } from "../utils/permissions";
 
@@ -79,7 +80,7 @@ export function ReservationsPage() {
   }
 
   return (
-    <section className="inventory-page">
+    <SkautaiPageShell className="inventory-page">
       <div className="section-toolbar">
         <div className="list-summary">
           <strong>{total}</strong>
@@ -115,12 +116,7 @@ export function ReservationsPage() {
         </select>
       </div>
 
-      {error && (
-        <div className="inline-alert">
-          <AlertCircle size={18} aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <SkautaiErrorState description={error} />}
 
       <div className="data-panel">
         <div className="data-panel-header">
@@ -136,7 +132,7 @@ export function ReservationsPage() {
         )}
 
         {!isLoading && !error && reservationsState?.reservations.length === 0 && (
-          <EmptyState icon={ClipboardList} title="Rezervacijų pagal šį filtrą nerasta" description="Pakeisk būseną arba atnaujink sąrašą." />
+          <SkautaiEmptyState icon={ClipboardList} title="Rezervacijų pagal šį filtrą nerasta" description="Pakeisk būseną arba atnaujink sąrašą." />
         )}
 
         {!isLoading && !error && Boolean(reservationsState?.reservations.length) && (
@@ -166,7 +162,7 @@ export function ReservationsPage() {
           <ChevronRight size={18} aria-hidden="true" />
         </button>
       </div>
-    </section>
+    </SkautaiPageShell>
   );
 }
 
@@ -210,16 +206,6 @@ function ReservationsList({ reservations }: { reservations: Reservation[] }) {
   );
 }
 
-function EmptyState({ icon: Icon, title, description }: { icon: ComponentType<LucideProps>; title: string; description: string }) {
-  return (
-    <div className="empty-state">
-      <Icon size={28} aria-hidden="true" />
-      <strong>{title}</strong>
-      <span>{description}</span>
-    </div>
-  );
-}
-
 function ReviewBadge({ label, status }: { label: string; status: string }) {
   return (
     <span className={`review-badge review-${status.toLowerCase()}`}>
@@ -229,7 +215,7 @@ function ReviewBadge({ label, status }: { label: string; status: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
+  return <SkautaiStatusPill status={status}>{statusLabel(status)}</SkautaiStatusPill>;
 }
 
 function summarizeItems(reservation: Reservation) {

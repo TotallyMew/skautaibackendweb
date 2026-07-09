@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
-import { AlertCircle, ChevronLeft, ChevronRight, Loader2, PackageCheck, PackageSearch, Plus, RefreshCw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, PackageCheck, PackageSearch, Plus, RefreshCw, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiSearchBar, SkautaiStatusPill } from "../components/ui/Skautai";
 import { countLabel, itemTypeLabel, statusLabel } from "../utils/display";
 import { canCreateItems } from "../utils/permissions";
 
@@ -102,7 +103,7 @@ export function InventoryPage() {
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <section className="inventory-page">
+    <SkautaiPageShell className="inventory-page">
       <div className="section-toolbar">
         <div className="list-summary">
           <strong>{total}</strong>
@@ -123,15 +124,11 @@ export function InventoryPage() {
       </div>
 
       <form className="filter-bar" onSubmit={applyFilters}>
-        <label className="search-field">
-          <Search size={17} aria-hidden="true" />
-          <input
-            type="search"
-            placeholder="Ieškoti pagal pavadinimą, kategoriją, būklę..."
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-          />
-        </label>
+        <SkautaiSearchBar
+          value={searchInput}
+          placeholder="Ieškoti pagal pavadinimą, kategoriją, būklę..."
+          onChange={setSearchInput}
+        />
 
         <select value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0); }}>
           {statusOptions.map((option) => (
@@ -170,12 +167,7 @@ export function InventoryPage() {
         </button>
       </form>
 
-      {error && (
-        <div className="inline-alert">
-          <AlertCircle size={18} aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <SkautaiErrorState description={error} />}
 
       <div className="data-panel">
         <div className="data-panel-header">
@@ -191,11 +183,11 @@ export function InventoryPage() {
         )}
 
         {!isLoading && !error && itemsState?.items.length === 0 && (
-          <div className="empty-state">
-            <PackageSearch size={28} aria-hidden="true" />
-            <strong>Inventoriaus pagal šiuos filtrus nerasta</strong>
-            <span>Pakeisk paiešką arba filtrus ir bandyk dar kartą.</span>
-          </div>
+          <SkautaiEmptyState
+            icon={PackageSearch}
+            title="Inventoriaus pagal šiuos filtrus nerasta"
+            description="Pakeisk paiešką arba filtrus ir bandyk dar kartą."
+          />
         )}
 
         {!isLoading && !error && Boolean(itemsState?.items.length) && (
@@ -225,7 +217,7 @@ export function InventoryPage() {
           <ChevronRight size={18} aria-hidden="true" />
         </button>
       </div>
-    </section>
+    </SkautaiPageShell>
   );
 }
 
@@ -268,5 +260,5 @@ function InventoryList({ items }: { items: Item[] }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
+  return <SkautaiStatusPill status={status}>{statusLabel(status)}</SkautaiStatusPill>;
 }

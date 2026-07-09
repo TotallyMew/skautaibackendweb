@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
-import { AlertCircle, Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart, type LucideProps } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Requisition, RequisitionListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiDataTable, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill, type SkautaiDataTableColumn } from "../components/ui/Skautai";
 import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
 import { canUseRequisitions, canUseSharedInventoryRequests } from "../utils/permissions";
 
@@ -95,7 +96,7 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
   }
 
   return (
-    <section className="inventory-page">
+    <SkautaiPageShell className="inventory-page">
       <div className="section-toolbar">
         <div className="list-summary">
           <strong>{total}</strong>
@@ -119,12 +120,7 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
         </div>
       )}
 
-      {error && (
-        <div className="inline-alert">
-          <AlertCircle size={18} aria-hidden="true" />
-          <span>{error}</span>
-        </div>
-      )}
+      {error && <SkautaiErrorState description={error} />}
 
       <div className="data-panel">
         <div className="data-panel-header">
@@ -140,7 +136,7 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
         )}
 
         {!isLoading && !error && activeTab === "requisitions" && requisitionsState?.requests.length === 0 && (
-          <RequestEmptyState icon={ShoppingCart} title="Pirkimo prašymų nėra" description="Kai vienetai pateiks pirkimo ar papildymo prašymus, jie bus rodomi čia." />
+          <SkautaiEmptyState icon={ShoppingCart} title="Pirkimo prašymų nėra" description="Kai vienetai pateiks pirkimo ar papildymo prašymus, jie bus rodomi čia." />
         )}
 
         {!isLoading && !error && activeTab === "requisitions" && Boolean(requisitionsState?.requests.length) && (
@@ -148,14 +144,14 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
         )}
 
         {!isLoading && !error && activeTab === "shared" && sharedRequestsState?.requests.length === 0 && (
-          <RequestEmptyState icon={PackageCheck} title="Paėmimo prašymų nėra" description="Bendro inventoriaus paėmimo užklausos bus rodomos čia." />
+          <SkautaiEmptyState icon={PackageCheck} title="Paėmimo prašymų nėra" description="Bendro inventoriaus paėmimo užklausos bus rodomos čia." />
         )}
 
         {!isLoading && !error && activeTab === "shared" && Boolean(sharedRequestsState?.requests.length) && (
           <SharedRequestsList requests={sharedRequestsState?.requests ?? []} />
         )}
       </div>
-    </section>
+    </SkautaiPageShell>
   );
 }
 
@@ -169,90 +165,102 @@ function TabButton({ active, onClick, label, count }: { active: boolean; onClick
 }
 
 function RequisitionsList({ requests }: { requests: Requisition[] }) {
-  return (
-    <div className="record-list">
-      <div className="record-header request-record-row" aria-hidden="true">
-        <span />
-        <span>Pirkimo prašymas</span>
-        <span>Terminas</span>
-        <span>Kiekis</span>
-        <span>Būsena</span>
-      </div>
-      {requests.map((request) => (
-        <article className="record-row request-record-row" key={request.id}>
-          <div className="record-icon">
-            <ShoppingCart size={18} aria-hidden="true" />
-          </div>
-          <div className="record-main">
-            <Link className="record-title" to={`/purchases/${request.id}`}>{requestTitle(request)}</Link>
+  const columns: Array<SkautaiDataTableColumn<Requisition>> = [
+    {
+      key: "request",
+      header: "Pirkimo prašymas",
+      cell: (request) => (
+        <div className="table-title-cell">
+          <span className="record-icon table-cell-icon"><ShoppingCart size={18} aria-hidden="true" /></span>
+          <div>
+            <Link className="table-link" to={`/purchases/${request.id}`}>{requestTitle(request)}</Link>
             <span>{request.requestingUnitName ?? "Tunto prašymas"}</span>
             <div className="record-chip-row">
               <ReviewBadge label="Padalinys" status={request.unitReviewStatus} />
               <ReviewBadge label="Tuntas" status={request.topLevelReviewStatus} />
             </div>
           </div>
-          <div className="record-meta record-date">
-            <strong>{formatOptionalDate(request.neededByDate)}</strong>
-            <span>Sukurta {formatDate(request.createdAt)}</span>
-          </div>
-          <div className="record-meta record-quantity">
-            <strong>{request.items.length} {countLabel(request.items.length, "eilutė", "eilutės", "eilučių")}</strong>
-            <span>{requisitionQuantity(request)} vnt.</span>
-          </div>
-          <StatusBadge status={request.status} />
-        </article>
-      ))}
-    </div>
-  );
+        </div>
+      )
+    },
+    {
+      key: "date",
+      header: "Terminas",
+      cell: (request) => (
+        <>
+          <strong>{formatOptionalDate(request.neededByDate)}</strong>
+          <span>Sukurta {formatDate(request.createdAt)}</span>
+        </>
+      )
+    },
+    {
+      key: "quantity",
+      header: "Kiekis",
+      cell: (request) => (
+        <>
+          <strong>{request.items.length} {countLabel(request.items.length, "eilutė", "eilutės", "eilučių")}</strong>
+          <span>{requisitionQuantity(request)} vnt.</span>
+        </>
+      )
+    },
+    {
+      key: "status",
+      header: "Būsena",
+      cell: (request) => <StatusBadge status={request.status} />
+    }
+  ];
+
+  return <SkautaiDataTable rows={requests} columns={columns} getRowKey={(request) => request.id} />;
 }
 
 function SharedRequestsList({ requests }: { requests: SharedInventoryRequest[] }) {
-  return (
-    <div className="record-list">
-      <div className="record-header request-record-row" aria-hidden="true">
-        <span />
-        <span>Paėmimo prašymas</span>
-        <span>Terminas</span>
-        <span>Kiekis</span>
-        <span>Būsena</span>
-      </div>
-      {requests.map((request) => (
-        <article className="record-row request-record-row" key={request.id}>
-          <div className="record-icon">
-            <PackageCheck size={18} aria-hidden="true" />
-          </div>
-          <div className="record-main">
-            <Link className="record-title" to={`/pickup-requests/${request.id}`}>{sharedRequestTitle(request)}</Link>
+  const columns: Array<SkautaiDataTableColumn<SharedInventoryRequest>> = [
+    {
+      key: "request",
+      header: "Paėmimo prašymas",
+      cell: (request) => (
+        <div className="table-title-cell">
+          <span className="record-icon table-cell-icon"><PackageCheck size={18} aria-hidden="true" /></span>
+          <div>
+            <Link className="table-link" to={`/pickup-requests/${request.id}`}>{sharedRequestTitle(request)}</Link>
             <span>{request.requestingUnitName ?? request.requestedByUserName ?? "Bendro inventoriaus prašymas"}</span>
             <div className="record-chip-row">
               {request.needsDraugininkasApproval && <ReviewBadge label="Padalinys" status={request.draugininkasStatus ?? "PENDING"} />}
               <ReviewBadge label="Tuntas" status={request.topLevelStatus} />
             </div>
           </div>
-          <div className="record-meta record-date">
-            <strong>{formatOptionalDate(request.neededByDate)}</strong>
-            <span>Sukurta {formatDate(request.createdAt)}</span>
-          </div>
-          <div className="record-meta record-quantity">
-            <strong>{sharedRequestQuantity(request)} vnt.</strong>
-            <span>{request.items.length > 0 ? `${request.items.length} eil.` : "1 eil."}</span>
-            <span>{request.notes ?? ""}</span>
-          </div>
-          <StatusBadge status={request.topLevelStatus} />
-        </article>
-      ))}
-    </div>
-  );
-}
+        </div>
+      )
+    },
+    {
+      key: "date",
+      header: "Terminas",
+      cell: (request) => (
+        <>
+          <strong>{formatOptionalDate(request.neededByDate)}</strong>
+          <span>Sukurta {formatDate(request.createdAt)}</span>
+        </>
+      )
+    },
+    {
+      key: "quantity",
+      header: "Kiekis",
+      cell: (request) => (
+        <>
+          <strong>{sharedRequestQuantity(request)} vnt.</strong>
+          <span>{request.items.length > 0 ? `${request.items.length} eil.` : "1 eil."}</span>
+          <span>{request.notes ?? ""}</span>
+        </>
+      )
+    },
+    {
+      key: "status",
+      header: "Būsena",
+      cell: (request) => <StatusBadge status={request.topLevelStatus} />
+    }
+  ];
 
-function RequestEmptyState({ icon: Icon, title, description }: { icon: ComponentType<LucideProps>; title: string; description: string }) {
-  return (
-    <div className="empty-state">
-      <Icon size={28} aria-hidden="true" />
-      <strong>{title}</strong>
-      <span>{description}</span>
-    </div>
-  );
+  return <SkautaiDataTable rows={requests} columns={columns} getRowKey={(request) => request.id} />;
 }
 
 function ReviewBadge({ label, status }: { label: string; status: string }) {
@@ -264,7 +272,7 @@ function ReviewBadge({ label, status }: { label: string; status: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>;
+  return <SkautaiStatusPill status={status}>{statusLabel(status)}</SkautaiStatusPill>;
 }
 
 function headerMeta(tab: RequestTab) {

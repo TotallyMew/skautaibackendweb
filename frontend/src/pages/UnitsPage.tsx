@@ -219,7 +219,6 @@ export function UnitsPage() {
         <section className="data-panel">
           <div className="record-header unit-row">
             <span>VIENETAS</span>
-            <span>TIPAS</span>
             <span>NARIAI</span>
             <span>INVENTORIUS</span>
             <span></span>
@@ -254,10 +253,10 @@ export function UnitsPage() {
                 <article className="record-row unit-row" key={unit.id}>
                   <div className="record-main">
                     <strong className="record-title">{unit.name}</strong>
-                    <span>{unit.subType ? unitSubtypeLabel(unit.subType) : "Be potipio"}</span>
+                    <span className="mini-chip unit-type-chip">{unitTypeLabel(unit.type)}</span>
+                    <span className="muted-line unit-subtype-line">{unit.subType ? unitSubtypeLabel(unit.subType) : "Be potipio"}</span>
                     {unit.acceptedRankName && <span className="muted-line">Priima: {roleLabel(unit.acceptedRankName)}</span>}
                   </div>
-                  <span className="mini-chip">{unitTypeLabel(unit.type)}</span>
                   <div className="record-meta">
                     <strong>{unit.memberCount}</strong>
                     <span>nariai</span>

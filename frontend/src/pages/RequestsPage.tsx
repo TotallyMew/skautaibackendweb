@@ -188,7 +188,6 @@ function RequisitionsList({ requests }: { requests: Requisition[] }) {
           <div className="record-meta record-quantity">
             <strong>{request.items.length} {countLabel(request.items.length, "eilutė", "eilutės", "eilučių")}</strong>
             <span>{requisitionQuantity(request)} vnt.</span>
-            <span>{request.items.slice(0, 2).map((item) => item.itemName).join(", ")}</span>
           </div>
           <StatusBadge status={request.status} />
         </article>

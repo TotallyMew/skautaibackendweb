@@ -154,7 +154,6 @@ export function LocationsPage() {
         <section className="data-panel">
           <div className="record-header location-row">
             <span>LOKACIJA</span>
-            <span>TIPAS</span>
             <span>ADRESAS</span>
             <span></span>
           </div>
@@ -173,13 +172,13 @@ export function LocationsPage() {
             <div className="record-list">
               {sortedLocations.map((location) => (
                 <article className="record-row location-row" key={location.id}>
-                  <div>
+                  <div className="record-main location-main">
                     <strong className="record-title">{location.name}</strong>
-                    <span>{location.fullPath}</span>
+                    <span className="mini-chip location-type-chip">{visibilityLabel(location.visibility)}</span>
+                    <span className="muted-line">{location.fullPath}</span>
                     {location.ownerUnitName && <span className="muted-line">{location.ownerUnitName}</span>}
                   </div>
-                  <span className="mini-chip">{visibilityLabel(location.visibility)}</span>
-                  <span>{location.address || "Nenurodyta"}</span>
+                  <span className="record-cell-text">{location.address || "Nenurodyta"}</span>
                   <div className="row-actions">
                     {canManageLocations && location.isEditable && (
                       <>

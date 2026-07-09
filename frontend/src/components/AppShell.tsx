@@ -87,7 +87,7 @@ export function AppShell() {
             <span className="eyebrow">{contextLabel}</span>
             <h1>{title}</h1>
           </div>
-          <div className="topbar-context">
+          <div className="topbar-context" aria-label="Vartotojo paskyra">
             <strong>{isSuperAdmin ? "Sistemos valdymas" : auth?.name ?? "Vartotojas"}</strong>
             <span>{isSuperAdmin ? "Visi tuntai" : auth?.email ?? ""}</span>
           </div>

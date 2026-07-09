@@ -15,18 +15,24 @@ export type AuthState = {
   leadershipUnitIds: string[];
 };
 
-export function authFromTokenResponse(response: TokenResponse, preferredTuntasId?: string | null): AuthState {
-  const activeTuntai = response.tuntai?.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [];
+type AuthFallback = {
+  refreshToken?: string | null;
+  tuntai?: UserTuntas[];
+};
+
+export function authFromTokenResponse(response: TokenResponse, preferredTuntasId?: string | null, fallback: AuthFallback = {}): AuthState {
+  const tuntai = response.tuntai?.length ? response.tuntai : fallback.tuntai ?? [];
+  const activeTuntai = tuntai.filter((tuntas) => isActiveTuntasStatus(tuntas.status));
   const hasPreferredTuntas = activeTuntai.some((tuntas) => tuntas.id === preferredTuntasId);
 
   return {
     token: response.token,
-    refreshToken: response.refreshToken ?? null,
+    refreshToken: response.refreshToken ?? fallback.refreshToken ?? null,
     userId: response.userId,
     email: response.email,
     name: response.name,
     type: response.type,
-    tuntai: response.tuntai ?? [],
+    tuntai,
     activeTuntasId: hasPreferredTuntas ? preferredTuntasId ?? null : activeTuntai.length === 1 ? activeTuntai[0].id : null,
     permissions: [],
     leadershipUnitIds: []

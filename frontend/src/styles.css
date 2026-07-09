@@ -1334,6 +1334,34 @@ button {
   width: 100%;
 }
 
+.unit-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.unit-summary-tile {
+  display: grid;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-lowest);
+  padding: 14px;
+}
+
+.unit-summary-tile span {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.unit-summary-tile strong {
+  color: var(--text);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
 .location-row {
   grid-template-columns: minmax(0, 1.45fr) minmax(190px, 0.8fr) minmax(96px, max-content);
 }
@@ -2348,6 +2376,15 @@ fieldset {
   margin-top: 1px;
 }
 
+.table-actions-cell {
+  width: 112px;
+  text-align: right;
+}
+
+.table-actions-cell .row-actions {
+  justify-content: flex-end;
+}
+
 .status-badge {
   display: inline-flex;
   width: fit-content;
@@ -2804,6 +2841,7 @@ fieldset {
   .home-action-grid,
   .form-grid,
   .admin-summary-grid,
+  .unit-summary-grid,
   .admin-layout,
   .inner-page-grid {
     grid-template-columns: 1fr;

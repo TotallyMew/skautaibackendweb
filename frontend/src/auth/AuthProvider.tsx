@@ -100,15 +100,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const refreshToken = current.refreshToken;
-    const activeTuntasId = current.activeTuntasId;
+    const currentAuth = current;
+    const refreshToken = currentAuth.refreshToken;
+    if (!refreshToken) {
+      setIsInitializing(false);
+      return;
+    }
+    const restoreRefreshToken: string = refreshToken;
+    const activeTuntasId = currentAuth.activeTuntasId;
     let isCancelled = false;
 
     async function restoreSession() {
       try {
-        const response = await api.refresh(refreshToken);
+        const response = await api.refresh(restoreRefreshToken);
         if (!isCancelled) {
-          await hydratePermissions(authFromTokenResponse(response, activeTuntasId));
+          await hydratePermissions(authFromTokenResponse(response, activeTuntasId, {
+            refreshToken: restoreRefreshToken,
+            tuntai: currentAuth.tuntai
+          }));
         }
       } catch {
         if (!isCancelled) {

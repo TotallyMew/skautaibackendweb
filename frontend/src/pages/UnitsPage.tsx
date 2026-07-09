@@ -1,10 +1,19 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ClipboardCopy, Edit3, Loader2, Plus, RefreshCw, ShieldCheck, Trash2, UsersRound } from "lucide-react";
+import { ClipboardCopy, Edit3, Loader2, Network, Plus, RefreshCw, ShieldCheck, Trash2, UsersRound } from "lucide-react";
 import { ApiError, api } from "../api/client";
 import type { InvitationResponse, OrganizationalUnit, Role } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { roleLabel } from "../utils/display";
-import { hasPermission } from "../utils/permissions";
+import {
+  SkautaiCard,
+  SkautaiDataTable,
+  SkautaiEmptyState,
+  SkautaiErrorState,
+  SkautaiPageShell,
+  SkautaiStatusPill,
+  type SkautaiDataTableColumn
+} from "../components/ui/Skautai";
+import { countLabel, roleLabel } from "../utils/display";
+import { canUseUnits, hasPermission } from "../utils/permissions";
 
 type UnitForm = {
   name: string;
@@ -52,10 +61,11 @@ export function UnitsPage() {
   const canViewUnits = hasPermission(permissions, "organizational_units.view");
   const canManageUnits = hasPermission(permissions, "organizational_units.manage");
   const canCreateInvites = hasPermission(permissions, "invitations.create");
-  const canFetch = Boolean(auth?.token && auth.activeTuntasId && canViewUnits);
+  const canOpenPage = canUseUnits(permissions);
+  const canFetch = Boolean(auth?.token && auth.activeTuntasId && (canViewUnits || canManageUnits || canCreateInvites));
 
   useEffect(() => {
-    if (!auth?.token || !auth.activeTuntasId || !canViewUnits) {
+    if (!auth?.token || !auth.activeTuntasId || !canOpenPage) {
       setUnits([]);
       setRoles([]);
       setIsLoading(false);
@@ -67,8 +77,12 @@ export function UnitsPage() {
     setError(null);
 
     Promise.all([
-      api.listOrganizationalUnits(auth.token, auth.activeTuntasId),
-      api.listRoles(auth.token, auth.activeTuntasId).catch(() => ({ roles: [], total: 0 }))
+      canViewUnits
+        ? api.listOrganizationalUnits(auth.token, auth.activeTuntasId).catch(() => ({ units: [], total: 0 }))
+        : Promise.resolve({ units: [], total: 0 }),
+      (canManageUnits || canCreateInvites)
+        ? api.listRoles(auth.token, auth.activeTuntasId).catch(() => ({ roles: [], total: 0 }))
+        : Promise.resolve({ roles: [], total: 0 })
     ])
       .then(([unitResponse, roleResponse]) => {
         if (isCancelled) return;
@@ -89,7 +103,7 @@ export function UnitsPage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, canViewUnits, reloadKey]);
+  }, [auth?.activeTuntasId, auth?.token, canCreateInvites, canManageUnits, canOpenPage, canViewUnits, reloadKey]);
 
   const sortedUnits = useMemo(
     () => [...units].sort((left, right) => unitTypeLabel(left.type).localeCompare(unitTypeLabel(right.type), "lt") || left.name.localeCompare(right.name, "lt")),
@@ -107,6 +121,9 @@ export function UnitsPage() {
       .sort((left, right) => roleLabel(left.name).localeCompare(roleLabel(right.name), "lt")),
     [roles]
   );
+
+  const totalMembers = sortedUnits.reduce((sum, unit) => sum + unit.memberCount, 0);
+  const totalItems = sortedUnits.reduce((sum, unit) => sum + unit.itemCount, 0);
 
   function startEdit(unit: OrganizationalUnit) {
     setEditingId(unit.id);
@@ -128,7 +145,10 @@ export function UnitsPage() {
   async function saveUnit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!auth?.token || !auth.activeTuntasId || !canManageUnits) return;
-    if (!unitForm.name.trim()) return setError("Įveskite vieneto pavadinimą.");
+    if (!unitForm.name.trim()) {
+      setError("Įveskite vieneto pavadinimą.");
+      return;
+    }
 
     setIsSavingUnit(true);
     setMessage(null);
@@ -178,7 +198,10 @@ export function UnitsPage() {
   async function createInvite(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!auth?.token || !auth.activeTuntasId || !canCreateInvites) return;
-    if (!inviteForm.roleId) return setError("Pasirinkite rolę pakvietimui.");
+    if (!inviteForm.roleId) {
+      setError("Pasirinkite rolę pakvietimui.");
+      return;
+    }
 
     setIsCreatingInvite(true);
     setMessage(null);
@@ -199,185 +222,309 @@ export function UnitsPage() {
     }
   }
 
+  const actions = (
+    <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={!canFetch || isLoading}>
+      <RefreshCw size={17} aria-hidden="true" />
+      Atnaujinti
+    </button>
+  );
+
   return (
-    <section className="units-page">
-      <div className="page-heading-row">
-        <div>
-          <span className="section-kicker">ORGANIZACIJA</span>
-          <h2>Vienetai</h2>
-        </div>
-        <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={!canFetch || isLoading}>
-          <RefreshCw size={17} aria-hidden="true" />
-          Atnaujinti
-        </button>
-      </div>
-
+    <SkautaiPageShell className="units-page" eyebrow="Organizacija" title="Vienetai" actions={actions}>
       {message && <p className="inline-success">{message}</p>}
-      {error && <p className="error-text">{error}</p>}
+      {error && <SkautaiErrorState description={error} />}
 
-      <div className="inner-page-grid">
-        <section className="data-panel">
-          <div className="record-header unit-row">
-            <span>VIENETAS</span>
-            <span>NARIAI</span>
-            <span>INVENTORIUS</span>
-            <span></span>
+      {!canOpenPage ? (
+        <SkautaiEmptyState
+          icon={ShieldCheck}
+          title="Vienetams reikia teisės"
+          description="Šis ekranas rodomas tik vadovams, kurie gali matyti vienetus, juos valdyti arba kurti pakvietimus."
+        />
+      ) : (
+        <>
+          <section className="unit-summary-grid" aria-label="Vienetų suvestinė">
+            <MetricTile label="Vienetai" value={sortedUnits.length} />
+            <MetricTile label="Nariai vienetuose" value={totalMembers} />
+            <MetricTile label="Inventoriaus įrašai" value={totalItems} />
+          </section>
+
+          <div className="inner-page-grid units-layout">
+            <section className="data-panel">
+              <div className="data-panel-header">
+                <span>{sortedUnits.length} {countLabel(sortedUnits.length, "vienetas", "vienetai", "vienetų")}</span>
+                <span>{canViewUnits ? "Tunto struktūra" : "Sąrašui reikia vienetų peržiūros teisės"}</span>
+              </div>
+
+              {!canViewUnits ? (
+                <SkautaiEmptyState
+                  compact
+                  icon={ShieldCheck}
+                  title="Sąrašas nepasiekiamas"
+                  description="Vienetų sąrašui reikia organizacinių vienetų peržiūros teisės."
+                />
+              ) : isLoading && sortedUnits.length === 0 ? (
+                <SkautaiEmptyState compact icon={Loader2} title="Kraunami vienetai" />
+              ) : sortedUnits.length === 0 ? (
+                <SkautaiEmptyState
+                  compact
+                  icon={UsersRound}
+                  title="Vienetų dar nėra"
+                  description="Sukurk draugoves, gildijas ar būrelius, kad nariai ir inventorius turėtų aiškų kontekstą."
+                />
+              ) : (
+                <UnitsTable units={sortedUnits} canManageUnits={canManageUnits} busyId={busyId} onEdit={startEdit} onDelete={(unit) => void deleteUnit(unit)} />
+              )}
+            </section>
+
+            <aside className="side-panel-stack">
+              <SkautaiCard variant="dense">
+                <UnitFormCard
+                  canManageUnits={canManageUnits}
+                  editingId={editingId}
+                  isSaving={isSavingUnit}
+                  rankRoles={rankRoles}
+                  unitForm={unitForm}
+                  onCancel={resetUnitForm}
+                  onSubmit={saveUnit}
+                  onUnitFormChange={setUnitForm}
+                />
+              </SkautaiCard>
+
+              <SkautaiCard variant="dense">
+                <InviteFormCard
+                  canCreateInvites={canCreateInvites}
+                  inviteForm={inviteForm}
+                  inviteRoles={inviteRoles}
+                  isCreatingInvite={isCreatingInvite}
+                  latestInvite={latestInvite}
+                  units={sortedUnits}
+                  onInviteFormChange={setInviteForm}
+                  onSubmit={createInvite}
+                />
+              </SkautaiCard>
+            </aside>
           </div>
+        </>
+      )}
+    </SkautaiPageShell>
+  );
+}
 
-          {!canViewUnits && (
-            <div className="empty-state compact-empty-state">
-              <ShieldCheck size={28} aria-hidden="true" />
-              <strong>Vienetams reikia teisės</strong>
-              <span>Šis ekranas rodomas tik vadovams, kurie gali matyti organizacijos vienetus.</span>
-            </div>
-          )}
+function UnitsTable({
+  units,
+  canManageUnits,
+  busyId,
+  onEdit,
+  onDelete
+}: {
+  units: OrganizationalUnit[];
+  canManageUnits: boolean;
+  busyId: string | null;
+  onEdit: (unit: OrganizationalUnit) => void;
+  onDelete: (unit: OrganizationalUnit) => void;
+}) {
+  const columns: Array<SkautaiDataTableColumn<OrganizationalUnit>> = [
+    {
+      key: "unit",
+      header: "Vienetas",
+      cell: (unit) => (
+        <div className="table-title-cell">
+          <span className="record-icon table-cell-icon"><Network size={18} aria-hidden="true" /></span>
+          <div>
+            <strong>{unit.name}</strong>
+            <span>{unit.subType ? unitSubtypeLabel(unit.subType) : "Be potipio"}</span>
+            {unit.acceptedRankName && <span>Priima: {roleLabel(unit.acceptedRankName)}</span>}
+          </div>
+        </div>
+      )
+    },
+    {
+      key: "type",
+      header: "Tipas",
+      cell: (unit) => <SkautaiStatusPill tone="info">{unitTypeLabel(unit.type)}</SkautaiStatusPill>
+    },
+    {
+      key: "members",
+      header: "Nariai",
+      cell: (unit) => (
+        <>
+          <strong>{unit.memberCount}</strong>
+          <span>{countLabel(unit.memberCount, "narys", "nariai", "narių")}</span>
+        </>
+      )
+    },
+    {
+      key: "items",
+      header: "Inventorius",
+      cell: (unit) => (
+        <>
+          <strong>{unit.itemCount}</strong>
+          <span>{countLabel(unit.itemCount, "įrašas", "įrašai", "įrašų")}</span>
+        </>
+      )
+    },
+    {
+      key: "actions",
+      header: "",
+      className: "table-actions-cell",
+      cell: (unit) => canManageUnits ? (
+        <div className="row-actions">
+          <button className="icon-button" type="button" title="Redaguoti" onClick={() => onEdit(unit)}>
+            <Edit3 size={17} aria-hidden="true" />
+          </button>
+          <button className="icon-button danger-icon-button" type="button" title="Ištrinti" disabled={busyId === unit.id} onClick={() => onDelete(unit)}>
+            <Trash2 size={17} aria-hidden="true" />
+          </button>
+        </div>
+      ) : null
+    }
+  ];
 
-          {canViewUnits && isLoading && units.length === 0 ? (
-            <div className="empty-state compact-empty-state">
-              <Loader2 className="spin-icon" size={28} aria-hidden="true" />
-              <strong>Kraunami vienetai</strong>
-            </div>
-          ) : null}
+  return <SkautaiDataTable rows={units} columns={columns} getRowKey={(unit) => unit.id} />;
+}
 
-          {canViewUnits && !isLoading && sortedUnits.length === 0 ? (
-            <div className="empty-state compact-empty-state">
-              <UsersRound size={28} aria-hidden="true" />
-              <strong>Vienetų dar nėra</strong>
-              <span>Sukurk draugoves, gildijas ar būrelius, kad nariai ir inventorius turėtų aiškų kontekstą.</span>
-            </div>
-          ) : null}
-
-          {canViewUnits && sortedUnits.length > 0 && (
-            <div className="record-list">
-              {sortedUnits.map((unit) => (
-                <article className="record-row unit-row" key={unit.id}>
-                  <div className="record-main">
-                    <strong className="record-title">{unit.name}</strong>
-                    <span className="mini-chip unit-type-chip">{unitTypeLabel(unit.type)}</span>
-                    <span className="muted-line unit-subtype-line">{unit.subType ? unitSubtypeLabel(unit.subType) : "Be potipio"}</span>
-                    {unit.acceptedRankName && <span className="muted-line">Priima: {roleLabel(unit.acceptedRankName)}</span>}
-                  </div>
-                  <div className="record-meta">
-                    <strong>{unit.memberCount}</strong>
-                    <span>nariai</span>
-                  </div>
-                  <div className="record-meta">
-                    <strong>{unit.itemCount}</strong>
-                    <span>įrašai</span>
-                  </div>
-                  <div className="row-actions">
-                    {canManageUnits && (
-                      <>
-                        <button className="icon-button" type="button" title="Redaguoti" onClick={() => startEdit(unit)}>
-                          <Edit3 size={17} aria-hidden="true" />
-                        </button>
-                        <button className="icon-button danger-icon-button" type="button" title="Ištrinti" disabled={busyId === unit.id} onClick={() => void deleteUnit(unit)}>
-                          <Trash2 size={17} aria-hidden="true" />
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <aside className="side-panel-stack">
-          <form className="form-section" onSubmit={saveUnit}>
-            <div className="form-section-heading">
-              <Plus size={20} aria-hidden="true" />
-              <div>
-                <h3>{editingId ? "Redaguoti vienetą" : "Naujas vienetas"}</h3>
-                <span>{canManageUnits ? "Kurk draugoves, gildijas ir būrelius pagal tunto struktūrą." : "Vienetus keisti gali tik tam teisę turintys vadovai."}</span>
-              </div>
-            </div>
-            <fieldset disabled={!canManageUnits || isSavingUnit}>
-              <div className="form-grid one-column-grid">
-                <TextField label="Pavadinimas *" value={unitForm.name} onChange={(value) => setUnitForm((current) => ({ ...current, name: value }))} required />
-                <label className="form-field">
-                  <span>Tipas</span>
-                  <select value={unitForm.type} disabled={Boolean(editingId)} onChange={(event) => setUnitForm((current) => ({ ...current, type: event.target.value }))}>
-                    <option value="DRAUGOVE">Draugovė</option>
-                    <option value="GILDIJA">Gildija</option>
-                    <option value="BURELIS">Būrelis</option>
-                  </select>
-                </label>
-                <label className="form-field">
-                  <span>Potipis</span>
-                  <select value={unitForm.subType} disabled={Boolean(editingId)} onChange={(event) => setUnitForm((current) => ({ ...current, subType: event.target.value }))}>
-                    <option value="">Nenurodyta</option>
-                    <option value="VILKAI">Vilkų</option>
-                    <option value="SKAUTAI">Skautų</option>
-                    <option value="PATYRE_SKAUTAI">Patyrusių skautų</option>
-                    <option value="VYR_SKAUTAI">Vyr. skautų / skaučių</option>
-                    <option value="VADOVAI">Vadovų</option>
-                  </select>
-                </label>
-                <label className="form-field">
-                  <span>Priimamas patyrimo laipsnis</span>
-                  <select value={unitForm.acceptedRankId} onChange={(event) => setUnitForm((current) => ({ ...current, acceptedRankId: event.target.value }))}>
-                    <option value="">Netaikoma</option>
-                    {rankRoles.map((role) => (
-                      <option key={role.id} value={role.id}>{roleLabel(role.name)}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-              <div className="form-actions">
-                <button className="primary-button compact-primary-button" type="submit">
-                  {isSavingUnit ? "Saugoma..." : editingId ? "Išsaugoti" : "Sukurti"}
-                </button>
-                {editingId && <button className="secondary-button" type="button" onClick={resetUnitForm}>Atšaukti</button>}
-              </div>
-            </fieldset>
-          </form>
-
-          <form className="form-section" onSubmit={createInvite}>
-            <div className="form-section-heading">
-              <ClipboardCopy size={20} aria-hidden="true" />
-              <div>
-                <h3>Pakvietimo kodas</h3>
-                <span>{canCreateInvites ? "Sukurk kodą nariui arba vadovui prisijungti prie tunto/vieneto." : "Pakvietimus kurti gali tik tam teisę turintys vadovai."}</span>
-              </div>
-            </div>
-            <fieldset disabled={!canCreateInvites || isCreatingInvite}>
-              <div className="form-grid one-column-grid">
-                <label className="form-field">
-                  <span>Rolė *</span>
-                  <select value={inviteForm.roleId} onChange={(event) => setInviteForm((current) => ({ ...current, roleId: event.target.value }))} required>
-                    <option value="">Pasirinkite rolę</option>
-                    {inviteRoles.map((role) => (
-                      <option key={role.id} value={role.id}>{roleLabel(role.name)} ({role.roleType === "RANK" ? "laipsnis" : "pareigos"})</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="form-field">
-                  <span>Vienetas</span>
-                  <select value={inviteForm.organizationalUnitId} onChange={(event) => setInviteForm((current) => ({ ...current, organizationalUnitId: event.target.value }))}>
-                    <option value="">Tunto lygmuo</option>
-                    {sortedUnits.map((unit) => (
-                      <option key={unit.id} value={unit.id}>{unit.name}</option>
-                    ))}
-                  </select>
-                </label>
-                <TextField label="Galioja valandų" type="number" value={inviteForm.expiresInHours} onChange={(value) => setInviteForm((current) => ({ ...current, expiresInHours: value }))} />
-              </div>
-              <button className="primary-button compact-primary-button" type="submit">
-                {isCreatingInvite ? "Kuriama..." : "Sukurti kodą"}
-              </button>
-            </fieldset>
-            {latestInvite && (
-              <div className="invite-code-card">
-                <span>Pakvietimo kodas</span>
-                <strong>{latestInvite.code}</strong>
-                <small>{latestInvite.tuntasName}{latestInvite.organizationalUnitName ? ` / ${latestInvite.organizationalUnitName}` : ""} / {roleLabel(latestInvite.roleName)}</small>
-              </div>
-            )}
-          </form>
-        </aside>
+function UnitFormCard({
+  canManageUnits,
+  editingId,
+  isSaving,
+  rankRoles,
+  unitForm,
+  onCancel,
+  onSubmit,
+  onUnitFormChange
+}: {
+  canManageUnits: boolean;
+  editingId: string | null;
+  isSaving: boolean;
+  rankRoles: Role[];
+  unitForm: UnitForm;
+  onCancel: () => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onUnitFormChange: (value: UnitForm | ((current: UnitForm) => UnitForm)) => void;
+}) {
+  return (
+    <form className="form-panel unit-card-form" onSubmit={onSubmit}>
+      <div className="form-section-heading">
+        <Plus size={20} aria-hidden="true" />
+        <div>
+          <h3>{editingId ? "Redaguoti vienetą" : "Naujas vienetas"}</h3>
+          <span>{canManageUnits ? "Kurk draugoves, gildijas ir būrelius pagal tunto struktūrą." : "Vienetus keisti gali tik tam teisę turintys vadovai."}</span>
+        </div>
       </div>
-    </section>
+      <fieldset disabled={!canManageUnits || isSaving}>
+        <div className="form-grid one-column-grid">
+          <TextField label="Pavadinimas *" value={unitForm.name} onChange={(value) => onUnitFormChange((current) => ({ ...current, name: value }))} required />
+          <label className="form-field">
+            <span>Tipas</span>
+            <select value={unitForm.type} disabled={Boolean(editingId)} onChange={(event) => onUnitFormChange((current) => ({ ...current, type: event.target.value }))}>
+              <option value="DRAUGOVE">Draugovė</option>
+              <option value="GILDIJA">Gildija</option>
+              <option value="BURELIS">Būrelis</option>
+            </select>
+          </label>
+          <label className="form-field">
+            <span>Potipis</span>
+            <select value={unitForm.subType} disabled={Boolean(editingId)} onChange={(event) => onUnitFormChange((current) => ({ ...current, subType: event.target.value }))}>
+              <option value="">Nenurodyta</option>
+              <option value="VILKAI">Vilkų</option>
+              <option value="SKAUTAI">Skautų</option>
+              <option value="PATYRE_SKAUTAI">Patyrusių skautų</option>
+              <option value="VYR_SKAUTAI">Vyr. skautų / skaučių</option>
+              <option value="VADOVAI">Vadovų</option>
+            </select>
+          </label>
+          <label className="form-field">
+            <span>Priimamas patyrimo laipsnis</span>
+            <select value={unitForm.acceptedRankId} onChange={(event) => onUnitFormChange((current) => ({ ...current, acceptedRankId: event.target.value }))}>
+              <option value="">Netaikoma</option>
+              {rankRoles.map((role) => (
+                <option key={role.id} value={role.id}>{roleLabel(role.name)}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="form-actions">
+          <button className="primary-button compact-primary-button" type="submit">
+            {isSaving ? "Saugoma..." : editingId ? "Išsaugoti" : "Sukurti"}
+          </button>
+          {editingId && <button className="secondary-button" type="button" onClick={onCancel}>Atšaukti</button>}
+        </div>
+      </fieldset>
+    </form>
+  );
+}
+
+function InviteFormCard({
+  canCreateInvites,
+  inviteForm,
+  inviteRoles,
+  isCreatingInvite,
+  latestInvite,
+  units,
+  onInviteFormChange,
+  onSubmit
+}: {
+  canCreateInvites: boolean;
+  inviteForm: InviteForm;
+  inviteRoles: Role[];
+  isCreatingInvite: boolean;
+  latestInvite: InvitationResponse | null;
+  units: OrganizationalUnit[];
+  onInviteFormChange: (value: InviteForm | ((current: InviteForm) => InviteForm)) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
+  return (
+    <form className="form-panel unit-card-form" onSubmit={onSubmit}>
+      <div className="form-section-heading">
+        <ClipboardCopy size={20} aria-hidden="true" />
+        <div>
+          <h3>Pakvietimo kodas</h3>
+          <span>{canCreateInvites ? "Sukurk kodą nariui arba vadovui prisijungti prie tunto/vieneto." : "Pakvietimus kurti gali tik tam teisę turintys vadovai."}</span>
+        </div>
+      </div>
+      <fieldset disabled={!canCreateInvites || isCreatingInvite}>
+        <div className="form-grid one-column-grid">
+          <label className="form-field">
+            <span>Rolė *</span>
+            <select value={inviteForm.roleId} onChange={(event) => onInviteFormChange((current) => ({ ...current, roleId: event.target.value }))} required>
+              <option value="">Pasirinkite rolę</option>
+              {inviteRoles.map((role) => (
+                <option key={role.id} value={role.id}>{roleLabel(role.name)} ({role.roleType === "RANK" ? "laipsnis" : "pareigos"})</option>
+              ))}
+            </select>
+          </label>
+          <label className="form-field">
+            <span>Vienetas</span>
+            <select value={inviteForm.organizationalUnitId} onChange={(event) => onInviteFormChange((current) => ({ ...current, organizationalUnitId: event.target.value }))}>
+              <option value="">Tunto lygmuo</option>
+              {units.map((unit) => (
+                <option key={unit.id} value={unit.id}>{unit.name}</option>
+              ))}
+            </select>
+          </label>
+          <TextField label="Galioja valandų" type="number" value={inviteForm.expiresInHours} onChange={(value) => onInviteFormChange((current) => ({ ...current, expiresInHours: value }))} />
+        </div>
+        <button className="primary-button compact-primary-button" type="submit">
+          {isCreatingInvite ? "Kuriama..." : "Sukurti kodą"}
+        </button>
+      </fieldset>
+      {latestInvite && (
+        <div className="invite-code-card">
+          <span>Pakvietimo kodas</span>
+          <strong>{latestInvite.code}</strong>
+          <small>{latestInvite.tuntasName}{latestInvite.organizationalUnitName ? ` / ${latestInvite.organizationalUnitName}` : ""} / {roleLabel(latestInvite.roleName)}</small>
+        </div>
+      )}
+    </form>
+  );
+}
+
+function MetricTile({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="unit-summary-tile">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
   );
 }
 

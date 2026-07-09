@@ -58,6 +58,25 @@ describe("authFromTokenResponse", () => {
 
     expect(state.activeTuntasId).toBe("tuntas-1");
   });
+
+  it("preserves the selected tuntas when a refresh response omits tuntas", () => {
+    const state = authFromTokenResponse(
+      {
+        ...tokenResponse,
+        refreshToken: undefined,
+        tuntai: undefined
+      },
+      "tuntas-2",
+      {
+        refreshToken: "existing-refresh-token",
+        tuntai: tokenResponse.tuntai
+      }
+    );
+
+    expect(state.activeTuntasId).toBe("tuntas-2");
+    expect(state.tuntai).toEqual(tokenResponse.tuntai);
+    expect(state.refreshToken).toBe("existing-refresh-token");
+  });
 });
 
 describe("withPermissions", () => {

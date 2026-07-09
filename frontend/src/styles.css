@@ -104,6 +104,27 @@
   --danger: var(--skautai-clay);
   --danger-container: #f5d7d3;
   --danger-text: #3a0f0b;
+  --unit-patyre-card: #f0d4ce;
+  --unit-patyre-icon: #e4b3ab;
+  --unit-patyre-accent: #8e2f25;
+  --unit-skautai-card: #f1e2b0;
+  --unit-skautai-icon: #e3c664;
+  --unit-skautai-accent: #6f5412;
+  --unit-vilkai-card: #f2d8be;
+  --unit-vilkai-icon: #e4ac76;
+  --unit-vilkai-accent: #8a4a16;
+  --unit-gildija-card: #dee2dd;
+  --unit-gildija-icon: #c3cac1;
+  --unit-gildija-accent: #465149;
+  --unit-vyr-skautai-card: #e2d9eb;
+  --unit-vyr-skautai-icon: #c6b2d8;
+  --unit-vyr-skautai-accent: #5c3e76;
+  --unit-vyr-skautes-card: #d4dce9;
+  --unit-vyr-skautes-icon: #b0c1d6;
+  --unit-vyr-skautes-accent: #263f63;
+  --unit-default-card: #ece1bd;
+  --unit-default-icon: var(--gold-soft);
+  --unit-default-accent: var(--gold);
   --shadow: rgba(13, 18, 14, 0.08);
 }
 
@@ -2432,6 +2453,75 @@ fieldset {
 .status-cancelled {
   background: var(--danger-container);
   color: var(--danger);
+}
+
+.unit-palette-patyre {
+  --unit-card-tone: var(--unit-patyre-card);
+  --unit-icon-tone: var(--unit-patyre-icon);
+  --unit-accent-tone: var(--unit-patyre-accent);
+}
+
+.unit-palette-skautai {
+  --unit-card-tone: var(--unit-skautai-card);
+  --unit-icon-tone: var(--unit-skautai-icon);
+  --unit-accent-tone: var(--unit-skautai-accent);
+}
+
+.unit-palette-vilkai {
+  --unit-card-tone: var(--unit-vilkai-card);
+  --unit-icon-tone: var(--unit-vilkai-icon);
+  --unit-accent-tone: var(--unit-vilkai-accent);
+}
+
+.unit-palette-gildija {
+  --unit-card-tone: var(--unit-gildija-card);
+  --unit-icon-tone: var(--unit-gildija-icon);
+  --unit-accent-tone: var(--unit-gildija-accent);
+}
+
+.unit-palette-vyr-skautai {
+  --unit-card-tone: var(--unit-vyr-skautai-card);
+  --unit-icon-tone: var(--unit-vyr-skautai-icon);
+  --unit-accent-tone: var(--unit-vyr-skautai-accent);
+}
+
+.unit-palette-vyr-skautes {
+  --unit-card-tone: var(--unit-vyr-skautes-card);
+  --unit-icon-tone: var(--unit-vyr-skautes-icon);
+  --unit-accent-tone: var(--unit-vyr-skautes-accent);
+}
+
+.unit-palette-default {
+  --unit-card-tone: var(--unit-default-card);
+  --unit-icon-tone: var(--unit-default-icon);
+  --unit-accent-tone: var(--unit-default-accent);
+}
+
+.units-data-table tbody tr.unit-table-row td {
+  background: var(--unit-card-tone);
+  border-bottom-color: rgba(13, 18, 14, 0.1);
+}
+
+.units-data-table tbody tr.unit-table-row:hover td {
+  filter: saturate(1.04);
+}
+
+.unit-type-icon {
+  display: inline-grid;
+  place-items: center;
+  background: var(--unit-icon-tone);
+  color: var(--unit-accent-tone);
+}
+
+.unit-type-pill,
+.unit-rank-pill {
+  background: var(--unit-icon-tone);
+  color: var(--unit-accent-tone);
+}
+
+.table-title-cell .unit-rank-pill {
+  display: inline-flex;
+  margin-top: 7px;
 }
 
 .review-badge {

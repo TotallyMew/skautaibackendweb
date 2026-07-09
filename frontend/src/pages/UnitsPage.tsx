@@ -30,7 +30,7 @@ type InviteForm = {
 
 const emptyUnitForm: UnitForm = {
   name: "",
-  type: "DRAUGOVE",
+  type: "SKAUTU_DRAUGOVE",
   subType: "",
   acceptedRankId: ""
 };
@@ -40,6 +40,20 @@ const emptyInviteForm: InviteForm = {
   organizationalUnitId: "",
   expiresInHours: "48"
 };
+
+const unitTypeOptions = [
+  { value: "VILKU_DRAUGOVE", label: "Vilkų draugovė" },
+  { value: "SKAUTU_DRAUGOVE", label: "Skautų draugovė" },
+  { value: "PATYRUSIU_SKAUTU_DRAUGOVE", label: "Patyrusių skautų draugovė" },
+  { value: "GILDIJA", label: "Gildija" },
+  { value: "VYR_SKAUTU_VIENETAS", label: "Vyr. skautų draugovė / būrelis" },
+  { value: "VYR_SKAUCIU_VIENETAS", label: "Vyr. skaučių draugovė / būrelis" }
+];
+
+const seniorSubtypeOptions = [
+  { value: "DRAUGOVE", label: "Draugovė" },
+  { value: "BURELIS", label: "Būrelis" }
+];
 
 export function UnitsPage() {
   const { auth } = useAuth();
@@ -106,7 +120,7 @@ export function UnitsPage() {
   }, [auth?.activeTuntasId, auth?.token, canCreateInvites, canManageUnits, canOpenPage, canViewUnits, reloadKey]);
 
   const sortedUnits = useMemo(
-    () => [...units].sort((left, right) => unitTypeLabel(left.type).localeCompare(unitTypeLabel(right.type), "lt") || left.name.localeCompare(right.name, "lt")),
+    () => [...units].sort((left, right) => unitTypeSortOrder(left) - unitTypeSortOrder(right) || unitDisplayTypeLabel(left).localeCompare(unitDisplayTypeLabel(right), "lt") || left.name.localeCompare(right.name, "lt")),
     [units]
   );
 
@@ -162,7 +176,7 @@ export function UnitsPage() {
         : await api.createOrganizationalUnit(auth.token, auth.activeTuntasId, {
           name: unitForm.name.trim(),
           type: unitForm.type,
-          subType: optional(unitForm.subType),
+          subType: normalizeUnitSubtype(unitForm.type, unitForm.subType),
           acceptedRankId: optional(unitForm.acceptedRankId)
         });
       setUnits((current) => editingId
@@ -327,21 +341,28 @@ function UnitsTable({
     {
       key: "unit",
       header: "Vienetas",
-      cell: (unit) => (
+      cell: (unit) => {
+        const paletteClass = unitPaletteClass(unit);
+        return (
         <div className="table-title-cell">
-          <span className="record-icon table-cell-icon"><Network size={18} aria-hidden="true" /></span>
+          <span className={`record-icon table-cell-icon unit-type-icon ${paletteClass}`}><Network size={18} aria-hidden="true" /></span>
           <div>
             <strong>{unit.name}</strong>
-            <span>{unit.subType ? unitSubtypeLabel(unit.subType) : "Be potipio"}</span>
-            {unit.acceptedRankName && <span>Priima: {roleLabel(unit.acceptedRankName)}</span>}
+            <span>{unitSecondaryLabel(unit)}</span>
+            {unit.acceptedRankName && (
+              <SkautaiStatusPill className={`unit-rank-pill ${paletteClass}`}>
+                Priima: {roleLabel(unit.acceptedRankName)}
+              </SkautaiStatusPill>
+            )}
           </div>
         </div>
-      )
+        );
+      }
     },
     {
       key: "type",
       header: "Tipas",
-      cell: (unit) => <SkautaiStatusPill tone="info">{unitTypeLabel(unit.type)}</SkautaiStatusPill>
+      cell: (unit) => <SkautaiStatusPill className={`unit-type-pill ${unitPaletteClass(unit)}`}>{unitDisplayTypeLabel(unit)}</SkautaiStatusPill>
     },
     {
       key: "members",
@@ -380,7 +401,15 @@ function UnitsTable({
     }
   ];
 
-  return <SkautaiDataTable rows={units} columns={columns} getRowKey={(unit) => unit.id} />;
+  return (
+    <SkautaiDataTable
+      className="units-data-table"
+      rows={units}
+      columns={columns}
+      getRowKey={(unit) => unit.id}
+      getRowClassName={(unit) => `unit-table-row ${unitPaletteClass(unit)}`}
+    />
+  );
 }
 
 function UnitFormCard({
@@ -416,23 +445,33 @@ function UnitFormCard({
           <TextField label="Pavadinimas *" value={unitForm.name} onChange={(value) => onUnitFormChange((current) => ({ ...current, name: value }))} required />
           <label className="form-field">
             <span>Tipas</span>
-            <select value={unitForm.type} disabled={Boolean(editingId)} onChange={(event) => onUnitFormChange((current) => ({ ...current, type: event.target.value }))}>
-              <option value="DRAUGOVE">Draugovė</option>
-              <option value="GILDIJA">Gildija</option>
-              <option value="BURELIS">Būrelis</option>
+            <select
+              value={unitForm.type}
+              disabled={Boolean(editingId)}
+              onChange={(event) => onUnitFormChange((current) => {
+                const nextType = event.target.value;
+                return {
+                  ...current,
+                  type: nextType,
+                  subType: isSeniorUnitType(nextType) ? current.subType || "DRAUGOVE" : ""
+                };
+              })}
+            >
+              {unitTypeOptions.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </label>
-          <label className="form-field">
-            <span>Potipis</span>
-            <select value={unitForm.subType} disabled={Boolean(editingId)} onChange={(event) => onUnitFormChange((current) => ({ ...current, subType: event.target.value }))}>
-              <option value="">Nenurodyta</option>
-              <option value="VILKAI">Vilkų</option>
-              <option value="SKAUTAI">Skautų</option>
-              <option value="PATYRE_SKAUTAI">Patyrusių skautų</option>
-              <option value="VYR_SKAUTAI">Vyr. skautų / skaučių</option>
-              <option value="VADOVAI">Vadovų</option>
-            </select>
-          </label>
+          {isSeniorUnitType(unitForm.type) && (
+            <label className="form-field">
+              <span>Potipis</span>
+              <select value={unitForm.subType || "DRAUGOVE"} disabled={Boolean(editingId)} onChange={(event) => onUnitFormChange((current) => ({ ...current, subType: event.target.value }))}>
+                {seniorSubtypeOptions.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="form-field">
             <span>Priimamas patyrimo laipsnis</span>
             <select value={unitForm.acceptedRankId} onChange={(event) => onUnitFormChange((current) => ({ ...current, acceptedRankId: event.target.value }))}>
@@ -549,24 +588,122 @@ function TextField({
   );
 }
 
-function unitTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    DRAUGOVE: "Draugovė",
-    GILDIJA: "Gildija",
-    BURELIS: "Būrelis"
+type UnitTone = "patyre" | "skautai" | "vilkai" | "gildija" | "vyr-skautai" | "vyr-skautes" | "default";
+
+function unitPaletteClass(unit: OrganizationalUnit) {
+  return `unit-palette-${resolveUnitTone(unit)}`;
+}
+
+function resolveUnitTone(unit: OrganizationalUnit): UnitTone {
+  switch (unit.type) {
+    case "PATYRUSIU_SKAUTU_DRAUGOVE":
+      return "patyre";
+    case "SKAUTU_DRAUGOVE":
+      return "skautai";
+    case "VILKU_DRAUGOVE":
+      return "vilkai";
+    case "GILDIJA":
+      return "gildija";
+    case "VYR_SKAUTU_VIENETAS":
+      return "vyr-skautai";
+    case "VYR_SKAUCIU_VIENETAS":
+      return "vyr-skautes";
+    default:
+      break;
+  }
+
+  switch (unit.subType) {
+    case "PATYRE_SKAUTAI":
+      return "patyre";
+    case "SKAUTAI":
+      return "skautai";
+    case "VILKAI":
+      return "vilkai";
+    case "VADOVAI":
+      return "gildija";
+    case "VYR_SKAUTAI":
+      return "vyr-skautai";
+    case "VYR_SKAUTES":
+      return "vyr-skautes";
+    default:
+      return "default";
+  }
+}
+
+function unitTypeSortOrder(unit: OrganizationalUnit) {
+  const order: Record<UnitTone, number> = {
+    "vyr-skautai": 0,
+    "vyr-skautes": 1,
+    gildija: 2,
+    patyre: 3,
+    skautai: 4,
+    vilkai: 5,
+    default: 6
   };
-  return labels[type] ?? type;
+  return order[resolveUnitTone(unit)];
+}
+
+function unitDisplayTypeLabel(unit: OrganizationalUnit) {
+  switch (unit.type) {
+    case "VILKU_DRAUGOVE":
+      return "Vilkų draugovė";
+    case "SKAUTU_DRAUGOVE":
+      return "Skautų draugovė";
+    case "PATYRUSIU_SKAUTU_DRAUGOVE":
+      return "Patyrusių skautų draugovė";
+    case "GILDIJA":
+      return "Gildija";
+    case "VYR_SKAUTU_VIENETAS":
+      return `Vyr. skautų ${seniorUnitKindLabel(unit.subType)}`;
+    case "VYR_SKAUCIU_VIENETAS":
+      return `Vyr. skaučių ${seniorUnitKindLabel(unit.subType)}`;
+    case "DRAUGOVE":
+      return `${legacyAgeGroupLabel(unit.subType)} draugovė`;
+    case "BURELIS":
+      return `${legacyAgeGroupLabel(unit.subType)} būrelis`;
+    default:
+      return unit.type;
+  }
+}
+
+function unitSecondaryLabel(unit: OrganizationalUnit) {
+  if (isSeniorUnitType(unit.type)) return unitSubtypeLabel(unit.subType || "DRAUGOVE");
+  if (unit.type === "GILDIJA") return "Vadovų vienetas";
+  if (unit.type.endsWith("_DRAUGOVE")) return "Draugovė";
+  if (unit.type === "DRAUGOVE" || unit.type === "BURELIS") return unitSubtypeLabel(unit.subType || unit.type);
+  return "Tunto vienetas";
 }
 
 function unitSubtypeLabel(subtype: string) {
   const labels: Record<string, string> = {
+    DRAUGOVE: "Draugovė",
+    BURELIS: "Būrelis",
     VILKAI: "Vilkų",
     SKAUTAI: "Skautų",
     PATYRE_SKAUTAI: "Patyrusių skautų",
     VYR_SKAUTAI: "Vyr. skautų / skaučių",
+    VYR_SKAUTES: "Vyr. skaučių",
     VADOVAI: "Vadovų"
   };
   return labels[subtype] ?? subtype;
+}
+
+function legacyAgeGroupLabel(subtype?: string | null) {
+  if (!subtype) return "Tunto";
+  return unitSubtypeLabel(subtype);
+}
+
+function seniorUnitKindLabel(subtype?: string | null) {
+  return subtype === "BURELIS" ? "būrelis" : "draugovė";
+}
+
+function isSeniorUnitType(type: string) {
+  return type === "VYR_SKAUTU_VIENETAS" || type === "VYR_SKAUCIU_VIENETAS";
+}
+
+function normalizeUnitSubtype(type: string, subtype: string) {
+  if (!isSeniorUnitType(type)) return null;
+  return subtype === "BURELIS" ? "BURELIS" : "DRAUGOVE";
 }
 
 function optional(value: string) {

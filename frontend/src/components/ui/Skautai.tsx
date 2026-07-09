@@ -205,12 +205,14 @@ export function SkautaiDataTable<T>({
   rows,
   columns,
   getRowKey,
+  getRowClassName,
   emptyState,
   className
 }: {
   rows: T[];
   columns: Array<SkautaiDataTableColumn<T>>;
   getRowKey: (row: T) => string;
+  getRowClassName?: (row: T) => string | undefined;
   emptyState?: ReactNode;
   className?: string;
 }) {
@@ -230,7 +232,7 @@ export function SkautaiDataTable<T>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={getRowKey(row)}>
+            <tr key={getRowKey(row)} className={getRowClassName?.(row)}>
               {columns.map((column) => (
                 <td key={column.key} className={column.className}>{column.cell(row)}</td>
               ))}

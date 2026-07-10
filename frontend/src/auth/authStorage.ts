@@ -39,6 +39,30 @@ export function authFromTokenResponse(response: TokenResponse, preferredTuntasId
   };
 }
 
+export function authFromRefreshResponse(response: TokenResponse, current: AuthState): AuthState {
+  const refreshed = authFromTokenResponse(response, current.activeTuntasId, {
+    refreshToken: current.refreshToken,
+    tuntai: current.tuntai
+  });
+
+  if (!current.activeTuntasId) return refreshed;
+
+  const previouslySelectedTuntas = current.tuntai.find(
+    (tuntas) => tuntas.id === current.activeTuntasId && isActiveTuntasStatus(tuntas.status)
+  );
+  if (!previouslySelectedTuntas) return refreshed;
+
+  return {
+    ...refreshed,
+    // A refresh response can contain a partial or differently normalized membership list.
+    // Keep the last validated selection while hydratePermissions verifies it server-side.
+    tuntai: refreshed.tuntai.some((tuntas) => tuntas.id === previouslySelectedTuntas.id)
+      ? refreshed.tuntai
+      : [...refreshed.tuntai, previouslySelectedTuntas],
+    activeTuntasId: previouslySelectedTuntas.id
+  };
+}
+
 export function isActiveTuntasStatus(status: string) {
   return status === "ACTIVE" || status === "APPROVED";
 }

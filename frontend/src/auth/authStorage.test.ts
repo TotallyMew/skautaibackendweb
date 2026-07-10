@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { authFromTokenResponse, withPermissions } from "./authStorage";
+import { authFromRefreshResponse, authFromTokenResponse, withPermissions } from "./authStorage";
 import type { TokenResponse } from "../api/types";
 
 const tokenResponse: TokenResponse = {
@@ -88,5 +88,38 @@ describe("withPermissions", () => {
 
     expect(state.permissions).toEqual(["items.read", "items.write"]);
     expect(state.leadershipUnitIds).toEqual(["unit-1"]);
+  });
+});
+
+describe("authFromRefreshResponse", () => {
+  it("keeps the last validated tuntas when the refresh response contains a partial membership list", () => {
+    const current = {
+      ...authFromTokenResponse(tokenResponse, "tuntas-2"),
+      permissions: ["items.view"]
+    };
+
+    const state = authFromRefreshResponse(
+      {
+        ...tokenResponse,
+        refreshToken: "rotated-refresh-token",
+        tuntai: [tokenResponse.tuntai![0]]
+      },
+      current
+    );
+
+    expect(state.activeTuntasId).toBe("tuntas-2");
+    expect(state.tuntai.map((tuntas) => tuntas.id)).toEqual(["tuntas-1", "tuntas-2"]);
+    expect(state.refreshToken).toBe("rotated-refresh-token");
+  });
+
+  it("does not restore a selection that was not an active membership", () => {
+    const current = {
+      ...authFromTokenResponse(tokenResponse),
+      activeTuntasId: "unknown-tuntas"
+    };
+
+    const state = authFromRefreshResponse(tokenResponse, current);
+
+    expect(state.activeTuntasId).toBeNull();
   });
 });

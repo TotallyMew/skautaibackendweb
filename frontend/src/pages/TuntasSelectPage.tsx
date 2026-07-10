@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { CheckCircle2, Clock, LogOut, RefreshCw, ShieldCheck, TicketCheck } from "lucide-react";
 import { ApiError } from "../api/client";
@@ -13,18 +13,11 @@ export function TuntasSelectPage() {
   const [inviteCode, setInviteCode] = useState("");
   const [isAcceptingInvite, setIsAcceptingInvite] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [hasLoadedFreshTuntai, setHasLoadedFreshTuntai] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const activeTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [], [auth?.tuntai]);
   const pendingTuntai = useMemo(() => auth?.tuntai.filter((tuntas) => !isActiveTuntasStatus(tuntas.status)) ?? [], [auth?.tuntai]);
-
-  useEffect(() => {
-    if (!auth || auth.type === "super_admin" || hasLoadedFreshTuntai) return;
-    setHasLoadedFreshTuntai(true);
-    void refreshTuntai().catch(() => undefined);
-  }, [auth, hasLoadedFreshTuntai, refreshTuntai]);
 
   if (!auth) return <Navigate to="/login" replace />;
   if (auth.type === "super_admin") return <Navigate to="/admin" replace />;

@@ -1,7 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { api } from "../api/client";
 import type { LoginRequest, MyProfile, RegisterTuntininkasRequest, RegisterWithInviteRequest } from "../api/types";
-import { authFromTokenResponse, isActiveTuntasStatus, loadAuthState, saveAuthState, withPermissions, type AuthState } from "./authStorage";
+import {
+  authFromRefreshResponse,
+  authFromTokenResponse,
+  isActiveTuntasStatus,
+  loadAuthState,
+  saveAuthState,
+  withPermissions,
+  type AuthState
+} from "./authStorage";
 
 type AuthContextValue = {
   auth: AuthState | null;
@@ -107,17 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const restoreRefreshToken: string = refreshToken;
-    const activeTuntasId = currentAuth.activeTuntasId;
     let isCancelled = false;
 
     async function restoreSession() {
       try {
         const response = await api.refresh(restoreRefreshToken);
         if (!isCancelled) {
-          await hydratePermissions(authFromTokenResponse(response, activeTuntasId, {
-            refreshToken: restoreRefreshToken,
-            tuntai: currentAuth.tuntai
-          }));
+          await hydratePermissions(authFromRefreshResponse(response, currentAuth));
         }
       } catch {
         if (!isCancelled) {

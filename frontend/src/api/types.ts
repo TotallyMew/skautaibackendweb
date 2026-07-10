@@ -293,6 +293,8 @@ export type ItemListFilters = {
   type?: string;
   category?: string;
   sharedOnly?: boolean;
+  personalOwnerUserId?: string;
+  updatedAfter?: string;
   limit?: number;
   offset?: number;
 };
@@ -317,11 +319,260 @@ export type CreateItemRequest = {
   notes?: string | null;
   customFields?: ItemCustomFieldRequest[];
   duplicateHandling?: string;
+  duplicateTargetItemId?: string | null;
 };
 
 export type ItemCustomFieldRequest = {
   fieldName: string;
   fieldValue?: string | null;
+};
+
+export type UpdateItemRequest = Partial<CreateItemRequest> & {
+  status?: string | null;
+  clearCustodianId?: boolean;
+  clearLocationId?: boolean;
+  clearSourceSharedItemId?: boolean;
+  clearResponsibleUserId?: boolean;
+  clearMinimumQuantity?: boolean;
+};
+
+export type TransferItemToUnitRequest = {
+  targetUnitId: string;
+  quantity: number;
+  notes?: string | null;
+};
+
+export type ReturnItemToSharedRequest = {
+  quantity: number;
+  notes?: string | null;
+};
+
+export type DirectItemLoanRequest = {
+  issuedToUserId: string;
+  quantity: number;
+  dueAt?: string | null;
+  notes?: string | null;
+};
+
+export type ReturnDirectItemLoanRequest = {
+  quantity: number;
+  notes?: string | null;
+};
+
+export type RestockItemRequest = {
+  quantity: number;
+  purchaseDate?: string | null;
+  purchasePrice?: number | null;
+  notes?: string | null;
+};
+
+export type ConsumeItemRequest = {
+  quantity: number;
+  notes?: string | null;
+};
+
+export type WriteOffItemRequest = {
+  reason: string;
+};
+
+export type ReviewItemAdditionRequest = {
+  decision: string;
+  rejectionReason?: string | null;
+};
+
+export type ItemAssignment = {
+  id: string;
+  itemId: string;
+  assignedToUserId: string;
+  assignedToUserName?: string | null;
+  assignedByUserId?: string | null;
+  assignedByUserName?: string | null;
+  assignedAt: string;
+  unassignedAt?: string | null;
+  reason?: string | null;
+  notes?: string | null;
+};
+
+export type ItemAssignmentListResponse = {
+  assignments: ItemAssignment[];
+  total: number;
+};
+
+export type DirectItemLoan = {
+  id: string;
+  itemId: string;
+  itemName?: string | null;
+  issuedToUserId: string;
+  issuedToUserName?: string | null;
+  issuedByUserId: string;
+  issuedByUserName?: string | null;
+  quantity: number;
+  returnedQuantity: number;
+  outstandingQuantity: number;
+  status: string;
+  issuedAt: string;
+  returnedAt?: string | null;
+  dueAt?: string | null;
+  notes?: string | null;
+};
+
+export type DirectItemLoanListResponse = {
+  loans: DirectItemLoan[];
+  total: number;
+  activeOutstandingQuantity: number;
+};
+
+export type ItemConditionLogEntry = {
+  id: string;
+  itemId: string;
+  previousCondition?: string | null;
+  newCondition: string;
+  reportedByUserId?: string | null;
+  reportedByUserName?: string | null;
+  reportedAt: string;
+  notes?: string | null;
+};
+
+export type ItemConditionLogListResponse = {
+  entries: ItemConditionLogEntry[];
+  total: number;
+};
+
+export type ItemTransfer = {
+  id: string;
+  itemId: string;
+  fromCustodianId?: string | null;
+  fromCustodianName?: string | null;
+  toCustodianId?: string | null;
+  toCustodianName?: string | null;
+  initiatedByUserId?: string | null;
+  initiatedByUserName?: string | null;
+  approvedByUserId?: string | null;
+  approvedByUserName?: string | null;
+  notes?: string | null;
+  status: string;
+  createdAt: string;
+  completedAt?: string | null;
+};
+
+export type ItemTransferListResponse = {
+  transfers: ItemTransfer[];
+  total: number;
+};
+
+export type ItemHistoryEntry = {
+  id: string;
+  itemId: string;
+  eventType: string;
+  quantityChange?: number | null;
+  performedByUserId?: string | null;
+  performedByUserName?: string | null;
+  requisitionId?: string | null;
+  notes?: string | null;
+  createdAt: string;
+};
+
+export type ItemHistoryListResponse = {
+  entries: ItemHistoryEntry[];
+  total: number;
+};
+
+export type ItemQrResolveResponse = {
+  itemId: string;
+};
+
+export type CreateStorageAuditSessionRequest = {
+  custodianId?: string | null;
+  type?: string | null;
+  category?: string | null;
+  sharedOnly?: boolean;
+  personalOwnerUserId?: string | null;
+  notes?: string | null;
+};
+
+export type UpsertStorageAuditCheckRequest = {
+  itemId: string;
+  result: string;
+  actualQuantity?: number | null;
+  actualLocationId?: string | null;
+  actualLocationNote?: string | null;
+  conditionAtCheck?: string | null;
+  notes?: string | null;
+};
+
+export type UpsertStorageAuditChecksRequest = {
+  checks: UpsertStorageAuditCheckRequest[];
+};
+
+export type ItemCheck = {
+  id: string;
+  sessionId: string;
+  itemId?: string | null;
+  eventInventoryItemId?: string | null;
+  custodyId?: string | null;
+  itemName?: string | null;
+  qrToken?: string | null;
+  result: string;
+  quantity: number;
+  expectedQuantity: number;
+  actualQuantity: number;
+  quantityDifference: number;
+  quantityChangeDirection: string;
+  actualLocationId?: string | null;
+  actualLocationPath?: string | null;
+  actualLocationNote?: string | null;
+  conditionAtCheck?: string | null;
+  checkedByUserId: string;
+  checkedByUserName?: string | null;
+  checkedAt: string;
+  notes?: string | null;
+};
+
+export type ItemCheckSummary = {
+  total: number;
+  checked: number;
+  unchecked: number;
+  found: number;
+  missing: number;
+  misplaced: number;
+  damaged: number;
+  consumed: number;
+  returned: number;
+  matched: number;
+  decreased: number;
+  increased: number;
+  expectedQuantityTotal: number;
+  actualQuantityTotal: number;
+  shortageQuantityTotal: number;
+  overageQuantityTotal: number;
+};
+
+export type ItemCheckSession = {
+  id: string;
+  tuntasId: string;
+  contextType: string;
+  status: string;
+  eventId?: string | null;
+  scopeCustodianId?: string | null;
+  scopeCustodianName?: string | null;
+  scopeType?: string | null;
+  scopeCategory?: string | null;
+  scopeSharedOnly: boolean;
+  scopePersonalOwnerUserId?: string | null;
+  startedByUserId: string;
+  startedByUserName?: string | null;
+  completedByUserId?: string | null;
+  completedByUserName?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  completedAt?: string | null;
+  summary: ItemCheckSummary;
+  checks: ItemCheck[];
+};
+
+export type ItemCheckSessionListResponse = {
+  sessions: ItemCheckSession[];
+  total: number;
 };
 
 export type ReservationItem = {
@@ -356,7 +607,11 @@ export type Reservation = {
   endDate: string;
   status: string;
   unitReviewStatus?: string;
+  unitReviewedByUserId?: string | null;
+  unitReviewedAt?: string | null;
   topLevelReviewStatus?: string;
+  topLevelReviewedByUserId?: string | null;
+  topLevelReviewedAt?: string | null;
   pickupAt?: string | null;
   pickupLocationId?: string | null;
   pickupLocationPath?: string | null;
@@ -382,6 +637,7 @@ export type ReservationListResponse = {
 export type ReservationListFilters = {
   status?: string;
   itemId?: string;
+  updatedAfter?: string;
   limit?: number;
   offset?: number;
 };
@@ -401,6 +657,66 @@ export type CreateReservationRequest = {
   pickupLocationId?: string | null;
   returnLocationId?: string | null;
   notes?: string | null;
+};
+
+export type ReservationAvailabilityItem = {
+  itemId: string;
+  totalQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+};
+
+export type ReservationAvailabilityResponse = {
+  startDate: string;
+  endDate: string;
+  items: ReservationAvailabilityItem[];
+};
+
+export type ReviewReservationRequest = {
+  status: string;
+  notes?: string | null;
+};
+
+export type ReservationMovementItemRequest = {
+  itemId: string;
+  quantity: number;
+};
+
+export type ReservationMovementRequest = {
+  items: ReservationMovementItemRequest[];
+  locationId?: string | null;
+  notes?: string | null;
+};
+
+export type ReservationMovement = {
+  id: string;
+  reservationId: string;
+  itemId: string;
+  itemName?: string | null;
+  locationId?: string | null;
+  locationPath?: string | null;
+  type: string;
+  quantity: number;
+  performedByUserId: string;
+  notes?: string | null;
+  createdAt: string;
+};
+
+export type ReservationMovementListResponse = {
+  movements: ReservationMovement[];
+  total: number;
+};
+
+export type UpdateReservationPickupRequest = {
+  pickupAt?: string | null;
+  pickupLocationId?: string | null;
+  response?: string | null;
+};
+
+export type UpdateReservationReturnTimeRequest = {
+  returnAt?: string | null;
+  returnLocationId?: string | null;
+  response?: string | null;
 };
 
 export type RequisitionItem = {
@@ -441,6 +757,53 @@ export type RequisitionListResponse = {
   total: number;
 };
 
+export type CreateRequisitionItemRequest = {
+  itemName: string;
+  itemDescription?: string | null;
+  quantity?: number;
+  notes?: string | null;
+  requestType?: string;
+  existingItemId?: string | null;
+};
+
+export type CreateRequisitionRequest = {
+  requestingUnitId?: string | null;
+  neededByDate?: string | null;
+  notes?: string | null;
+  items: CreateRequisitionItemRequest[];
+};
+
+export type RequisitionUnitReviewRequest = {
+  action: string;
+  rejectionReason?: string | null;
+};
+
+export type RequisitionTopLevelReviewRequest = {
+  action: string;
+  rejectionReason?: string | null;
+};
+
+export type RequisitionMarkPurchasedRequest = {
+  notes?: string | null;
+};
+
+export type AddRequisitionItemToInventoryRequest = {
+  requisitionItemId: string;
+  action: string;
+  existingItemId?: string | null;
+  custodianId?: string | null;
+  type?: string;
+  category?: string;
+  condition?: string;
+  purchaseDate?: string | null;
+  purchasePrice?: number | null;
+  notes?: string | null;
+};
+
+export type AddRequisitionToInventoryRequest = {
+  items: AddRequisitionItemToInventoryRequest[];
+};
+
 export type SharedInventoryRequestItem = {
   id: string;
   itemId: string;
@@ -473,6 +836,34 @@ export type SharedInventoryRequest = {
 export type SharedInventoryRequestListResponse = {
   requests: SharedInventoryRequest[];
   total: number;
+};
+
+export type CreateSharedInventoryRequestItemRequest = {
+  itemId: string;
+  quantity?: number;
+};
+
+export type CreateSharedInventoryRequestRequest = {
+  itemId?: string | null;
+  itemDescription?: string | null;
+  quantity?: number;
+  neededByDate?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  requestingUnitId?: string | null;
+  needsDraugininkasApproval?: boolean | null;
+  notes?: string | null;
+  items?: CreateSharedInventoryRequestItemRequest[];
+};
+
+export type SharedInventoryUnitReviewRequest = {
+  action: string;
+  rejectionReason?: string | null;
+};
+
+export type SharedInventoryTopLevelReviewRequest = {
+  action: string;
+  rejectionReason?: string | null;
 };
 
 export type MemberLeadershipRole = {
@@ -524,6 +915,205 @@ export type Member = {
 export type MemberListResponse = {
   members: Member[];
   total: number;
+};
+
+export type AssignLeadershipRoleRequest = {
+  roleId: string;
+  organizationalUnitId?: string | null;
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  termNumber?: number;
+};
+
+export type UpdateLeadershipRoleRequest = {
+  startsAt?: string | null;
+  expiresAt?: string | null;
+  termStatus?: string | null;
+  organizationalUnitId?: string | null;
+};
+
+export type TransferTuntininkasRequest = {
+  successorUserId: string;
+};
+
+export type CreateLeadershipChangeRequest = {
+  reason?: string | null;
+};
+
+export type ReviewLeadershipChangeRequest = {
+  action: string;
+  successorUserId?: string | null;
+  reviewNote?: string | null;
+};
+
+export type AssignRankRequest = {
+  roleId: string;
+};
+
+export type LeadershipChangeRequest = {
+  id: string;
+  tuntasId: string;
+  requesterUserId: string;
+  requesterName: string;
+  roleAssignmentId: string;
+  roleId: string;
+  roleName: string;
+  organizationalUnitId: string;
+  organizationalUnitName: string;
+  status: string;
+  reason?: string | null;
+  reviewedByUserId?: string | null;
+  successorUserId?: string | null;
+  successorName?: string | null;
+  reviewNote?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  reviewedAt?: string | null;
+  resolvedAssignmentId?: string | null;
+};
+
+export type LeadershipChangeRequestListResponse = {
+  requests: LeadershipChangeRequest[];
+  total: number;
+};
+
+export type SeniorUnitAccessAudit = {
+  id: string;
+  actorUserId: string;
+  actorUserName: string;
+  action: string;
+  accessMode: string;
+  createdAt: string;
+};
+
+export type SeniorUnitAccessAuditListResponse = {
+  entries: SeniorUnitAccessAudit[];
+  total: number;
+};
+
+export type UnitMemberVisibilityRequest = {
+  isPubliclyVisible: boolean;
+};
+
+export type UnitMemberMoveRequest = {
+  targetOrganizationalUnitId: string;
+};
+
+export type InventoryKitItemRequest = {
+  itemId: string;
+  quantity?: number;
+  notes?: string | null;
+};
+
+export type CreateInventoryKitRequest = {
+  name: string;
+  description?: string | null;
+  custodianId?: string | null;
+  locationId?: string | null;
+  temporaryStorageLabel?: string | null;
+  responsibleUserId?: string | null;
+  items?: InventoryKitItemRequest[];
+};
+
+export type UpdateInventoryKitRequest = Partial<CreateInventoryKitRequest> & {
+  status?: string | null;
+  clearLocationId?: boolean;
+  clearResponsibleUserId?: boolean;
+};
+
+export type InventoryKitItem = {
+  id: string;
+  itemId: string;
+  itemName: string;
+  itemCondition: string;
+  itemStatus: string;
+  availableQuantity: number;
+  quantity: number;
+  locationId?: string | null;
+  locationName?: string | null;
+  locationPath?: string | null;
+  notes?: string | null;
+};
+
+export type InventoryKit = {
+  id: string;
+  tuntasId: string;
+  custodianId?: string | null;
+  custodianName?: string | null;
+  name: string;
+  description?: string | null;
+  locationId?: string | null;
+  locationName?: string | null;
+  locationPath?: string | null;
+  temporaryStorageLabel?: string | null;
+  responsibleUserId?: string | null;
+  responsibleUserName?: string | null;
+  createdByUserId?: string | null;
+  createdByUserName?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  items: InventoryKitItem[];
+};
+
+export type InventoryKitListResponse = {
+  kits: InventoryKit[];
+  total: number;
+};
+
+export type InventoryTemplateItemRequest = {
+  itemId?: string | null;
+  itemName: string;
+  quantity?: number;
+  category?: string | null;
+  notes?: string | null;
+};
+
+export type CreateInventoryTemplateRequest = {
+  name: string;
+  eventType?: string | null;
+  items?: InventoryTemplateItemRequest[];
+};
+
+export type UpdateInventoryTemplateRequest = Partial<CreateInventoryTemplateRequest>;
+
+export type ApplyInventoryTemplateRequest = {
+  templateId: string;
+};
+
+export type InventoryTemplateItem = {
+  id: string;
+  templateId: string;
+  itemId?: string | null;
+  itemName: string;
+  quantity: number;
+  category?: string | null;
+  notes?: string | null;
+};
+
+export type InventoryTemplate = {
+  id: string;
+  tuntasId: string;
+  name: string;
+  eventType?: string | null;
+  createdByUserId?: string | null;
+  createdByUserName?: string | null;
+  createdAt: string;
+  items: InventoryTemplateItem[];
+};
+
+export type InventoryTemplateListResponse = {
+  templates: InventoryTemplate[];
+  total: number;
+};
+
+export type AppliedInventoryTemplateResponse = {
+  reserved: Array<Record<string, unknown>>;
+  toPurchase: Array<Record<string, unknown>>;
+  sources: Array<Record<string, unknown>>;
+  shortages: Array<Record<string, unknown>>;
+  reservedTotal: number;
+  toPurchaseTotal: number;
 };
 
 export type EventRole = {
@@ -602,6 +1192,132 @@ export type CreateEventRequest = {
 
 export type UpdateEventRequest = Partial<CreateEventRequest> & {
   status?: string | null;
+};
+
+export type EventWorkspacePayload = Record<string, unknown>;
+
+export type EventCandidateMembersResponse = {
+  members: Member[];
+  total: number;
+};
+
+export type UpdateEventFinanceBudgetRequest = {
+  inventoryBudgetAmount?: number | null;
+};
+
+export type AssignEventRoleRequest = {
+  userId: string;
+  role: string;
+  targetGroup?: string | null;
+  pastovykleId?: string | null;
+};
+
+export type CreateEventInventoryBucketRequest = {
+  name: string;
+  type: string;
+  pastovykleId?: string | null;
+  locationId?: string | null;
+  notes?: string | null;
+};
+
+export type UpdateEventInventoryBucketRequest = Partial<CreateEventInventoryBucketRequest>;
+
+export type CreateEventInventoryItemRequest = {
+  itemId?: string | null;
+  name: string;
+  plannedQuantity: number;
+  bucketId?: string | null;
+  responsibleUserId?: string | null;
+  notes?: string | null;
+};
+
+export type CreateEventInventoryItemsBulkRequest = {
+  items: CreateEventInventoryItemRequest[];
+};
+
+export type UpdateEventInventoryItemRequest = Partial<CreateEventInventoryItemRequest>;
+
+export type CreateEventInventorySourceRequest = {
+  itemId?: string | null;
+  plannedQuantity: number;
+  notes?: string | null;
+};
+
+export type UpdateEventInventorySourceRequest = {
+  plannedQuantity?: number | null;
+  notes?: string | null;
+  sourceStatus?: string | null;
+};
+
+export type CreateEventInventoryAllocationRequest = {
+  eventInventoryItemId: string;
+  bucketId: string;
+  quantity: number;
+  notes?: string | null;
+};
+
+export type UpdateEventInventoryAllocationRequest = {
+  quantity?: number | null;
+  notes?: string | null;
+};
+
+export type CreateEventPurchaseItemRequest = {
+  eventInventoryItemId: string;
+  purchasedQuantity: number;
+  unitPrice?: number | null;
+  notes?: string | null;
+};
+
+export type CreateEventPurchaseRequest = {
+  purchaseDate?: string | null;
+  notes?: string | null;
+  items: CreateEventPurchaseItemRequest[];
+};
+
+export type UpdateEventPurchaseRequest = {
+  status?: string | null;
+  purchaseDate?: string | null;
+  totalAmount?: number | null;
+  invoiceFileUrl?: string | null;
+  notes?: string | null;
+};
+
+export type AttachEventPurchaseInvoiceRequest = {
+  invoiceFileUrl: string;
+};
+
+export type CreateEventInventoryMovementRequest = {
+  eventInventoryItemId: string;
+  movementType: string;
+  quantity: number;
+  pastovykleId?: string | null;
+  toUserId?: string | null;
+  fromCustodyId?: string | null;
+  requestId?: string | null;
+  notes?: string | null;
+};
+
+export type CreateEventInventoryTransferRequest = {
+  sourceCustodyId: string;
+  quantity: number;
+  notes?: string | null;
+};
+
+export type RespondEventInventoryTransferRequest = {
+  approve: boolean;
+  notes?: string | null;
+};
+
+export type ReconcileEventReturnsRequest = {
+  returns: Array<Record<string, unknown>>;
+};
+
+export type ReconcileEventPurchasesRequest = {
+  purchases: Array<Record<string, unknown>>;
+};
+
+export type UploadResponse = {
+  url: string;
 };
 
 export type MyTask = {

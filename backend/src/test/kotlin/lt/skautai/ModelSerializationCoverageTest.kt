@@ -6,6 +6,7 @@ import kotlinx.serialization.json.Json
 import lt.skautai.models.requests.*
 import lt.skautai.models.responses.*
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class ModelSerializationCoverageTest {
@@ -22,6 +23,21 @@ class ModelSerializationCoverageTest {
 
     private inline fun <reified T> assertDecodesTo(rawJson: String, expected: T) {
         assertEquals(expected, json.decodeFromString<T>(rawJson))
+    }
+
+    @Test
+    fun `active tuntas status is serialized with production json defaults`() {
+        val encoded = Json.encodeToString(
+            TuntasInfo(
+                id = "tuntas-active",
+                name = "Aktyvus tuntas",
+                krastas = "Vilniaus",
+                contactEmail = "tuntas@example.com",
+                status = "ACTIVE"
+            )
+        )
+
+        assertTrue(encoded.contains("\"status\":\"ACTIVE\""))
     }
 
     @Test

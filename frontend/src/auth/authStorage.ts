@@ -44,8 +44,21 @@ export function authFromRefreshResponse(response: TokenResponse, current: AuthSt
     refreshToken: current.refreshToken,
     tuntai: current.tuntai
   });
+  const previousTuntaiById = new Map(current.tuntai.map((tuntas) => [tuntas.id, tuntas]));
+  const restoredTuntai = refreshed.tuntai.map((tuntas) => {
+    const previous = previousTuntaiById.get(tuntas.id);
+    if (!previous) return tuntas;
+    return {
+      ...tuntas,
+      name: tuntas.name || previous.name,
+      krastas: tuntas.krastas || previous.krastas,
+      contactEmail: tuntas.contactEmail || previous.contactEmail,
+      // Kotlin serialization omits properties that equal a DTO default unless encodeDefaults is enabled.
+      status: tuntas.status || previous.status
+    };
+  });
 
-  if (!current.activeTuntasId) return refreshed;
+  if (!current.activeTuntasId) return { ...refreshed, tuntai: restoredTuntai };
 
   const previouslySelectedTuntas = current.tuntai.find(
     (tuntas) => tuntas.id === current.activeTuntasId && isActiveTuntasStatus(tuntas.status)
@@ -56,9 +69,9 @@ export function authFromRefreshResponse(response: TokenResponse, current: AuthSt
     ...refreshed,
     // A refresh response can contain a partial or differently normalized membership list.
     // Keep the last validated selection while hydratePermissions verifies it server-side.
-    tuntai: refreshed.tuntai.some((tuntas) => tuntas.id === previouslySelectedTuntas.id)
-      ? refreshed.tuntai
-      : [...refreshed.tuntai, previouslySelectedTuntas],
+    tuntai: restoredTuntai.some((tuntas) => tuntas.id === previouslySelectedTuntas.id)
+      ? restoredTuntai
+      : [...restoredTuntai, previouslySelectedTuntas],
     activeTuntasId: previouslySelectedTuntas.id
   };
 }

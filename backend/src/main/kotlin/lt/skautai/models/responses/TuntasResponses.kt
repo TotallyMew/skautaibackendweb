@@ -8,5 +8,5 @@ data class TuntasInfo(
     val name: String,
     val krastas: String,
     val contactEmail: String,
-    val status: String = "ACTIVE"
+    val status: String
 )

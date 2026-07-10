@@ -122,4 +122,20 @@ describe("authFromRefreshResponse", () => {
 
     expect(state.activeTuntasId).toBeNull();
   });
+
+  it("survives consecutive refresh responses that omit default tuntas statuses", () => {
+    const current = authFromTokenResponse(tokenResponse, "tuntas-2");
+    const responseWithoutStatuses = {
+      ...tokenResponse,
+      tuntai: tokenResponse.tuntai!.map((tuntas) => ({ ...tuntas, status: "" }))
+    };
+
+    const firstRefresh = authFromRefreshResponse(responseWithoutStatuses, current);
+    const secondRefresh = authFromRefreshResponse(responseWithoutStatuses, firstRefresh);
+
+    expect(firstRefresh.activeTuntasId).toBe("tuntas-2");
+    expect(firstRefresh.tuntai.every((tuntas) => tuntas.status === "ACTIVE")).toBe(true);
+    expect(secondRefresh.activeTuntasId).toBe("tuntas-2");
+    expect(secondRefresh.tuntai.every((tuntas) => tuntas.status === "ACTIVE")).toBe(true);
+  });
 });

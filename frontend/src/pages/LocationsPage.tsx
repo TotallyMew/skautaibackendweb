@@ -189,10 +189,14 @@ export function LocationsPage() {
   );
 
   return (
-    <SkautaiPageShell className="locations-page" eyebrow="Inventorius" title="Lokacijos" actions={actions}>
-      <p className="locations-page-description">
-        Tvarkyk hierarchinę sandėlių, patalpų ir kitų inventoriaus vietų struktūrą.
-      </p>
+    <SkautaiPageShell
+      className="locations-page"
+      eyebrow="Inventorius"
+      title="Lokacijos"
+      description="Tvarkykite hierarchinę sandėlių, patalpų ir kitų inventoriaus vietų struktūrą."
+      actions={actions}
+      width="wide"
+    >
 
       {message && <p className="inline-success">{message}</p>}
       {error && <SkautaiErrorState description={error} />}

@@ -296,10 +296,14 @@ export function UnitsPage() {
   );
 
   return (
-    <SkautaiPageShell className="units-page" eyebrow="Organizacija" title="Vienetai" actions={actions}>
-      <p className="units-page-description">
-        Peržiūrėk tunto vienetus, jų narių ir inventoriaus suvestines bei valdyk prisijungimo kodus.
-      </p>
+    <SkautaiPageShell
+      className="units-page"
+      eyebrow="Organizacija"
+      title="Vienetai"
+      description="Peržiūrėkite tunto vienetus, jų narių ir inventoriaus suvestines bei valdykite prisijungimo kodus."
+      actions={actions}
+      width="wide"
+    >
       {message && <p className="inline-success">{message}</p>}
       {error && <SkautaiErrorState description={error} />}
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Eye, Loader2, Plus, RefreshCw, ShieldCheck } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Reservation, ReservationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -22,8 +22,10 @@ const statusOptions = [
 
 export function ReservationsPage() {
   const { auth } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedStatus = searchParams.get("status") ?? "";
   const [reservationsState, setReservationsState] = useState<ReservationListResponse | null>(null);
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(() => statusOptions.some((option) => option.value === requestedStatus) ? requestedStatus : "");
   const [offset, setOffset] = useState(0);
   const [reloadKey, setReloadKey] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -79,131 +81,132 @@ export function ReservationsPage() {
     );
   }
 
-  return (
-    <SkautaiPageShell className="inventory-page">
-      <div className="section-toolbar">
-        <div className="list-summary">
-          <strong>{total}</strong>
-          <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
-        </div>
-        <div className="toolbar-actions">
-          {canCreate && (
-            <Link className="primary-button compact-primary-button" to="/reservations/new">
-              <Plus size={17} aria-hidden="true" />
-              Nauja rezervacija
-            </Link>
-          )}
-          <button
-            className="secondary-button"
-            type="button"
-            onClick={() => {
-              setOffset(0);
-              setReloadKey((value) => value + 1);
-            }}
-            disabled={!canFetch || isLoading}
-          >
-            <RefreshCw size={17} aria-hidden="true" />
-            Atnaujinti
-          </button>
-        </div>
-      </div>
+  const actions = <>
+    <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={!canFetch || isLoading}>
+      <RefreshCw size={17} aria-hidden="true" />Atnaujinti
+    </button>
+    {canCreate && <Link className="primary-button compact-primary-button" to="/reservations/new"><Plus size={17} aria-hidden="true" />Nauja rezervacija</Link>}
+  </>;
 
-      <div className="filter-bar compact-filter-bar">
-        <select value={status} onChange={(event) => { setStatus(event.target.value); setOffset(0); }}>
-          {statusOptions.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-      </div>
+  function changeStatus(nextStatus: string) {
+    setStatus(nextStatus);
+    setOffset(0);
+    const next = new URLSearchParams(searchParams);
+    if (nextStatus) next.set("status", nextStatus);
+    else next.delete("status");
+    setSearchParams(next, { replace: true });
+  }
+
+  return (
+    <SkautaiPageShell className="inventory-page" eyebrow="Darbų srautai" title="Rezervacijos"
+      description="Valdykite rezervavimo laikotarpius, išdavimą, grąžinimą ir patvirtinimo eigą."
+      actions={actions} width="wide">
+      <SkautaiToolbar title="Filtrai">
+        <div className="filter-bar compact-filter-bar management-filter-bar">
+          <select value={status} aria-label="Būsena" onChange={(event) => changeStatus(event.target.value)}>
+            {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </div>
+      </SkautaiToolbar>
 
       {error && <SkautaiErrorState description={error} />}
-
       <div className="data-panel">
-        <div className="data-panel-header">
-          <span>{total} {countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
-          <span>Puslapis {currentPage} / {pageCount}</span>
-        </div>
-
-        {isLoading && (
-          <div className="table-state">
-            <Loader2 className="spin" size={22} aria-hidden="true" />
-            Kraunamos rezervacijos...
-          </div>
-        )}
-
-        {!isLoading && !error && reservationsState?.reservations.length === 0 && (
-          <SkautaiEmptyState icon={ClipboardList} title="Rezervacijų pagal šį filtrą nerasta" description="Pakeisk būseną arba atnaujink sąrašą." />
-        )}
-
-        {!isLoading && !error && Boolean(reservationsState?.reservations.length) && (
-          <ReservationsList reservations={reservationsState?.reservations ?? []} />
-        )}
-      </div>
-
-      <div className="pagination-row">
-        <button
-          className="icon-button"
-          type="button"
-          disabled={offset === 0 || isLoading}
-          onClick={() => setOffset(Math.max(0, offset - pageSize))}
-          aria-label="Ankstesnis puslapis"
-          title="Ankstesnis puslapis"
-        >
-          <ChevronLeft size={18} aria-hidden="true" />
-        </button>
-        <button
-          className="icon-button"
-          type="button"
-          disabled={!reservationsState?.hasMore || isLoading}
-          onClick={() => setOffset(offset + pageSize)}
-          aria-label="Kitas puslapis"
-          title="Kitas puslapis"
-        >
-          <ChevronRight size={18} aria-hidden="true" />
-        </button>
+        {isLoading && <div className="table-state"><Loader2 className="spin" size={22} aria-hidden="true" />Kraunamos rezervacijos...</div>}
+        {!isLoading && !error && reservationsState?.reservations.length === 0 && <SkautaiEmptyState icon={ClipboardList}
+          title="Rezervacijų pagal šį filtrą nerasta" description="Pakeiskite būseną arba atnaujinkite sąrašą." />}
+        {!isLoading && !error && Boolean(reservationsState?.reservations.length) && <ReservationsTable reservations={reservationsState?.reservations ?? []} />}
+        {!error && <SkautaiTableFooter meta={`${total} ${countLabel(total, "įrašas", "įrašai", "įrašų")} · Puslapis ${currentPage} iš ${pageCount}`}>
+          <button className="icon-button" type="button" disabled={offset === 0 || isLoading}
+            onClick={() => setOffset(Math.max(0, offset - pageSize))} aria-label="Ankstesnis puslapis" title="Ankstesnis puslapis">
+            <ChevronLeft size={18} aria-hidden="true" />
+          </button>
+          <button className="icon-button" type="button" disabled={!reservationsState?.hasMore || isLoading}
+            onClick={() => setOffset(offset + pageSize)} aria-label="Kitas puslapis" title="Kitas puslapis">
+            <ChevronRight size={18} aria-hidden="true" />
+          </button>
+        </SkautaiTableFooter>}
       </div>
     </SkautaiPageShell>
   );
 }
 
-function ReservationsList({ reservations }: { reservations: Reservation[] }) {
-  return (
-    <div className="record-list">
-      <div className="record-header request-record-row" aria-hidden="true">
-        <span />
-        <span>Rezervacija</span>
-        <span>Laikas</span>
-        <span>Kiekis</span>
-        <span>Būsena</span>
-      </div>
-      {reservations.map((reservation) => (
-        <article className="record-row request-record-row" key={reservation.id}>
-          <div className="record-icon">
-            <CalendarCheck size={18} aria-hidden="true" />
+function ReservationsTable({ reservations }: { reservations: Reservation[] }) {
+  const columns: Array<SkautaiDataTableColumn<Reservation>> = [
+    {
+      key: "reservation",
+      header: "Rezervacija",
+      cell: (reservation) => (
+        <div className="table-title-cell">
+          <span className="record-icon table-cell-icon"><CalendarCheck size={18} aria-hidden="true" /></span>
+          <div>
+            <Link className="table-link" to={`/reservations/${reservation.id}`}>{reservation.title}</Link>
+            <span>{reservation.notes ?? summarizeItems(reservation)}</span>
           </div>
-          <div className="record-main">
-            <Link className="record-title" to={`/reservations/${reservation.id}`}>{reservation.title}</Link>
-            <span>{reservation.requestingUnitName ?? reservation.notes ?? "Bendra rezervacija"}</span>
-            <div className="record-chip-row">
-              <ReviewBadge label="Padalinys" status={reservation.unitReviewStatus ?? "NOT_REQUIRED"} />
-              <ReviewBadge label="Tuntas" status={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
-            </div>
-          </div>
-          <div className="record-meta record-date">
-            <strong>{formatDate(reservation.startDate)}</strong>
-            <span>iki {formatDate(reservation.endDate)}</span>
-            <span>{reservation.reservedByName ?? "Rezervavęs narys nenurodytas"}</span>
-          </div>
-          <div className="record-meta record-quantity">
-            <strong>{reservation.totalItems} {countLabel(reservation.totalItems, "įrašas", "įrašai", "įrašų")}</strong>
-            <span>{reservation.totalQuantity} vnt.</span>
-            <span>{summarizeItems(reservation)}</span>
-          </div>
-          <StatusBadge status={reservation.status} />
-        </article>
-      ))}
-    </div>
-  );
+        </div>
+      )
+    },
+    {
+      key: "requester",
+      header: "Rezervavo",
+      cell: (reservation) => (
+        <>
+          <strong>{reservation.reservedByName ?? "—"}</strong>
+          <span>{reservation.requestingUnitName ?? "Tunto rezervacija"}</span>
+        </>
+      )
+    },
+    {
+      key: "period",
+      header: "Laikotarpis",
+      cell: (reservation) => (
+        <>
+          <strong>{formatDate(reservation.startDate)}</strong>
+          <span>iki {formatDate(reservation.endDate)}</span>
+        </>
+      )
+    },
+    {
+      key: "quantity",
+      header: "Inventorius",
+      cell: (reservation) => {
+        const itemCount = finiteCount(reservation.totalItems);
+        return (
+          <>
+            <strong>{finiteCount(reservation.totalQuantity)} vnt.</strong>
+            <span>{itemCount} {countLabel(itemCount, "įrašas", "įrašai", "įrašų")}</span>
+          </>
+        );
+      }
+    },
+    {
+      key: "review",
+      header: "Patvirtinimas",
+      cell: (reservation) => (
+        <div className="review-status-stack">
+          <ReviewBadge label="Padalinys" status={reservation.unitReviewStatus ?? "NOT_REQUIRED"} />
+          <ReviewBadge label="Tuntas" status={reservation.topLevelReviewStatus ?? "NOT_REQUIRED"} />
+        </div>
+      )
+    },
+    {
+      key: "status",
+      header: "Būsena",
+      cell: (reservation) => <StatusBadge status={reservation.status} />
+    },
+    {
+      key: "actions",
+      header: "",
+      mobileLabel: "Veiksmai",
+      className: "table-actions-cell",
+      cell: (reservation) => (
+        <Link className="icon-button" to={`/reservations/${reservation.id}`} aria-label={`Peržiūrėti ${reservation.title}`} title="Peržiūrėti">
+          <Eye size={17} aria-hidden="true" />
+        </Link>
+      )
+    }
+  ];
+
+  return <SkautaiDataTable rows={reservations} columns={columns} getRowKey={(reservation) => reservation.id} className="management-data-table reservations-data-table" />;
 }
 
 function ReviewBadge({ label, status }: { label: string; status: string }) {
@@ -215,7 +218,7 @@ function ReviewBadge({ label, status }: { label: string; status: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
-  return <SkautaiStatusPill status={status}>{statusLabel(status)}</SkautaiStatusPill>;
+  return <SkautaiStatusPill status={status}>{reservationStatusLabel(status)}</SkautaiStatusPill>;
 }
 
 function summarizeItems(reservation: Reservation) {

@@ -24,22 +24,22 @@ import { taskRoutePath, taskUrgencyLabel } from "../utils/tasks";
 type DashboardData = {
   inventoryTotal: number;
   taskTotal: number;
-  pendingReservationsTotal: number;
+  activeReservationsTotal: number;
   planningEventsTotal: number;
   inventoryItems: Item[];
   tasks: MyTask[];
-  pendingReservations: Reservation[];
+  activeReservations: Reservation[];
   planningEvents: Event[];
 };
 
 const emptyDashboard: DashboardData = {
   inventoryTotal: 0,
   taskTotal: 0,
-  pendingReservationsTotal: 0,
+  activeReservationsTotal: 0,
   planningEventsTotal: 0,
   inventoryItems: [],
   tasks: [],
-  pendingReservations: [],
+  activeReservations: [],
   planningEvents: []
 };
 
@@ -73,7 +73,7 @@ export function DashboardPage() {
     Promise.all([
       canViewInventoryArea ? api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
       api.listMyTasks(auth.token, auth.activeTuntasId).catch(() => null),
-      canViewReservationArea ? api.listReservations(auth.token, auth.activeTuntasId, { status: "PENDING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
+      canViewReservationArea ? api.listReservations(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null),
       canViewEvents ? api.listEvents(auth.token, auth.activeTuntasId, { status: "PLANNING", limit: 3, offset: 0 }).catch(() => null) : Promise.resolve(null)
     ])
       .then(([items, tasks, reservations, events]) => {
@@ -89,11 +89,11 @@ export function DashboardPage() {
         setDashboard({
           inventoryTotal: safeCount(items?.total),
           taskTotal: safeCount(tasks?.total),
-          pendingReservationsTotal: safeCount(reservations?.total),
+          activeReservationsTotal: safeCount(reservations?.total),
           planningEventsTotal: safeCount(events?.total),
           inventoryItems: items?.items ?? [],
           tasks: tasks?.tasks.slice(0, 4) ?? [],
-          pendingReservations: reservations?.reservations ?? [],
+          activeReservations: reservations?.reservations ?? [],
           planningEvents: events?.events ?? []
         });
       })
@@ -153,9 +153,9 @@ export function DashboardPage() {
             />
             <DashboardMetricTile
               icon={CalendarDays}
-              label="Laukiančios rezervacijos"
-              value={canViewReservationArea ? dashboard.pendingReservationsTotal : undefined}
-              to={canViewReservationArea ? "/reservations?status=PENDING" : undefined}
+              label="Aktyvios rezervacijos"
+              value={canViewReservationArea ? dashboard.activeReservationsTotal : undefined}
+              to={canViewReservationArea ? "/reservations?status=ACTIVE" : undefined}
             />
             <DashboardMetricTile
               icon={CalendarDays}
@@ -216,9 +216,9 @@ export function DashboardPage() {
               )}
 
               {canViewReservationArea && (
-                <DashboardSection title="Laukiančios rezervacijos" actionLabel="Visos rezervacijos" actionTo="/reservations">
+                <DashboardSection title="Aktyvios rezervacijos" actionLabel="Visos rezervacijos" actionTo="/reservations">
                   <div className="dashboard-list">
-                    {dashboard.pendingReservations.length > 0 ? dashboard.pendingReservations.map((reservation) => (
+                    {dashboard.activeReservations.length > 0 ? dashboard.activeReservations.map((reservation) => (
                       <DashboardListRow
                         key={reservation.id}
                         to={`/reservations/${reservation.id}`}
@@ -234,8 +234,8 @@ export function DashboardPage() {
                     )) : (
                       <DashboardEmptyRow
                         icon={CalendarDays}
-                        title="Laukiančių rezervacijų nėra"
-                        description="Naujos laukiančios rezervacijos bus rodomos čia."
+                        title="Aktyvių rezervacijų nėra"
+                        description="Išduotos ir šiuo metu vykdomos rezervacijos bus rodomos čia."
                       />
                     )}
                   </div>

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart } from "lucide-react";
+import { Eye, Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Requisition, RequisitionListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { SkautaiDataTable, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill, type SkautaiDataTableColumn } from "../components/ui/Skautai";
-import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
+import { SkautaiDataTable, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill, SkautaiTableFooter, type SkautaiDataTableColumn } from "../components/ui/Skautai";
+import { countLabel, finiteCount, reviewStatusLabel, statusLabel } from "../utils/display";
 import { canUseRequisitions, canUseSharedInventoryRequests } from "../utils/permissions";
 
 type RequestTab = "requisitions" | "shared";
@@ -54,21 +54,28 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
     setIsLoading(true);
     setError(null);
 
-    Promise.all([
+    Promise.allSettled([
       canFetchRequisitions
-        ? api.listRequisitions(auth.token, auth.activeTuntasId).catch(() => null)
+        ? api.listRequisitions(auth.token, auth.activeTuntasId)
         : Promise.resolve(null),
       canFetchSharedRequests
-        ? api.listSharedInventoryRequests(auth.token, auth.activeTuntasId).catch(() => null)
+        ? api.listSharedInventoryRequests(auth.token, auth.activeTuntasId)
         : Promise.resolve(null)
     ])
-      .then(([requisitions, sharedRequests]) => {
+      .then(([requisitionsResult, sharedRequestsResult]) => {
         if (isCancelled) return;
-        setRequisitionsState(requisitions);
-        setSharedRequestsState(sharedRequests);
-      })
-      .catch(() => {
-        if (!isCancelled) setError(`Nepavyko užkrauti ${modeLabel(mode, activeTab).toLowerCase()}.`);
+
+        if (requisitionsResult.status === "fulfilled") {
+          setRequisitionsState(requisitionsResult.value);
+        } else if (activeTab === "requisitions") {
+          setError("Nepavyko užkrauti pirkimo prašymų.");
+        }
+
+        if (sharedRequestsResult.status === "fulfilled") {
+          setSharedRequestsState(sharedRequestsResult.value);
+        } else if (activeTab === "shared") {
+          setError("Nepavyko užkrauti paėmimo prašymų.");
+        }
       })
       .finally(() => {
         if (!isCancelled) setIsLoading(false);
@@ -79,8 +86,8 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
     };
   }, [activeTab, auth?.activeTuntasId, auth?.token, canFetchRequisitions, canFetchSharedRequests, mode, reloadKey, visibleTabs.length]);
 
-  const requisitionTotal = requisitionsState?.total ?? 0;
-  const sharedTotal = sharedRequestsState?.total ?? 0;
+  const requisitionTotal = finiteCount(requisitionsState?.total);
+  const sharedTotal = finiteCount(sharedRequestsState?.total);
   const total = activeTab === "requisitions" ? requisitionTotal : sharedTotal;
 
   if (visibleTabs.length === 0) {
@@ -95,14 +102,14 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
     );
   }
 
-  return (
-    <SkautaiPageShell className="inventory-page">
-      <div className="section-toolbar">
-        <div className="list-summary">
-          <strong>{total}</strong>
-          <span>{countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
-        </div>
-        <button
+  const title = mode === "shared" ? "Paėmimo prašymai" : mode === "requisitions" ? "Pirkimo prašymai" : "Prašymai";
+  const description = mode === "shared"
+    ? "Peržiūrėkite bendro inventoriaus paėmimo prašymus ir jų tvirtinimo eigą."
+    : mode === "requisitions"
+      ? "Valdykite pirkimo ir turimų atsargų papildymo prašymus vienoje darbo eilėje."
+      : "Valdykite pirkimo, papildymo ir bendro inventoriaus paėmimo prašymus.";
+  const actions = (
+    <button
           className="secondary-button"
           type="button"
           onClick={() => setReloadKey((value) => value + 1)}
@@ -110,8 +117,11 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
         >
           <RefreshCw size={17} aria-hidden="true" />
           Atnaujinti
-        </button>
-      </div>
+    </button>
+  );
+
+  return (
+    <SkautaiPageShell className="requests-page" eyebrow="Prašymai" title={title} description={description} actions={actions} width="wide">
 
       {shouldShowTabs && (
         <div className="segmented-tabs" role="tablist" aria-label="Prašymų tipai">
@@ -123,11 +133,6 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
       {error && <SkautaiErrorState description={error} />}
 
       <div className="data-panel">
-        <div className="data-panel-header">
-          <span>{total} {countLabel(total, "įrašas", "įrašai", "įrašų")}</span>
-          <span>{headerMeta(activeTab)}</span>
-        </div>
-
         {isLoading && (
           <div className="table-state">
             <Loader2 className="spin" size={22} aria-hidden="true" />
@@ -150,6 +155,8 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
         {!isLoading && !error && activeTab === "shared" && Boolean(sharedRequestsState?.requests.length) && (
           <SharedRequestsList requests={sharedRequestsState?.requests ?? []} />
         )}
+
+        {!error && <SkautaiTableFooter meta={`${total} ${countLabel(total, "įrašas", "įrašai", "įrašų")} · ${headerMeta(activeTab)}`} />}
       </div>
     </SkautaiPageShell>
   );
@@ -175,10 +182,6 @@ function RequisitionsList({ requests }: { requests: Requisition[] }) {
           <div>
             <Link className="table-link" to={`/purchases/${request.id}`}>{requestTitle(request)}</Link>
             <span>{request.requestingUnitName ?? "Tunto prašymas"}</span>
-            <div className="record-chip-row">
-              <ReviewBadge label="Padalinys" status={request.unitReviewStatus} />
-              <ReviewBadge label="Tuntas" status={request.topLevelReviewStatus} />
-            </div>
           </div>
         </div>
       )
@@ -204,13 +207,34 @@ function RequisitionsList({ requests }: { requests: Requisition[] }) {
       )
     },
     {
+      key: "review",
+      header: "Patvirtinimas",
+      cell: (request) => (
+        <div className="review-status-stack">
+          <ReviewBadge label="Padalinys" status={request.unitReviewStatus} />
+          <ReviewBadge label="Tuntas" status={request.topLevelReviewStatus} />
+        </div>
+      )
+    },
+    {
       key: "status",
       header: "Būsena",
       cell: (request) => <StatusBadge status={request.status} />
+    },
+    {
+      key: "actions",
+      header: "",
+      mobileLabel: "Veiksmai",
+      className: "table-actions-cell",
+      cell: (request) => (
+        <Link className="icon-button" to={`/purchases/${request.id}`} aria-label={`Peržiūrėti ${requestTitle(request)}`} title="Peržiūrėti">
+          <Eye size={17} aria-hidden="true" />
+        </Link>
+      )
     }
   ];
 
-  return <SkautaiDataTable rows={requests} columns={columns} getRowKey={(request) => request.id} />;
+  return <SkautaiDataTable rows={requests} columns={columns} getRowKey={(request) => request.id} className="management-data-table requests-data-table" />;
 }
 
 function SharedRequestsList({ requests }: { requests: SharedInventoryRequest[] }) {
@@ -224,10 +248,6 @@ function SharedRequestsList({ requests }: { requests: SharedInventoryRequest[] }
           <div>
             <Link className="table-link" to={`/pickup-requests/${request.id}`}>{sharedRequestTitle(request)}</Link>
             <span>{request.requestingUnitName ?? request.requestedByUserName ?? "Bendro inventoriaus prašymas"}</span>
-            <div className="record-chip-row">
-              {request.needsDraugininkasApproval && <ReviewBadge label="Padalinys" status={request.draugininkasStatus ?? "PENDING"} />}
-              <ReviewBadge label="Tuntas" status={request.topLevelStatus} />
-            </div>
           </div>
         </div>
       )
@@ -254,13 +274,34 @@ function SharedRequestsList({ requests }: { requests: SharedInventoryRequest[] }
       )
     },
     {
+      key: "review",
+      header: "Patvirtinimas",
+      cell: (request) => (
+        <div className="review-status-stack">
+          {request.needsDraugininkasApproval && <ReviewBadge label="Padalinys" status={request.draugininkasStatus ?? "PENDING"} />}
+          <ReviewBadge label="Tuntas" status={request.topLevelStatus} />
+        </div>
+      )
+    },
+    {
       key: "status",
       header: "Būsena",
       cell: (request) => <StatusBadge status={request.topLevelStatus} />
+    },
+    {
+      key: "actions",
+      header: "",
+      mobileLabel: "Veiksmai",
+      className: "table-actions-cell",
+      cell: (request) => (
+        <Link className="icon-button" to={`/pickup-requests/${request.id}`} aria-label={`Peržiūrėti ${sharedRequestTitle(request)}`} title="Peržiūrėti">
+          <Eye size={17} aria-hidden="true" />
+        </Link>
+      )
     }
   ];
 
-  return <SkautaiDataTable rows={requests} columns={columns} getRowKey={(request) => request.id} />;
+  return <SkautaiDataTable rows={requests} columns={columns} getRowKey={(request) => request.id} className="management-data-table requests-data-table" />;
 }
 
 function ReviewBadge({ label, status }: { label: string; status: string }) {
@@ -303,7 +344,7 @@ function requestTitle(request: Requisition) {
 }
 
 function requisitionQuantity(request: Requisition) {
-  return request.items.reduce((sum, item) => sum + item.quantityRequested, 0);
+  return request.items.reduce((sum, item) => sum + finiteCount(item.quantityRequested), 0);
 }
 
 function sharedRequestTitle(request: SharedInventoryRequest) {
@@ -311,7 +352,7 @@ function sharedRequestTitle(request: SharedInventoryRequest) {
 }
 
 function sharedRequestQuantity(request: SharedInventoryRequest) {
-  return request.items.length > 0 ? request.items.reduce((sum, item) => sum + item.quantity, 0) : request.quantity;
+  return request.items.length > 0 ? request.items.reduce((sum, item) => sum + finiteCount(item.quantity), 0) : finiteCount(request.quantity);
 }
 
 function formatOptionalDate(value?: string | null) {
@@ -320,7 +361,7 @@ function formatOptionalDate(value?: string | null) {
 
 function formatDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
+  if (Number.isNaN(date.getTime())) return "—";
   return new Intl.DateTimeFormat("lt-LT", {
     dateStyle: "medium"
   }).format(date);

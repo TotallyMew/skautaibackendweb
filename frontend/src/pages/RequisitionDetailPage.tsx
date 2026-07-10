@@ -4,7 +4,7 @@ import { AlertCircle, ArrowLeft, CalendarDays, ClipboardList, Loader2, PackagePl
 import { api } from "../api/client";
 import type { AddRequisitionItemToInventoryRequest, Item, OrganizationalUnit, Requisition, RequisitionItem } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { reviewStatusLabel, statusLabel } from "../utils/display";
+import { finiteCount, requisitionActionLabel, requestTypeLabel, reviewLevelLabel, reviewStatusLabel, statusLabel } from "../utils/display";
 import { hasAnyPermission, hasPermission } from "../utils/permissions";
 
 type InventoryAction = "NEW_ITEM" | "RESTOCK_EXISTING";
@@ -219,12 +219,12 @@ export function RequisitionDetailPage() {
               </div>
               <section className="detail-section">
                 <h3>Prašomos eilutės</h3>
-                <div className="table-wrap"><table className="data-table compact-data-table"><thead><tr><th>Inventorius</th><th>Kiekis</th><th>Patvirtinta</th><th>Inventoriaus būsena</th><th>Pastabos</th></tr></thead><tbody>{request.items.map((item) => <tr key={item.id}><td><strong>{item.itemName}</strong><span>{item.itemDescription ?? item.requestType}</span></td><td>{item.quantityRequested}</td><td>{item.quantityApproved ?? "-"}</td><td>{item.itemId ? "Pridėta" : "Laukia"}</td><td>{item.rejectionReason ?? item.notes ?? "-"}</td></tr>)}</tbody></table></div>
+                <div className="table-wrap"><table className="data-table compact-data-table"><thead><tr><th>Inventorius</th><th>Kiekis</th><th>Patvirtinta</th><th>Inventoriaus būsena</th><th>Pastabos</th></tr></thead><tbody>{request.items.map((item) => <tr key={item.id}><td><strong>{item.itemName}</strong><span>{item.itemDescription ?? requestTypeLabel(item.requestType)}</span></td><td>{finiteCount(item.quantityRequested)}</td><td>{item.quantityApproved != null ? finiteCount(item.quantityApproved) : "-"}</td><td>{item.itemId ? "Pridėta" : "Laukia"}</td><td>{item.rejectionReason ?? item.notes ?? "-"}</td></tr>)}</tbody></table></div>
               </section>
             </article>
             <aside className="detail-side">
-              <DetailFact label="Peržiūros lygis" value={request.reviewLevel} />
-              <DetailFact label="Paskutinis veiksmas" value={request.lastAction} />
+              <DetailFact label="Peržiūros lygis" value={reviewLevelLabel(request.reviewLevel)} />
+              <DetailFact label="Paskutinis veiksmas" value={requisitionActionLabel(request.lastAction)} />
               <DetailFact label="Sukurta" value={formatDateTime(request.createdAt)} />
               <DetailFact label="Atnaujinta" value={formatDateTime(request.updatedAt)} />
             </aside>
@@ -318,10 +318,10 @@ function InfoTile({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
 function DetailFact({ label, value }: { label: string; value: string }) { return <div className="detail-fact"><span>{label}</span><strong>{value}</strong></div>; }
 function StatusBadge({ status }: { status: string }) { return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>; }
 function requestTitle(request: Requisition) { return request.items[0]?.itemName ?? "Pirkimo prašymas"; }
-function totalQuantity(request: Requisition) { return request.items.reduce((sum, item) => sum + item.quantityRequested, 0); }
+function totalQuantity(request: Requisition) { return request.items.reduce((sum, item) => sum + finiteCount(item.quantityRequested), 0); }
 function optional(value: string) { const trimmed = value.trim(); return trimmed ? trimmed : null; }
 function numberOrNull(value: string) { if (!value.trim()) return null; const parsed = Number(value); return Number.isFinite(parsed) && parsed >= 0 ? parsed : null; }
 function errorMessage(cause: unknown, fallback: string) { return cause instanceof Error ? cause.message : fallback; }
 function formatOptionalDate(value?: string | null) { return value ? formatDate(value) : "-"; }
-function formatDate(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return value; return new Intl.DateTimeFormat("lt-LT", { dateStyle: "medium" }).format(date); }
-function formatDateTime(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return value; return new Intl.DateTimeFormat("lt-LT", { dateStyle: "medium", timeStyle: "short" }).format(date); }
+function formatDate(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return "-"; return new Intl.DateTimeFormat("lt-LT", { dateStyle: "medium" }).format(date); }
+function formatDateTime(value: string) { const date = new Date(value); if (Number.isNaN(date.getTime())) return "-"; return new Intl.DateTimeFormat("lt-LT", { dateStyle: "medium", timeStyle: "short" }).format(date); }

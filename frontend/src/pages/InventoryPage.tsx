@@ -151,10 +151,10 @@ function InventoryTable({ items }: { items: Item[] }) {
       </>
     },
     { key: "location", header: "Lokacija", cell: (item) => item.locationPath ?? item.locationName ?? item.temporaryStorageLabel ?? "—" },
-    { key: "custody", header: "Saugotojas", cell: (item) => item.custodianName ?? "Bendras tuntas" },
+    { key: "custody", header: "Saugotojas", className: "mobile-secondary-column", cell: (item) => item.custodianName ?? "Bendras tuntas" },
     { key: "condition", header: "Būklė", cell: (item) => itemConditionLabel(item.condition) },
     { key: "status", header: "Būsena", cell: (item) => <SkautaiStatusPill status={item.status}>{statusLabel(item.status)}</SkautaiStatusPill> },
-    { key: "updated", header: "Atnaujinta", cell: (item) => formatDate(item.updatedAt) },
+    { key: "updated", header: "Atnaujinta", className: "mobile-secondary-column", cell: (item) => formatDate(item.updatedAt) },
     {
       key: "actions", header: "Veiksmai", className: "table-actions-cell", cell: (item) => (
         <Link className="icon-button" to={`/inventory/${item.id}`} aria-label={`Peržiūrėti ${item.name}`} title="Peržiūrėti">

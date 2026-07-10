@@ -4,7 +4,7 @@ import { AlertCircle, ArrowLeft, Calendar, Loader2, MapPin, Package, QrCode, Use
 import { api } from "../api/client";
 import type { Item } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { itemOriginLabel, itemTypeLabel, statusLabel } from "../utils/display";
+import { finiteCount, itemCategoryLabel, itemConditionLabel, itemOriginLabel, itemTypeLabel, statusLabel } from "../utils/display";
 
 export function InventoryDetailPage() {
   const { itemId } = useParams();
@@ -86,19 +86,19 @@ export function InventoryDetailPage() {
           <article className="detail-main">
             <div className="detail-title-row">
               <div>
-                <span className="eyebrow">{item.category} / {itemTypeLabel(item.type)}</span>
+                <span className="eyebrow">{itemCategoryLabel(item.category)} / {itemTypeLabel(item.type)}</span>
                 <h3>{item.name}</h3>
               </div>
               <div className={item.isLowStock ? "quantity-card danger-border" : "quantity-card"}>
-                <strong>{item.quantity} {item.unitOfMeasure ?? "vnt."}</strong>
-                <span>{item.minimumQuantity != null ? `Min. ${item.minimumQuantity}` : "Kiekis"}</span>
+                <strong>{finiteCount(item.quantity)} {item.unitOfMeasure ?? "vnt."}</strong>
+                <span>{item.minimumQuantity != null ? `Min. ${finiteCount(item.minimumQuantity)}` : "Kiekis"}</span>
               </div>
             </div>
 
             {item.description && <p className="detail-description">{item.description}</p>}
 
             <div className="info-grid">
-              <InfoTile icon={Package} label="Būklė" value={item.condition} />
+              <InfoTile icon={Package} label="Būklė" value={itemConditionLabel(item.condition)} />
               <InfoTile icon={UserRound} label="Saugotojas" value={item.custodianName ?? "Bendras tuntas"} />
               <InfoTile icon={MapPin} label="Lokacija" value={location} />
               <InfoTile icon={QrCode} label="QR kodas" value={item.qrToken} />
@@ -176,7 +176,7 @@ function formatDate(value: string) {
 }
 
 function formatPrice(value?: number | null) {
-  if (value == null) return "-";
+  if (value == null || !Number.isFinite(value)) return "-";
   return new Intl.NumberFormat("lt-LT", {
     style: "currency",
     currency: "EUR"

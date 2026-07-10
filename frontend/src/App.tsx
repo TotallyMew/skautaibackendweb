@@ -10,7 +10,10 @@ import { EventFormPage } from "./pages/EventFormPage";
 import { EventsPage } from "./pages/EventsPage";
 import { ForgotPasswordPage, ResetPasswordPage } from "./pages/ForgotPasswordPage";
 import { InventoryCreatePage } from "./pages/InventoryCreatePage";
+import { InventoryAuditDetailPage } from "./pages/InventoryAuditDetailPage";
+import { InventoryAuditsPage } from "./pages/InventoryAuditsPage";
 import { InventoryDetailPage } from "./pages/InventoryDetailPage";
+import { InventoryKitsPage } from "./pages/InventoryKitsPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { LocationsPage } from "./pages/LocationsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -45,6 +48,10 @@ export function App() {
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="inventory/new" element={<InventoryCreatePage />} />
+          <Route path="inventory/kits" element={<InventoryKitsPage />} />
+          <Route path="inventory/audits" element={<InventoryAuditsPage />} />
+          <Route path="inventory/audits/:sessionId" element={<InventoryAuditDetailPage />} />
+          <Route path="inventory/:itemId/edit" element={<InventoryCreatePage />} />
           <Route path="inventory/:itemId" element={<InventoryDetailPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="reservations" element={<ReservationsPage />} />

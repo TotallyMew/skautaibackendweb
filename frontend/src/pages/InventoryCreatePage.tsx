@@ -287,7 +287,7 @@ export function InventoryCreatePage() {
               <select value={form.locationId} onChange={(event) => update("locationId", event.target.value)}>
                 <option value="">Nenurodyta</option>
                 {locations.map((location) => (
-                  <option key={location.id} value={location.id}>{location.path ?? location.name}</option>
+                  <option key={location.id} value={location.id}>{location.fullPath || location.name}</option>
                 ))}
               </select>
             </label>

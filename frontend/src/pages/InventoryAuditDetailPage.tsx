@@ -76,6 +76,8 @@ export function InventoryAuditDetailPage() {
     }
 
     let isCancelled = false;
+    const token = auth.token;
+    const tuntasId = auth.activeTuntasId;
     setIsLoading(true);
     setError(null);
     setReferenceWarning(null);
@@ -83,14 +85,14 @@ export function InventoryAuditDetailPage() {
     void (async () => {
       try {
         const [loadedSession, loadedLocations] = await Promise.all([
-          api.getInventoryAuditSession(auth.token, auth.activeTuntasId, sessionId),
-          api.listLocations(auth.token, auth.activeTuntasId).then((response) => response.locations).catch(() => [])
+          api.getInventoryAuditSession(token, tuntasId, sessionId),
+          api.listLocations(token, tuntasId).then((response) => response.locations).catch(() => [])
         ]);
 
         let loadedScopeItems: AuditScopeItem[];
         let warning: string | null = null;
         try {
-          const inventoryItems = await fetchScopedItems(auth.token, auth.activeTuntasId, loadedSession);
+          const inventoryItems = await fetchScopedItems(token, tuntasId, loadedSession);
           loadedScopeItems = mergeScopeItems(inventoryItems.map(toScopeItem), loadedSession.checks);
           if (loadedScopeItems.length < loadedSession.summary.total) {
             warning = `Inventorizacijos apimtyje užfiksuota ${loadedSession.summary.total} įrašų, bet dabar galima parodyti ${loadedScopeItems.length}. Prieš užbaigdami patikrinkite, ar inventorius nebuvo išaktyvintas arba ar nepasikeitė prieigos teisės.`;

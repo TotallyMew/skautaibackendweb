@@ -131,7 +131,7 @@ export function MembersPage() {
         {canViewMembers && !isLoading && !error && filteredMembers.length > 0 && (
           <MembersTable members={filteredMembers} onOpen={setSelectedMember} />
         )}
-        {canViewMembers && !error && <SkautaiTableFooter meta={`${filteredMembers.length} rodoma · ${total} iš viso`} />}
+        {canViewMembers && !error && members.length > 0 && <SkautaiTableFooter meta={`${filteredMembers.length} rodoma · ${total} iš viso`} />}
       </section>
 
       <MemberDetailsPanel member={selectedMember} onClose={() => setSelectedMember(null)} />

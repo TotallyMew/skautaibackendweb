@@ -136,7 +136,7 @@ export function EventsPage() {
           <SkautaiEmptyState icon={CalendarDays} title="Renginių pagal šiuos filtrus nerasta" description="Pakeiskite būseną arba tipą ir bandykite dar kartą." />
         )}
         {!isLoading && !error && Boolean(eventsState?.events.length) && <EventsTable events={eventsState?.events ?? []} />}
-        {!error && (
+        {!error && total > 0 && (
           <SkautaiTableFooter meta={`${total} ${countLabel(total, "renginys", "renginiai", "renginių")} · Puslapis ${currentPage} iš ${pageCount}`}>
             <button className="icon-button" type="button" disabled={offset === 0 || isLoading} onClick={() => setOffset(Math.max(0, offset - pageSize))} aria-label="Ankstesnis puslapis" title="Ankstesnis puslapis">
               <ChevronLeft size={18} aria-hidden="true" />

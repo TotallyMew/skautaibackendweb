@@ -3,6 +3,7 @@ import { AlertCircle, KeyRound, Loader2, RefreshCw, Save, ShieldAlert, UserRound
 import { ApiError, api } from "../api/client";
 import type { MyProfile } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiPageShell } from "../components/ui/Skautai";
 
 export function ProfilePage() {
   const { auth, logout, updateProfileSnapshot } = useAuth();
@@ -138,18 +139,22 @@ export function ProfilePage() {
     }
   }
 
+  const actions = (
+    <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={isLoading}>
+      <RefreshCw size={16} aria-hidden="true" />
+      Atnaujinti
+    </button>
+  );
+
   return (
-    <section className="profile-page">
-      <div className="page-heading-row">
-        <div>
-          <span className="section-kicker">PASKYRA</span>
-          <h2>Mano profilis</h2>
-        </div>
-        <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={isLoading}>
-          <RefreshCw size={17} aria-hidden="true" />
-          Atnaujinti
-        </button>
-      </div>
+    <SkautaiPageShell
+      className="profile-page"
+      eyebrow="Paskyra"
+      title="Mano profilis"
+      description="Asmeniniai duomenys, prisijungimo sauga ir paskyros valdymas."
+      actions={actions}
+      width="standard"
+    >
 
       {message && <p className="inline-success">{message}</p>}
       {error && (
@@ -182,10 +187,12 @@ export function ProfilePage() {
                   <TextField label="El. paštas *" type="email" value={profileForm.email} onChange={(value) => setProfileForm((current) => ({ ...current, email: value }))} required />
                   <TextField label="Telefono numeris" value={profileForm.phone} onChange={(value) => setProfileForm((current) => ({ ...current, phone: value }))} />
                 </div>
-                <button className="primary-button compact-primary-button" type="submit" disabled={isSavingProfile}>
-                  <Save size={17} aria-hidden="true" />
-                  {isSavingProfile ? "Saugoma..." : "Išsaugoti pakeitimus"}
-                </button>
+                <div className="form-actions profile-form-actions">
+                  <button className="primary-button compact-primary-button" type="submit" disabled={isSavingProfile}>
+                    <Save size={16} aria-hidden="true" />
+                    {isSavingProfile ? "Saugoma..." : "Išsaugoti pakeitimus"}
+                  </button>
+                </div>
               </section>
             </form>
 
@@ -203,9 +210,11 @@ export function ProfilePage() {
                   <TextField label="Naujas slaptažodis" type="password" value={passwordForm.newPassword} onChange={(value) => setPasswordForm((current) => ({ ...current, newPassword: value }))} />
                   <TextField label="Pakartokite slaptažodį" type="password" value={passwordForm.repeatPassword} onChange={(value) => setPasswordForm((current) => ({ ...current, repeatPassword: value }))} />
                 </div>
-                <button className="secondary-button compact-primary-button" type="submit" disabled={isSavingPassword}>
-                  {isSavingPassword ? "Keičiama..." : "Pakeisti slaptažodį"}
-                </button>
+                <div className="form-actions profile-form-actions">
+                  <button className="secondary-button compact-primary-button" type="submit" disabled={isSavingPassword}>
+                    {isSavingPassword ? "Keičiama..." : "Pakeisti slaptažodį"}
+                  </button>
+                </div>
               </section>
             </form>
           </div>
@@ -233,14 +242,16 @@ export function ProfilePage() {
               </div>
               <p>Ištrynus paskyrą bus pašalinti prisijungimo ir asmeniniai duomenys. Inventoriaus audito įrašai gali likti anonimizuoti apskaitos vientisumui.</p>
               <TextField label="Slaptažodis" type="password" value={deletePassword} onChange={setDeletePassword} />
-              <button className="secondary-button danger-border" type="submit" disabled={isRequestingDeletion}>
-                {isRequestingDeletion ? "Siunčiama..." : "Pateikti ištrynimo prašymą"}
-              </button>
+              <div className="form-actions profile-form-actions">
+                <button className="secondary-button danger-border" type="submit" disabled={isRequestingDeletion}>
+                  {isRequestingDeletion ? "Siunčiama..." : "Pateikti ištrynimo prašymą"}
+                </button>
+              </div>
             </form>
           </aside>
         </div>
       )}
-    </section>
+    </SkautaiPageShell>
   );
 }
 

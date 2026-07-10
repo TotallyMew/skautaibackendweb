@@ -126,7 +126,7 @@ export function InventoryPage() {
         {!isLoading && !error && itemsState?.items.length === 0 && <SkautaiEmptyState icon={PackageSearch}
           title="Inventoriaus pagal šiuos filtrus nerasta" description="Pakeiskite paiešką arba filtrus ir bandykite dar kartą." />}
         {!isLoading && !error && Boolean(itemsState?.items.length) && <InventoryTable items={itemsState?.items ?? []} />}
-        {!error && <InventoryFooter total={total} currentPage={currentPage} pageCount={pageCount} offset={offset}
+        {!error && total > 0 && <InventoryFooter total={total} currentPage={currentPage} pageCount={pageCount} offset={offset}
           hasMore={Boolean(itemsState?.hasMore)} isLoading={isLoading} onOffsetChange={setOffset} />}
       </div>
     </SkautaiPageShell>

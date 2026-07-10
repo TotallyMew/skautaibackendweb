@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
-import { LogIn } from "lucide-react";
+import { LogIn, TentTree } from "lucide-react";
 import { useAuth } from "../auth/AuthProvider";
 import type { AuthState } from "../auth/authStorage";
 
@@ -37,7 +37,7 @@ export function LoginPage() {
     <main className="login-page">
       <div className="auth-stack">
         <section className="auth-hero">
-          <span>Skautų inventorius</span>
+          <span className="auth-hero-label"><TentTree size={15} aria-hidden="true" />Skautų inventorius</span>
           <h1>Prisijunk prie savo tunto inventoriaus</h1>
           <p>Vienoje vietoje matysi bendrą tunto, vieneto ir savo siūlomą inventorių.</p>
         </section>
@@ -45,7 +45,7 @@ export function LoginPage() {
         <section className="login-panel">
           <div className="brand login-brand">
             <span className="brand-mark">SI</span>
-            <div>
+            <div className="brand-copy">
               <strong>Prisijungimas</strong>
               <small>Žiniatinklio sistema</small>
             </div>

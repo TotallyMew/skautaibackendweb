@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Event, Reservation } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill } from "../components/ui/Skautai";
+import { countLabel, statusLabel } from "../utils/display";
 
 type CalendarEntry = {
   id: string;
@@ -60,6 +62,10 @@ export function CalendarPage() {
   const entriesByDate = useMemo(() => groupByDate(monthEntries), [monthEntries]);
   const selectedEntries = entriesByDate.get(selectedDate) ?? [];
   const weeks = useMemo(() => calendarWeeks(selectedMonth), [selectedMonth]);
+  const monthItemCount = useMemo(
+    () => new Set(monthEntries.map((entry) => `${entry.kind}-${entry.id}`)).size,
+    [monthEntries]
+  );
 
   function moveMonth(delta: number) {
     const next = addMonths(selectedMonth, delta);
@@ -78,93 +84,99 @@ export function CalendarPage() {
     else navigate(`/reservations/${entry.id}`);
   }
 
-  return (
-    <section className="calendar-page">
-      <div className="page-heading-row">
-        <div>
-          <span className="section-kicker">PLANAVIMAS</span>
-          <h2>Kalendorius</h2>
-        </div>
-        <div className="toolbar-actions">
-          <button className="secondary-button" type="button" onClick={() => moveMonth(-1)}>
-            <ChevronLeft size={17} aria-hidden="true" />
-            Ankstesnis
-          </button>
-          <button className="secondary-button" type="button" onClick={goToday}>Šiandien</button>
-          <button className="secondary-button" type="button" onClick={() => moveMonth(1)}>
-            Kitas
-            <ChevronRight size={17} aria-hidden="true" />
-          </button>
-          <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={isLoading}>
-            <RefreshCw size={17} aria-hidden="true" />
-            Atnaujinti
-          </button>
-        </div>
-      </div>
+  const actions = (
+    <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={isLoading}>
+      <RefreshCw size={16} aria-hidden="true" />
+      Atnaujinti
+    </button>
+  );
 
-      {error && <p className="error-text">{error}</p>}
+  return (
+    <SkautaiPageShell
+      className="calendar-page"
+      eyebrow="Planavimas"
+      title="Kalendorius"
+      description="Renginiai ir inventoriaus rezervacijos vienoje mėnesio apžvalgoje."
+      actions={actions}
+      width="wide"
+    >
+      {error && <SkautaiErrorState description={error} />}
 
       <div className="calendar-layout">
         <section className="data-panel calendar-board-panel">
-          <div className="calendar-title-row">
-            <CalendarDays size={20} aria-hidden="true" />
-            <strong>{monthTitle(selectedMonth)}</strong>
+          <div className="calendar-toolbar">
+            <button className="icon-button" type="button" onClick={() => moveMonth(-1)} aria-label="Ankstesnis mėnuo" title="Ankstesnis mėnuo">
+              <ChevronLeft size={17} aria-hidden="true" />
+            </button>
+            <div className="calendar-month-copy">
+              <strong>{monthTitle(selectedMonth)}</strong>
+              <span>{monthItemCount} {countLabel(monthItemCount, "įrašas", "įrašai", "įrašų")}</span>
+            </div>
+            <button className="secondary-button calendar-today-button" type="button" onClick={goToday}>Šiandien</button>
+            <button className="icon-button" type="button" onClick={() => moveMonth(1)} aria-label="Kitas mėnuo" title="Kitas mėnuo">
+              <ChevronRight size={17} aria-hidden="true" />
+            </button>
           </div>
-          <div className="calendar-weekdays">
-            {["Pr", "An", "Tr", "Kt", "Pn", "Št", "Sk"].map((day) => <span key={day}>{day}</span>)}
-          </div>
-          <div className="calendar-grid">
-            {weeks.flat().map((day, index) => {
-              const key = day ?? `empty-${index}`;
-              const dayEntries = day ? entriesByDate.get(day) ?? [] : [];
-              return (
-                <button
-                  key={key}
-                  className={`calendar-day${day === selectedDate ? " selected" : ""}${day === dateKey(new Date()) ? " today" : ""}`}
-                  type="button"
-                  disabled={!day}
-                  onClick={() => day && setSelectedDate(day)}
-                >
-                  {day && <strong>{Number(day.slice(8, 10))}</strong>}
-                  <span>
-                    {dayEntries.slice(0, 3).map((entry) => (
-                      <i key={`${entry.kind}-${entry.id}`}>{entry.title}</i>
-                    ))}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="calendar-grid-scroll">
+            <div className="calendar-weekdays">
+              {["Pr", "An", "Tr", "Kt", "Pn", "Št", "Sk"].map((day) => <span key={day}>{day}</span>)}
+            </div>
+            <div className="calendar-grid">
+              {weeks.flat().map((day, index) => {
+                const key = day ?? `empty-${index}`;
+                const dayEntries = day ? entriesByDate.get(day) ?? [] : [];
+                return (
+                  <button
+                    key={key}
+                    className={`calendar-day${day === selectedDate ? " selected" : ""}${day === dateKey(new Date()) ? " today" : ""}${dayEntries.length > 0 ? " has-entries" : ""}`}
+                    type="button"
+                    disabled={!day}
+                    aria-label={day ? formatSelectedDate(day) : undefined}
+                    onClick={() => day && setSelectedDate(day)}
+                  >
+                    {day && <strong>{Number(day.slice(8, 10))}</strong>}
+                    <span>
+                      {dayEntries.slice(0, 3).map((entry) => (
+                        <i className={`calendar-entry-chip kind-${entry.kind}`} key={`${entry.kind}-${entry.id}`}>{entry.title}</i>
+                      ))}
+                      {dayEntries.length > 3 && <i className="calendar-more-chip">+{dayEntries.length - 3}</i>}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </section>
 
         <aside className="data-panel calendar-day-panel">
-          <div className="calendar-title-row">
-            <strong>{selectedDate}</strong>
+          <div className="calendar-selected-heading">
+            <div>
+              <span>Pasirinkta diena</span>
+              <strong>{formatSelectedDate(selectedDate)}</strong>
+            </div>
             {isLoading && <Loader2 className="spin-icon" size={18} aria-hidden="true" />}
           </div>
           {selectedEntries.length === 0 ? (
-            <div className="empty-state compact-empty-state">
-              <CalendarDays size={26} aria-hidden="true" />
-              <strong>Nėra įrašų</strong>
-              <span>Pasirinktą dieną nėra renginių ar rezervacijų.</span>
-            </div>
+            <SkautaiEmptyState compact icon={CalendarDays} title="Nėra įrašų" description="Pasirinktą dieną nėra renginių ar rezervacijų." />
           ) : (
             <div className="calendar-entry-list">
               {selectedEntries.map((entry) => (
                 <button key={`${entry.kind}-${entry.id}`} className="calendar-entry-row" type="button" onClick={() => openEntry(entry)}>
-                  <span className={`mini-chip ${entry.kind === "event" ? "success-chip" : "warning-chip"}`}>
+                  <span className={`calendar-entry-kind kind-${entry.kind}`}>
                     {entry.kind === "event" ? "Renginys" : "Rezervacija"}
                   </span>
-                  <strong>{entry.title}</strong>
-                  <small>{entry.startDate} - {entry.endDate}</small>
-                  <em>{statusLabel(entry.status)}</em>
+                  <span className="calendar-entry-copy">
+                    <strong>{entry.title}</strong>
+                    <small>{formatDateRange(entry.startDate, entry.endDate)}</small>
+                  </span>
+                  <SkautaiStatusPill status={entry.status} tone={calendarStatusTone(entry.status)}>{statusLabel(entry.status)}</SkautaiStatusPill>
                 </button>
               ))}
             </div>
           )}
         </aside>
       </div>
-    </section>
+    </SkautaiPageShell>
   );
 }
 
@@ -265,16 +277,20 @@ function monthTitle(month: string) {
   return new Intl.DateTimeFormat("lt-LT", { month: "long", year: "numeric" }).format(date);
 }
 
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    ACTIVE: "Aktyvus",
-    PENDING: "Laukia",
-    APPROVED: "Patvirtinta",
-    REJECTED: "Atmesta",
-    CANCELLED: "Atšaukta",
-    PLANNING: "Planuojamas",
-    WRAP_UP: "Uždarymas",
-    COMPLETED: "Baigtas"
-  };
-  return labels[status] ?? status;
+function formatSelectedDate(value: string) {
+  const date = parseLocalDate(value);
+  return new Intl.DateTimeFormat("lt-LT", { weekday: "long", month: "long", day: "numeric" }).format(date);
+}
+
+function formatDateRange(start: string, end: string) {
+  const formattedStart = new Intl.DateTimeFormat("lt-LT", { month: "short", day: "numeric" }).format(parseLocalDate(start));
+  const formattedEnd = new Intl.DateTimeFormat("lt-LT", { month: "short", day: "numeric" }).format(parseLocalDate(end));
+  return start === end ? formattedStart : `${formattedStart}–${formattedEnd}`;
+}
+
+function calendarStatusTone(status: string): "success" | "warning" | "danger" | "muted" | "info" {
+  if (["ACTIVE", "APPROVED", "COMPLETED", "RETURNED"].includes(status)) return "success";
+  if (["PENDING", "PLANNING", "WRAP_UP"].includes(status)) return "warning";
+  if (["REJECTED", "CANCELLED"].includes(status)) return "danger";
+  return "muted";
 }

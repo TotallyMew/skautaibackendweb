@@ -156,7 +156,7 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
           <SharedRequestsList requests={sharedRequestsState?.requests ?? []} />
         )}
 
-        {!error && <SkautaiTableFooter meta={`${total} ${countLabel(total, "įrašas", "įrašai", "įrašų")} · ${headerMeta(activeTab)}`} />}
+        {!error && total > 0 && <SkautaiTableFooter meta={`${total} ${countLabel(total, "įrašas", "įrašai", "įrašų")} · ${headerMeta(activeTab)}`} />}
       </div>
     </SkautaiPageShell>
   );

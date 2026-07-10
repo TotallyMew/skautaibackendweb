@@ -115,7 +115,7 @@ export function ReservationsPage() {
         {!isLoading && !error && reservationsState?.reservations.length === 0 && <SkautaiEmptyState icon={ClipboardList}
           title="Rezervacijų pagal šį filtrą nerasta" description="Pakeiskite būseną arba atnaujinkite sąrašą." />}
         {!isLoading && !error && Boolean(reservationsState?.reservations.length) && <ReservationsTable reservations={reservationsState?.reservations ?? []} />}
-        {!error && <SkautaiTableFooter meta={`${total} ${countLabel(total, "įrašas", "įrašai", "įrašų")} · Puslapis ${currentPage} iš ${pageCount}`}>
+        {!error && total > 0 && <SkautaiTableFooter meta={`${total} ${countLabel(total, "įrašas", "įrašai", "įrašų")} · Puslapis ${currentPage} iš ${pageCount}`}>
           <button className="icon-button" type="button" disabled={offset === 0 || isLoading}
             onClick={() => setOffset(Math.max(0, offset - pageSize))} aria-label="Ankstesnis puslapis" title="Ankstesnis puslapis">
             <ChevronLeft size={18} aria-hidden="true" />

@@ -1465,3 +1465,610 @@ a.dashboard-metric-tile:hover {
     gap: 3px;
   }
 }
+
+/* Refinement pass: less chrome, clearer hierarchy, warmer scout character. */
+:root {
+  --app-bg: #f4f6f0;
+  --panel-muted: #f8faf6;
+  --divider: #e3e8df;
+  --text-soft: #707b72;
+  --panel-shadow: 0 1px 3px rgba(20, 42, 27, 0.07);
+  --major-border: #dbe2d8;
+  --unit-patyre-icon: #f3e6e2;
+  --unit-patyre-accent: #7a473e;
+  --unit-skautai-icon: #f4eedc;
+  --unit-skautai-accent: #6d5b2b;
+  --unit-vilkai-icon: #f5e9dd;
+  --unit-vilkai-accent: #765335;
+  --unit-gildija-icon: #edf0ec;
+  --unit-gildija-accent: #536158;
+  --unit-vyr-skautai-icon: #eee9f2;
+  --unit-vyr-skautai-accent: #625271;
+  --unit-vyr-skautes-icon: #e8edf3;
+  --unit-vyr-skautes-accent: #43566d;
+  --unit-default-icon: #f1ecdd;
+  --unit-default-accent: #695d3a;
+}
+
+.content {
+  background-color: var(--app-bg);
+  background-image:
+    radial-gradient(ellipse at 8% 12%, transparent 0 54px, rgba(31, 58, 42, 0.018) 55px 56px, transparent 57px 82px, rgba(31, 58, 42, 0.015) 83px 84px, transparent 85px),
+    radial-gradient(ellipse at 92% 72%, transparent 0 70px, rgba(31, 58, 42, 0.016) 71px 72px, transparent 73px 108px, rgba(31, 58, 42, 0.013) 109px 110px, transparent 111px);
+  background-position: 0 0, 180px 140px;
+  background-size: 520px 360px, 640px 430px;
+}
+
+.sidebar-scroll {
+  padding: 10px 8px 16px;
+}
+
+.drawer-section-title {
+  padding-inline: 7px;
+}
+
+.nav-link {
+  min-height: 38px;
+  gap: 8px;
+  padding: 7px 8px;
+  font-weight: 560;
+}
+
+.nav-link > svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 1.9;
+}
+
+.nav-link.active {
+  background: rgba(31, 58, 42, 0.052);
+  color: var(--accent-strong);
+  font-weight: 650;
+}
+
+.nav-link.active::before {
+  inset: 5px auto 5px 0;
+  width: 4px;
+  background: #244d32;
+}
+
+.nav-link:hover:not(.active) {
+  background: rgba(31, 58, 42, 0.032);
+}
+
+.page-heading-copy h1,
+.page-heading-row > div > h2,
+.section-heading > div > h2 {
+  margin-top: 6px;
+  font-weight: 700;
+}
+
+.page-heading-copy p {
+  margin-top: 10px;
+  color: var(--text-soft);
+}
+
+.section-kicker {
+  font-size: 0.7rem;
+  letter-spacing: 0.095em;
+}
+
+.skautai-page-shell > .skautai-toolbar {
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0 0 12px;
+}
+
+.dashboard-panel,
+.data-panel,
+.skautai-card:not(.skautai-card-flat),
+.form-section,
+.detail-main,
+.detail-side,
+.calendar-board-panel,
+.calendar-day-panel {
+  border-color: var(--major-border);
+  box-shadow: var(--panel-shadow);
+}
+
+.dashboard-metric-tile {
+  border: 0;
+  border-top: 2px solid rgba(31, 58, 42, 0.22);
+  box-shadow: var(--panel-shadow);
+}
+
+.dashboard-row-icon,
+.dashboard-quick-action-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--accent);
+}
+
+.dashboard-list-row,
+.dashboard-empty-row {
+  grid-template-columns: 24px minmax(0, 1fr) max-content;
+}
+
+.dashboard-quick-action {
+  grid-template-columns: 24px minmax(0, 1fr) 16px;
+}
+
+.dashboard-row-copy strong,
+.dashboard-quick-action-copy strong,
+.table-link,
+.record-title,
+.data-table td strong {
+  font-weight: 600;
+}
+
+.dashboard-row-copy small,
+.dashboard-quick-action-copy small,
+.data-table td > span,
+.data-table td > small,
+.table-title-cell > div > span,
+.table-title-cell > div > small {
+  color: var(--text-soft);
+  font-weight: 400;
+}
+
+.status-badge,
+.skautai-status-pill {
+  min-height: 22px;
+  padding: 2px 7px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.unit-summary-tile,
+.admin-metric-card {
+  min-height: 72px;
+  border: 0;
+  border-left: 2px solid var(--accent-container);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 10px 14px;
+}
+
+.unit-type-pill,
+.unit-rank-pill {
+  background: color-mix(in srgb, var(--unit-icon-tone) 72%, white);
+  font-weight: 600;
+}
+
+.table-title-cell .unit-rank-pill {
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.data-panel {
+  height: auto;
+  min-height: 0;
+  align-self: start;
+}
+
+.data-panel-header {
+  min-height: 42px;
+  background: transparent;
+}
+
+.data-table tbody tr td {
+  transition: background-color 100ms ease;
+}
+
+.data-table tbody tr:hover td,
+.data-table tbody tr:focus-within td {
+  background: #fafbf8;
+}
+
+.data-panel .skautai-empty-state,
+.data-panel .compact-empty-state {
+  min-height: 120px;
+  padding: 24px 16px;
+}
+
+.empty-state > svg,
+.skautai-empty-state > svg {
+  box-sizing: content-box;
+  border-radius: 50%;
+  outline: 1px dashed rgba(31, 58, 42, 0.2);
+  background: var(--accent-soft);
+  color: var(--accent);
+  padding: 8px;
+}
+
+.primary-button,
+.secondary-button,
+.compact-primary-button {
+  min-height: 38px;
+  padding: 7px 11px;
+}
+
+.primary-button > svg,
+.compact-primary-button > svg,
+.page-heading-row .primary-button > svg {
+  width: 16px;
+  height: 16px;
+}
+
+.profile-form-actions {
+  justify-content: flex-start;
+}
+
+.login-page {
+  background-color: #f1f3ec;
+  background-image:
+    radial-gradient(ellipse at 12% 18%, transparent 0 74px, rgba(31, 58, 42, 0.025) 75px 76px, transparent 77px 112px, rgba(31, 58, 42, 0.02) 113px 114px, transparent 115px),
+    radial-gradient(ellipse at 86% 76%, transparent 0 92px, rgba(31, 58, 42, 0.02) 93px 94px, transparent 95px 138px, rgba(31, 58, 42, 0.016) 139px 140px, transparent 141px);
+}
+
+.auth-stack {
+  gap: 14px;
+}
+
+.auth-hero {
+  position: relative;
+  isolation: isolate;
+  gap: 7px;
+  border-radius: 14px;
+  padding: 18px 22px;
+}
+
+.auth-hero::after {
+  position: absolute;
+  inset: -40% -10%;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 20% 40%, transparent 0 54px, rgba(255, 255, 255, 0.055) 55px 56px, transparent 57px 82px, rgba(255, 255, 255, 0.04) 83px 84px, transparent 85px),
+    radial-gradient(ellipse at 78% 58%, transparent 0 68px, rgba(255, 255, 255, 0.045) 69px 70px, transparent 71px 104px);
+  content: "";
+  pointer-events: none;
+}
+
+.auth-hero-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.auth-hero h1 {
+  font-size: 1.4rem;
+}
+
+.auth-hero p {
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.login-panel {
+  border-radius: 14px;
+  box-shadow: var(--panel-shadow);
+}
+
+/* Calendar: a single light grid, not 35 individual cards. */
+.calendar-layout {
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.55fr);
+  gap: 18px;
+}
+
+.calendar-board-panel,
+.calendar-day-panel {
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+}
+
+.calendar-toolbar {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto 38px;
+  gap: 8px;
+  align-items: center;
+  min-height: 58px;
+  border-bottom: 1px solid var(--divider);
+  padding: 9px 12px;
+}
+
+.calendar-month-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.calendar-month-copy strong {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.calendar-month-copy span,
+.calendar-selected-heading span {
+  color: var(--text-soft);
+  font-size: 0.74rem;
+}
+
+.calendar-today-button {
+  min-height: 34px;
+  padding: 5px 10px;
+}
+
+.calendar-grid-scroll {
+  overflow-x: auto;
+}
+
+.calendar-weekdays,
+.calendar-grid {
+  min-width: 680px;
+  gap: 0;
+}
+
+.calendar-weekdays {
+  background: var(--panel-muted);
+}
+
+.calendar-weekdays span {
+  min-height: 34px;
+  border-right: 1px solid var(--divider);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.calendar-weekdays span:last-child {
+  border-right: 0;
+}
+
+.calendar-grid {
+  border-top: 1px solid var(--divider);
+}
+
+.calendar-day {
+  grid-template-rows: auto minmax(52px, 1fr);
+  gap: 5px;
+  min-height: 104px;
+  border: 0;
+  border-right: 1px solid var(--divider);
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  padding: 7px;
+}
+
+.calendar-day:nth-child(7n) {
+  border-right: 0;
+}
+
+.calendar-day:disabled {
+  background: rgba(239, 243, 237, 0.48);
+  opacity: 1;
+}
+
+.calendar-day:not(:disabled):hover {
+  border-color: var(--divider);
+  background: #fafbf8;
+}
+
+.calendar-day.selected {
+  z-index: 1;
+  border-color: var(--divider);
+  background: #f1f6ee;
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.calendar-day > strong {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 0.78rem;
+  line-height: 26px;
+  text-align: center;
+}
+
+.calendar-day.today > strong {
+  width: 26px;
+  height: 26px;
+}
+
+.calendar-day .calendar-entry-chip,
+.calendar-day .calendar-more-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  background: #eef5ec;
+  color: #35563d;
+  padding: 2px 4px;
+  font-size: 0.67rem;
+  font-weight: 600;
+}
+
+.calendar-day .calendar-entry-chip::before {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #5f8766;
+  content: "";
+  flex: 0 0 auto;
+}
+
+.calendar-day .calendar-entry-chip.kind-reservation {
+  background: #f7f1df;
+  color: #6d5a27;
+}
+
+.calendar-day .calendar-entry-chip.kind-reservation::before {
+  background: #a18743;
+}
+
+.calendar-day .calendar-more-chip {
+  width: fit-content;
+  background: transparent;
+  color: var(--text-soft);
+}
+
+.calendar-selected-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 58px;
+  border-bottom: 1px solid var(--divider);
+  padding: 10px 14px;
+}
+
+.calendar-selected-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.calendar-selected-heading strong {
+  color: var(--text);
+  font-size: 0.94rem;
+  text-transform: capitalize;
+}
+
+.calendar-entry-list {
+  gap: 0;
+  padding: 0 14px;
+}
+
+.calendar-entry-row {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 12px 0;
+}
+
+.calendar-entry-row:last-child {
+  border-bottom: 0;
+}
+
+.calendar-entry-row:hover {
+  border-color: var(--divider);
+  background: #fafbf8;
+}
+
+.calendar-entry-kind {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #eef5ec;
+  color: #35563d;
+  padding: 3px 7px;
+  font-size: 0.67rem;
+  font-weight: 600;
+}
+
+.calendar-entry-kind.kind-reservation {
+  background: #f7f1df;
+  color: #6d5a27;
+}
+
+.calendar-entry-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.calendar-entry-copy strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.calendar-entry-copy small {
+  color: var(--text-soft);
+  font-size: 0.74rem;
+}
+
+.calendar-day-panel .skautai-empty-state {
+  min-height: 150px;
+}
+
+@media (max-width: 900px) {
+  .calendar-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard-list-row,
+  .dashboard-empty-row {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .calendar-weekdays,
+  .calendar-grid {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .calendar-day {
+    min-height: 78px;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-form-actions > button {
+    width: 100%;
+  }
+
+  .auth-hero {
+    padding: 16px 18px;
+  }
+
+  .calendar-day {
+    grid-template-rows: auto 10px;
+    min-height: 62px;
+    padding: 4px 3px;
+  }
+
+  .calendar-day > strong,
+  .calendar-day.today > strong {
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+    line-height: 22px;
+  }
+
+  .calendar-day > span {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .calendar-day .calendar-entry-chip {
+    width: 6px;
+    min-width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #5f8766;
+    padding: 0;
+    color: transparent;
+    font-size: 0;
+  }
+
+  .calendar-day .calendar-entry-chip.kind-reservation {
+    background: #a18743;
+  }
+
+  .calendar-day .calendar-entry-chip::before {
+    display: none;
+  }
+
+  .calendar-day .calendar-more-chip {
+    display: none;
+  }
+}

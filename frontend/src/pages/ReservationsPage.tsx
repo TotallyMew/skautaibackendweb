@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Loader2, Plus, RefreshCw, ShieldCheck } from "lucide-react";
+import { CalendarCheck, ChevronLeft, ChevronRight, ClipboardList, Eye, Loader2, Plus, RefreshCw, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Reservation, ReservationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill } from "../components/ui/Skautai";
-import { countLabel, reviewStatusLabel, statusLabel } from "../utils/display";
+import { SkautaiDataTable, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill, SkautaiTableFooter, SkautaiToolbar, type SkautaiDataTableColumn } from "../components/ui/Skautai";
+import { countLabel, finiteCount, reservationStatusLabel, reviewStatusLabel } from "../utils/display";
 import { canViewReservations, hasPermission } from "../utils/permissions";
 
 const pageSize = 25;
@@ -15,7 +15,7 @@ const statusOptions = [
   { value: "PENDING", label: "Laukia" },
   { value: "APPROVED", label: "Patvirtintos" },
   { value: "REJECTED", label: "Atmestos" },
-  { value: "ISSUED", label: "Išduotos" },
+  { value: "ACTIVE", label: "Aktyvios" },
   { value: "RETURNED", label: "Grąžintos" },
   { value: "CANCELLED", label: "Atšauktos" }
 ];
@@ -63,7 +63,7 @@ export function ReservationsPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, canView, offset, reloadKey, status]);
 
-  const total = reservationsState?.total ?? 0;
+  const total = finiteCount(reservationsState?.total);
   const currentPage = Math.floor(offset / pageSize) + 1;
   const pageCount = Math.max(1, Math.ceil(total / pageSize));
 

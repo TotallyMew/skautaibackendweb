@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { MyTask, MyTaskListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
+import { SkautaiPageShell } from "../components/ui/Skautai";
 import { taskBucketLabel, taskRoutePath, taskUrgencyLabel } from "../utils/tasks";
 
 const bucketOrder = ["URGENT", "TODAY", "NEXT", "WATCH"];
@@ -57,23 +58,26 @@ export function MyTasksPage() {
   const urgentCount = tasks.filter((task) => task.urgency === "HIGH" || task.bucket === "URGENT").length;
   const dueCount = tasks.filter((task) => Boolean(task.dueAt)).length;
 
+  const actions = (
+    <button
+      className="secondary-button"
+      type="button"
+      onClick={() => setReloadKey((value) => value + 1)}
+      disabled={!canFetch || isLoading}
+    >
+      <RefreshCw size={17} aria-hidden="true" />
+      Atnaujinti
+    </button>
+  );
+
   return (
-    <section className="collection-page tasks-page">
-      <div className="section-toolbar">
-        <div className="list-summary">
-          <strong>{total}</strong>
-          <span>{total === 1 ? "užduotis" : "užduotys"}</span>
-        </div>
-        <button
-          className="secondary-button"
-          type="button"
-          onClick={() => setReloadKey((value) => value + 1)}
-          disabled={!canFetch || isLoading}
-        >
-          <RefreshCw size={17} aria-hidden="true" />
-          Atnaujinti
-        </button>
-      </div>
+    <SkautaiPageShell
+      className="collection-page tasks-page"
+      eyebrow="Darbo erdvė"
+      title="Mano užduotys"
+      description={`${total} ${total === 1 ? "aktyvi užduotis" : "aktyvios užduotys"}. Tvirtinimai, grąžinimai ir renginių darbai vienoje eilėje.`}
+      actions={actions}
+    >
 
       {error && (
         <div className="inline-alert">
@@ -156,7 +160,7 @@ export function MyTasksPage() {
           </section>
         </aside>
       </div>
-    </section>
+    </SkautaiPageShell>
   );
 }
 

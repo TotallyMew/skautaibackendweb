@@ -14,7 +14,6 @@ import {
   Search,
   ShieldCheck,
   ShoppingCart,
-  Shuffle,
   UserRound,
   UsersRound,
   X,
@@ -35,7 +34,7 @@ import {
   canUseUnits
 } from "../utils/permissions";
 
-const compactNavigationQuery = "(max-width: 1049px)";
+const compactNavigationQuery = "(max-width: 1050px)";
 
 const overviewItems: NavItem[] = [
   { to: "/", label: "Pradžia", icon: Home, end: true },
@@ -84,7 +83,6 @@ export function AppShell() {
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const commandInputRef = useRef<HTMLInputElement>(null);
-  const title = currentTitle(location.pathname);
   const isSuperAdmin = auth?.type === "super_admin";
   const activeTuntai = auth?.tuntai.filter((tuntas) => isActiveTuntasStatus(tuntas.status)) ?? [];
   const activeTuntasName = activeTuntai.find((tuntas) => tuntas.id === auth?.activeTuntasId)?.name;
@@ -246,7 +244,12 @@ export function AppShell() {
         <div className="sidebar-scroll">
           {!isSuperAdmin && (
             <div className="tuntas-switcher">
-              <label className="tuntas-switcher-label" htmlFor="tuntas-select">Aktyvus tuntas</label>
+              <div className="tuntas-switcher-heading">
+                <label className="tuntas-switcher-label" htmlFor="tuntas-select">Aktyvus tuntas</label>
+                <Link className="tuntas-manage-link" to="/tuntas" onClick={() => closeDrawer()}>
+                  Valdyti
+                </Link>
+              </div>
               <select
                 id="tuntas-select"
                 className="select"
@@ -294,12 +297,6 @@ export function AppShell() {
             </Link>
           )}
           <div className="sidebar-footer-actions">
-            {!isSuperAdmin && (
-              <Link className="sidebar-footer-link" to="/tuntas" onClick={() => closeDrawer()}>
-                <Shuffle size={17} aria-hidden="true" />
-                Keisti tuntą
-              </Link>
-            )}
             <button className="logout-button" type="button" onClick={() => void logout()}>
               <LogOut size={17} aria-hidden="true" />
               Atsijungti
@@ -323,10 +320,7 @@ export function AppShell() {
               >
                 <Menu size={20} aria-hidden="true" />
               </button>
-              <div className="topbar-title">
-                <span className="eyebrow">{contextLabel}</span>
-                <h1>{title}</h1>
-              </div>
+              <span className="topbar-context" title="Aktyvus organizacijos kontekstas">{contextLabel}</span>
             </div>
 
             <div className="topbar-actions">
@@ -610,25 +604,4 @@ function initials(name: string) {
     .map((part) => part[0]?.toLocaleUpperCase("lt-LT") ?? "")
     .join("");
   return value || "SI";
-}
-
-function currentTitle(pathname: string) {
-  if (pathname === "/") return "Pradžia";
-  if (pathname.startsWith("/tasks")) return "Mano užduotys";
-  if (pathname.startsWith("/notifications")) return "Pranešimai";
-  if (pathname.startsWith("/calendar")) return "Kalendorius";
-  if (pathname.startsWith("/profile")) return "Mano profilis";
-  if (pathname.startsWith("/inventory/kits")) return "Inventoriaus rinkiniai";
-  if (pathname.startsWith("/inventory/audits")) return "Inventoriaus patikros";
-  if (pathname.startsWith("/inventory")) return "Inventorius";
-  if (pathname.startsWith("/locations")) return "Lokacijos";
-  if (pathname.startsWith("/reservations")) return "Rezervacijos";
-  if (pathname.startsWith("/purchases") || pathname.startsWith("/requests/requisitions")) return "Pirkimai";
-  if (pathname.startsWith("/pickup-requests") || pathname.startsWith("/requests/shared")) return "Paėmimai";
-  if (pathname.startsWith("/requests")) return "Pirkimai ir paėmimai";
-  if (pathname.startsWith("/members")) return "Nariai";
-  if (pathname.startsWith("/units")) return "Vienetai";
-  if (pathname.startsWith("/events")) return "Renginiai";
-  if (pathname.startsWith("/admin")) return "Administravimas";
-  return "Skautų inventorius";
 }

@@ -11,22 +11,27 @@ function classNames(...values: Array<string | false | null | undefined>) {
 export function SkautaiPageShell({
   eyebrow,
   title,
+  description,
   actions,
+  width = "standard",
   children,
   className,
   ...props
 }: ComponentPropsWithoutRef<"section"> & {
   eyebrow?: string;
   title?: string;
+  description?: string;
   actions?: ReactNode;
+  width?: "wide" | "standard" | "narrow";
 }) {
   return (
-    <section className={classNames("skautai-page-shell", className)} {...props}>
-      {(eyebrow || title || actions) && (
+    <section className={classNames("skautai-page-shell", `page-width-${width}`, className)} {...props}>
+      {(eyebrow || title || description || actions) && (
         <div className="page-heading-row">
-          <div>
+          <div className="page-heading-copy">
             {eyebrow && <span className="section-kicker">{eyebrow}</span>}
-            {title && <h2>{title}</h2>}
+            {title && <h1>{title}</h1>}
+            {description && <p>{description}</p>}
           </div>
           {actions && <div className="toolbar-actions">{actions}</div>}
         </div>
@@ -197,6 +202,7 @@ export function SkautaiActionTile({
 export type SkautaiDataTableColumn<T> = {
   key: string;
   header: ReactNode;
+  mobileLabel?: string;
   cell: (row: T) => ReactNode;
   className?: string;
 };
@@ -234,13 +240,36 @@ export function SkautaiDataTable<T>({
           {rows.map((row) => (
             <tr key={getRowKey(row)} className={getRowClassName?.(row)}>
               {columns.map((column) => (
-                <td key={column.key} className={column.className}>{column.cell(row)}</td>
+                <td
+                  key={column.key}
+                  className={column.className}
+                  data-label={column.mobileLabel ?? (typeof column.header === "string" ? column.header : undefined)}
+                >
+                  {column.cell(row)}
+                </td>
               ))}
             </tr>
           ))}
         </tbody>
       </table>
     </div>
+  );
+}
+
+export function SkautaiTableFooter({
+  meta,
+  children,
+  className
+}: {
+  meta?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <footer className={classNames("skautai-table-footer", className)}>
+      <span>{meta}</span>
+      {children && <div className="skautai-table-footer-actions">{children}</div>}
+    </footer>
   );
 }
 

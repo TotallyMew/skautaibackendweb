@@ -1317,6 +1317,11 @@ export const api = {
     return requestFormData<ApiTypes.UploadResponse>("/api/uploads/documents", formData, { token, tuntasId });
   },
 
-  liveEventsUrl: (token: string, tuntasId: string) =>
-    `${API_BASE_URL}/api/live/events?token=${encodeURIComponent(token)}&tuntasId=${encodeURIComponent(tuntasId)}`
+  liveEventsRequest: (token: string, tuntasId: string) => ({
+    url: `${API_BASE_URL}/api/live/events`,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "X-Tuntas-Id": tuntasId
+    }
+  })
 };

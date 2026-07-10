@@ -3689,3 +3689,478 @@ fieldset {
     min-height: 36px;
   }
 }
+
+/* Desktop web refinement: retain the scout palette, reduce app-like geometry. */
+:root {
+  --shadow: rgba(13, 18, 14, 0.055);
+}
+
+.app-shell {
+  grid-template-columns: 248px minmax(0, 1fr);
+}
+
+.sidebar-header,
+.topbar,
+.topbar-inner {
+  min-height: 64px;
+}
+
+.sidebar-header {
+  padding: 11px 14px;
+}
+
+.sidebar-scroll {
+  padding: 10px 10px 16px;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+
+.sidebar-scroll:hover {
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  border-radius: 7px;
+  box-shadow: 0 1px 2px rgba(13, 18, 14, 0.16);
+}
+
+.brand-copy strong {
+  font-size: 0.9rem;
+}
+
+.brand-copy small {
+  margin-top: 1px;
+  font-size: 0.68rem;
+  letter-spacing: 0.055em;
+}
+
+.tuntas-switcher {
+  padding: 2px 3px 8px;
+}
+
+.tuntas-switcher .select {
+  border-radius: 7px;
+  box-shadow: 0 1px 1px rgba(13, 18, 14, 0.03);
+}
+
+.drawer-section {
+  gap: 4px;
+  margin-top: 12px;
+}
+
+.drawer-section-title {
+  padding: 0 7px;
+  font-size: 0.67rem;
+  letter-spacing: 0.09em;
+}
+
+.nav-list {
+  gap: 1px;
+}
+
+.nav-link {
+  position: relative;
+  min-height: 34px;
+  border-radius: 6px;
+  padding: 6px 8px 6px 10px;
+  font-size: 0.85rem;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.nav-link.active {
+  background: rgba(31, 58, 42, 0.075);
+  color: var(--accent-strong);
+}
+
+.nav-link.active::before {
+  position: absolute;
+  inset: 7px auto 7px 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  content: "";
+}
+
+.nested-nav-list {
+  gap: 0;
+  margin: 0 0 2px 28px;
+  padding: 1px 0 1px 9px;
+}
+
+.nested-nav-link {
+  display: block;
+  min-height: 28px;
+  border-radius: 5px;
+  padding: 5px 7px;
+  font-size: 0.76rem;
+}
+
+.nested-nav-marker {
+  display: none;
+}
+
+.nested-nav-link.active {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.sidebar-footer {
+  gap: 6px;
+  padding: 10px;
+}
+
+.sidebar-account {
+  padding: 6px 7px;
+}
+
+.sidebar-footer-actions {
+  gap: 2px;
+}
+
+.sidebar-footer-link,
+.logout-button {
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+}
+
+.content-frame {
+  width: min(100%, 1480px);
+  padding: 0 30px 42px;
+}
+
+.topbar {
+  margin-bottom: 20px;
+  background: rgba(240, 245, 238, 0.975);
+  backdrop-filter: blur(8px);
+}
+
+.topbar-inner {
+  width: min(100%, 1480px);
+  padding: 9px 30px;
+}
+
+.topbar h1 {
+  margin-top: 2px;
+  font-size: 1.55rem;
+  letter-spacing: -0.025em;
+}
+
+.topbar-title .eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+}
+
+.topbar-utilities {
+  gap: 2px;
+}
+
+.topbar-utility-link,
+.topbar-admin-context {
+  min-height: 36px;
+  border-radius: 6px;
+  padding: 7px 9px;
+}
+
+.topbar-utility-link:hover,
+.topbar-utility-link.active {
+  border-color: transparent;
+  background: rgba(31, 58, 42, 0.075);
+}
+
+.brand:focus-visible,
+.nav-link:focus-visible,
+.nested-nav-link:focus-visible,
+.sidebar-account:focus-visible,
+.sidebar-footer-link:focus-visible,
+.logout-button:focus-visible,
+.sidebar-close-button:focus-visible,
+.mobile-menu-button:focus-visible,
+.topbar-utility-link:focus-visible {
+  outline-width: 2px;
+  outline-offset: 1px;
+}
+
+.home-page {
+  align-items: start;
+  gap: 14px;
+}
+
+.home-overview,
+.home-section,
+.home-empty-card,
+.home-action-tile,
+.dashboard-preview-row,
+.task-row {
+  border-radius: 10px;
+}
+
+.home-overview {
+  gap: 16px;
+  border-radius: 14px;
+  padding: 22px 24px;
+  box-shadow: 0 2px 5px rgba(13, 18, 14, 0.08);
+}
+
+.home-section {
+  align-self: start;
+  gap: 10px;
+  border-radius: 12px;
+  padding: 18px;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.home-action-grid,
+.dashboard-preview-list,
+.task-list {
+  gap: 6px;
+}
+
+.home-action-tile {
+  padding: 10px;
+}
+
+.home-action-tile:hover {
+  box-shadow: none;
+  transform: none;
+}
+
+.home-action-tile svg,
+.home-empty-card svg,
+.dashboard-preview-row svg,
+.task-row > svg {
+  border-radius: 8px;
+}
+
+.dashboard-preview-row,
+.task-row {
+  padding: 10px;
+}
+
+.task-board {
+  gap: 12px;
+  padding: 0;
+}
+
+.skautai-card,
+.skautai-hero-card,
+.skautai-toolbar,
+.overview-panel,
+.work-area,
+.login-panel,
+.unit-summary-tile,
+.admin-metric-card,
+.calendar-day,
+.calendar-entry-row,
+.form-section,
+.data-panel,
+.detail-main,
+.detail-side,
+.event-role-card,
+.quantity-card,
+.info-tile {
+  border-radius: 10px;
+  box-shadow: 0 1px 2px var(--shadow);
+}
+
+.skautai-card,
+.skautai-toolbar,
+.form-section,
+.data-panel,
+.detail-main,
+.detail-side {
+  background: var(--surface-lowest);
+}
+
+.skautai-toolbar {
+  padding: 12px;
+}
+
+.form-section {
+  gap: 12px;
+  padding: 16px;
+}
+
+.form-section-heading > svg {
+  width: 18px;
+  height: 18px;
+  border-radius: 7px;
+  padding: 7px;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea,
+.filter-bar select,
+.filter-bar input,
+.search-field,
+.select,
+.login-form input {
+  border-radius: 7px;
+}
+
+.form-field textarea {
+  border-radius: 7px;
+}
+
+.primary-button,
+.compact-primary-button,
+.secondary-button,
+.icon-button,
+.filter-search-button,
+.filter-clear-button,
+.filter-bar .primary-button,
+.filter-bar .secondary-button {
+  border-radius: 7px;
+}
+
+.primary-button {
+  min-height: 42px;
+}
+
+.login-form .primary-button {
+  min-height: 48px;
+}
+
+.compact-primary-button,
+.secondary-button {
+  min-height: 38px;
+}
+
+.icon-button,
+.filter-search-button {
+  width: 38px;
+  height: 38px;
+}
+
+.segmented-tabs {
+  gap: 2px;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.segmented-tabs button {
+  min-height: 32px;
+  border-radius: 6px;
+  padding: 0 11px;
+}
+
+.segmented-tabs button.active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+
+.data-panel {
+  border-radius: 10px;
+}
+
+.data-panel-header {
+  min-height: 44px;
+  background: rgba(235, 242, 232, 0.48);
+}
+
+.record-list {
+  padding: 0;
+}
+
+.record-header {
+  min-height: 36px;
+  padding: 0 16px;
+}
+
+.record-row {
+  min-height: 56px;
+  padding: 9px 16px;
+}
+
+.record-row:hover {
+  background: rgba(235, 242, 232, 0.58);
+  box-shadow: none;
+}
+
+.record-icon,
+.table-cell-icon,
+.unit-type-icon {
+  border-radius: 8px;
+}
+
+.record-chip-row {
+  margin-top: 5px;
+}
+
+.mini-chip {
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.data-table th {
+  background: rgba(235, 242, 232, 0.62);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+}
+
+.data-table th,
+.data-table td {
+  padding: 11px 14px;
+}
+
+.data-table tbody tr:hover td {
+  background: rgba(235, 242, 232, 0.42);
+}
+
+.detail-grid {
+  gap: 14px;
+}
+
+.detail-main {
+  gap: 18px;
+  padding: 20px;
+}
+
+.detail-fact {
+  padding: 12px 14px;
+}
+
+.admin-metric-card {
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.calendar-day {
+  border-radius: 8px;
+}
+
+.skautai-panel,
+.skautai-upload-field,
+.inline-alert {
+  border-radius: 9px;
+}
+
+@media (max-width: 1050px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    width: min(86vw, 292px);
+  }
+}
+
+@media (max-width: 560px) {
+  .content-frame,
+  .topbar-inner {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .home-overview,
+  .home-section,
+  .form-section,
+  .detail-main {
+    padding: 16px;
+  }
+}

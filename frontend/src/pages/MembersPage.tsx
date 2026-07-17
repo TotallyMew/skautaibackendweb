@@ -16,6 +16,7 @@ import {
   type SkautaiDataTableColumn
 } from "../components/ui/Skautai";
 import { assignmentTypeLabel, finiteCount, roleLabel } from "../utils/display";
+import { MemberManagementPanel } from "./MemberManagementPanel";
 
 const leadersFilter = "__leaders__";
 
@@ -134,7 +135,18 @@ export function MembersPage() {
         {canViewMembers && !error && members.length > 0 && <SkautaiTableFooter meta={`${filteredMembers.length} rodoma · ${total} iš viso`} />}
       </section>
 
-      <MemberDetailsPanel member={selectedMember} onClose={() => setSelectedMember(null)} />
+      <MemberManagementPanel
+        member={selectedMember}
+        onClose={() => setSelectedMember(null)}
+        onMemberUpdated={(updated) => {
+          setSelectedMember(updated);
+          setMembersState((current) => current ? { ...current, members: current.members.map((member) => member.userId === updated.userId ? updated : member) } : current);
+        }}
+        onMemberRemoved={(userId) => {
+          setSelectedMember(null);
+          setMembersState((current) => current ? { ...current, members: current.members.filter((member) => member.userId !== userId), total: Math.max(0, current.total - 1) } : current);
+        }}
+      />
     </SkautaiPageShell>
   );
 }

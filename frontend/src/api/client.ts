@@ -954,7 +954,7 @@ export const api = {
     }),
 
   assignEventRole: (token: string, tuntasId: string, eventId: string, body: ApiTypes.AssignEventRoleRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/roles`, {
+    request<ApiTypes.EventRole>(`/api/events/${eventId}/roles`, {
       token,
       tuntasId,
       method: "POST",
@@ -968,14 +968,72 @@ export const api = {
       method: "DELETE"
     }),
 
+  listEventPastovykles: (token: string, tuntasId: string, eventId: string) =>
+    request<ApiTypes.PastovykleListResponse>(`/api/events/${eventId}/pastovykles`, {
+      token,
+      tuntasId
+    }),
+
+  createEventPastovykle: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreatePastovykleRequest) =>
+    request<ApiTypes.Pastovykle>(`/api/events/${eventId}/pastovykles`, {
+      token,
+      tuntasId,
+      method: "POST",
+      body
+    }),
+
+  updateEventPastovykle: (token: string, tuntasId: string, eventId: string, pastovykleId: string, body: ApiTypes.UpdatePastovykleRequest) =>
+    request<ApiTypes.Pastovykle>(`/api/events/${eventId}/pastovykles/${pastovykleId}`, {
+      token,
+      tuntasId,
+      method: "PUT",
+      body
+    }),
+
+  deleteEventPastovykle: (token: string, tuntasId: string, eventId: string, pastovykleId: string) =>
+    request<MessageResponse>(`/api/events/${eventId}/pastovykles/${pastovykleId}`, {
+      token,
+      tuntasId,
+      method: "DELETE"
+    }),
+
+  getEventPackingList: (token: string, tuntasId: string, eventId: string) =>
+    request<ApiTypes.EventPackingList>(`/api/events/${eventId}/packing-list`, {
+      token,
+      tuntasId
+    }),
+
+  generateEventPackingList: (token: string, tuntasId: string, eventId: string) =>
+    request<ApiTypes.EventPackingList>(`/api/events/${eventId}/packing-list/generate`, {
+      token,
+      tuntasId,
+      method: "POST"
+    }),
+
+  createEventPackingContainer: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventPackingContainerRequest) =>
+    request<ApiTypes.EventPackingContainer>(`/api/events/${eventId}/packing-list/containers`, {
+      token,
+      tuntasId,
+      method: "POST",
+      body
+    }),
+
+  updateEventPackingLine: (token: string, tuntasId: string, eventId: string, lineId: string, body: ApiTypes.UpdateEventPackingLineRequest) =>
+    request<ApiTypes.EventPackingLine>(`/api/events/${eventId}/packing-list/lines/${lineId}`, {
+      token,
+      tuntasId,
+      method: "PUT",
+      body
+    }),
+
   getEventInventoryPlan: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-plan`, {
+    request<ApiTypes.EventInventoryPlan>(`/api/events/${eventId}/inventory-plan`, {
       token,
       tuntasId
     }),
 
   createEventInventoryBucket: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventInventoryBucketRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-buckets`, {
+    request<ApiTypes.EventInventoryBucket>(`/api/events/${eventId}/inventory-buckets`, {
       token,
       tuntasId,
       method: "POST",
@@ -983,7 +1041,7 @@ export const api = {
     }),
 
   updateEventInventoryBucket: (token: string, tuntasId: string, eventId: string, bucketId: string, body: ApiTypes.UpdateEventInventoryBucketRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-buckets/${bucketId}`, {
+    request<ApiTypes.EventInventoryBucket>(`/api/events/${eventId}/inventory-buckets/${bucketId}`, {
       token,
       tuntasId,
       method: "PUT",
@@ -998,7 +1056,7 @@ export const api = {
     }),
 
   createEventInventoryItem: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventInventoryItemRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-items`, {
+    request<ApiTypes.EventInventoryItem>(`/api/events/${eventId}/inventory-items`, {
       token,
       tuntasId,
       method: "POST",
@@ -1006,7 +1064,7 @@ export const api = {
     }),
 
   createEventInventoryItemsBulk: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventInventoryItemsBulkRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-items/bulk`, {
+    request<{ items: ApiTypes.EventInventoryItem[]; total: number }>(`/api/events/${eventId}/inventory-items/bulk`, {
       token,
       tuntasId,
       method: "POST",
@@ -1014,7 +1072,7 @@ export const api = {
     }),
 
   updateEventInventoryItem: (token: string, tuntasId: string, eventId: string, inventoryItemId: string, body: ApiTypes.UpdateEventInventoryItemRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-items/${inventoryItemId}`, {
+    request<ApiTypes.EventInventoryItem>(`/api/events/${eventId}/inventory-items/${inventoryItemId}`, {
       token,
       tuntasId,
       method: "PUT",
@@ -1029,7 +1087,7 @@ export const api = {
     }),
 
   createEventInventorySource: (token: string, tuntasId: string, eventId: string, inventoryItemId: string, body: ApiTypes.CreateEventInventorySourceRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-items/${inventoryItemId}/sources`, {
+    request<ApiTypes.EventInventorySource>(`/api/events/${eventId}/inventory-items/${inventoryItemId}/sources`, {
       token,
       tuntasId,
       method: "POST",
@@ -1037,7 +1095,7 @@ export const api = {
     }),
 
   updateEventInventorySource: (token: string, tuntasId: string, eventId: string, sourceId: string, body: ApiTypes.UpdateEventInventorySourceRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-items/sources/${sourceId}`, {
+    request<ApiTypes.EventInventorySource>(`/api/events/${eventId}/inventory-items/sources/${sourceId}`, {
       token,
       tuntasId,
       method: "PUT",
@@ -1052,7 +1110,7 @@ export const api = {
     }),
 
   createEventInventoryAllocation: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventInventoryAllocationRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-allocations`, {
+    request<ApiTypes.EventInventoryAllocation>(`/api/events/${eventId}/inventory-allocations`, {
       token,
       tuntasId,
       method: "POST",
@@ -1060,7 +1118,7 @@ export const api = {
     }),
 
   updateEventInventoryAllocation: (token: string, tuntasId: string, eventId: string, allocationId: string, body: ApiTypes.UpdateEventInventoryAllocationRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-allocations/${allocationId}`, {
+    request<ApiTypes.EventInventoryAllocation>(`/api/events/${eventId}/inventory-allocations/${allocationId}`, {
       token,
       tuntasId,
       method: "PUT",
@@ -1075,33 +1133,39 @@ export const api = {
     }),
 
   getEventInventoryReadiness: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-readiness`, {
+    request<ApiTypes.EventInventoryReadiness>(`/api/events/${eventId}/inventory-readiness`, {
       token,
       tuntasId
     }),
 
   listEventInventoryCustody: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-custody`, {
+    request<ApiTypes.EventInventoryCustodyListResponse>(`/api/events/${eventId}/inventory-custody`, {
       token,
       tuntasId
     }),
 
   listEventInventoryMovements: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-movements`, {
+    request<ApiTypes.EventInventoryMovementListResponse>(`/api/events/${eventId}/inventory-movements`, {
       token,
       tuntasId
     }),
 
   createEventInventoryMovement: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventInventoryMovementRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-movements`, {
+    request<ApiTypes.EventInventoryMovement>(`/api/events/${eventId}/inventory-movements`, {
       token,
       tuntasId,
       method: "POST",
       body
     }),
 
+  listEventInventoryTransferRequests: (token: string, tuntasId: string, eventId: string) =>
+    request<ApiTypes.EventInventoryTransferRequestListResponse>(`/api/events/${eventId}/inventory-transfer-requests`, {
+      token,
+      tuntasId
+    }),
+
   createEventInventoryTransferRequest: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventInventoryTransferRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-transfer-requests`, {
+    request<ApiTypes.EventInventoryTransferRequest>(`/api/events/${eventId}/inventory-transfer-requests`, {
       token,
       tuntasId,
       method: "POST",
@@ -1109,7 +1173,7 @@ export const api = {
     }),
 
   respondEventInventoryTransferRequest: (token: string, tuntasId: string, eventId: string, requestId: string, body: ApiTypes.RespondEventInventoryTransferRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/inventory-transfer-requests/${requestId}/respond`, {
+    request<ApiTypes.EventInventoryTransferRequest>(`/api/events/${eventId}/inventory-transfer-requests/${requestId}/respond`, {
       token,
       tuntasId,
       method: "POST",
@@ -1117,13 +1181,13 @@ export const api = {
     }),
 
   listEventPurchases: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/purchases`, {
+    request<ApiTypes.EventPurchaseListResponse>(`/api/events/${eventId}/purchases`, {
       token,
       tuntasId
     }),
 
   createEventPurchase: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventPurchaseRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/purchases`, {
+    request<ApiTypes.EventPurchase>(`/api/events/${eventId}/purchases`, {
       token,
       tuntasId,
       method: "POST",
@@ -1131,7 +1195,7 @@ export const api = {
     }),
 
   updateEventPurchase: (token: string, tuntasId: string, eventId: string, purchaseId: string, body: ApiTypes.UpdateEventPurchaseRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/purchases/${purchaseId}`, {
+    request<ApiTypes.EventPurchase>(`/api/events/${eventId}/purchases/${purchaseId}`, {
       token,
       tuntasId,
       method: "PUT",
@@ -1139,7 +1203,7 @@ export const api = {
     }),
 
   attachEventPurchaseInvoice: (token: string, tuntasId: string, eventId: string, purchaseId: string, body: ApiTypes.AttachEventPurchaseInvoiceRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/purchases/${purchaseId}/invoice`, {
+    request<ApiTypes.EventPurchase>(`/api/events/${eventId}/purchases/${purchaseId}/invoice`, {
       token,
       tuntasId,
       method: "POST",
@@ -1147,27 +1211,27 @@ export const api = {
     }),
 
   completeEventPurchase: (token: string, tuntasId: string, eventId: string, purchaseId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/purchases/${purchaseId}/complete`, {
+    request<ApiTypes.EventPurchase>(`/api/events/${eventId}/purchases/${purchaseId}/complete`, {
       token,
       tuntasId,
       method: "POST"
     }),
 
   addEventPurchaseToInventory: (token: string, tuntasId: string, eventId: string, purchaseId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/purchases/${purchaseId}/add-to-inventory`, {
+    request<ApiTypes.EventPurchase>(`/api/events/${eventId}/purchases/${purchaseId}/add-to-inventory`, {
       token,
       tuntasId,
       method: "POST"
     }),
 
   getEventFinance: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/finance`, {
+    request<ApiTypes.EventFinance>(`/api/events/${eventId}/finance`, {
       token,
       tuntasId
     }),
 
   updateEventFinanceBudget: (token: string, tuntasId: string, eventId: string, body: ApiTypes.UpdateEventFinanceBudgetRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/finance/budget`, {
+    request<ApiTypes.EventFinance>(`/api/events/${eventId}/finance/budget`, {
       token,
       tuntasId,
       method: "PUT",
@@ -1175,13 +1239,13 @@ export const api = {
     }),
 
   getEventReconciliation: (token: string, tuntasId: string, eventId: string) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/reconciliation`, {
+    request<ApiTypes.EventReconciliation>(`/api/events/${eventId}/reconciliation`, {
       token,
       tuntasId
     }),
 
   reconcileEventReturns: (token: string, tuntasId: string, eventId: string, body: ApiTypes.ReconcileEventReturnsRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/reconciliation/returns`, {
+    request<ApiTypes.EventReconciliation>(`/api/events/${eventId}/reconciliation/returns`, {
       token,
       tuntasId,
       method: "POST",
@@ -1189,7 +1253,7 @@ export const api = {
     }),
 
   reconcileEventPurchases: (token: string, tuntasId: string, eventId: string, body: ApiTypes.ReconcileEventPurchasesRequest) =>
-    request<ApiTypes.EventWorkspacePayload>(`/api/events/${eventId}/reconciliation/purchases`, {
+    request<ApiTypes.EventReconciliation>(`/api/events/${eventId}/reconciliation/purchases`, {
       token,
       tuntasId,
       method: "POST",

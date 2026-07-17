@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowLeft, CalendarPlus, PackagePlus, Plus, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { ApiError, api } from "../api/client";
-import type { Item, Location, OrganizationalUnit } from "../api/types";
+import type { Item, Location, OrganizationalUnit, ReservationAvailabilityItem } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { itemTypeLabel } from "../utils/display";
 import { hasPermission } from "../utils/permissions";
@@ -41,6 +41,8 @@ export function ReservationCreatePage() {
   const [items, setItems] = useState<Item[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [units, setUnits] = useState<OrganizationalUnit[]>([]);
+  const [availability, setAvailability] = useState<Record<string, ReservationAvailabilityItem>>({});
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isLoadingContext, setIsLoadingContext] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +92,22 @@ export function ReservationCreatePage() {
     };
   }, [auth?.activeTuntasId, auth?.token, canCreateReservation, canViewUnits]);
 
+  useEffect(() => {
+    if (!auth?.token || !auth.activeTuntasId || !form.startDate || !form.endDate || form.endDate < form.startDate) {
+      setAvailability({});
+      return;
+    }
+    let cancelled = false;
+    const timeoutId = window.setTimeout(() => {
+      setIsCheckingAvailability(true);
+      api.getReservationAvailability(auth.token, auth.activeTuntasId!, form.startDate, form.endDate)
+        .then((response) => { if (!cancelled) setAvailability(Object.fromEntries(response.items.map((item) => [item.itemId, item]))); })
+        .catch(() => { if (!cancelled) setAvailability({}); })
+        .finally(() => { if (!cancelled) setIsCheckingAvailability(false); });
+    }, 250);
+    return () => { cancelled = true; window.clearTimeout(timeoutId); };
+  }, [auth?.activeTuntasId, auth?.token, form.endDate, form.startDate]);
+
   const sortedItems = useMemo(
     () => [...items].sort((left, right) => left.name.localeCompare(right.name, "lt")),
     [items]
@@ -134,6 +152,11 @@ export function ReservationCreatePage() {
     const reservationItems = normalizedItems(form.items);
     if (reservationItems.length === 0) return setError("Pasirinkite bent vieną inventoriaus įrašą.");
     if (form.endDate < form.startDate) return setError("Pabaigos data negali būti ankstesnė už pradžios datą.");
+    const unavailable = reservationItems.find((line) => availability[line.itemId] && line.quantity > availability[line.itemId].availableQuantity);
+    if (unavailable) {
+      const item = items.find((candidate) => candidate.id === unavailable.itemId);
+      return setError(`„${item?.name ?? "Inventorius"}“ pasirinktam laikui galima rezervuoti tik ${availability[unavailable.itemId].availableQuantity} vnt.`);
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -231,7 +254,7 @@ export function ReservationCreatePage() {
             <PackagePlus size={20} aria-hidden="true" />
             <div>
               <h3>Inventorius</h3>
-              <span>{isLoadingContext ? "Kraunami aktyvūs inventoriaus įrašai..." : "Pasirink vieną ar kelis inventoriaus įrašus ir kiekį."}</span>
+              <span>{isLoadingContext ? "Kraunami aktyvūs inventoriaus įrašai..." : isCheckingAvailability ? "Tikrinamas pasirinkto laikotarpio prieinamumas..." : "Kiekiai rodo realų likutį pasirinktam laikotarpiui."}</span>
             </div>
           </div>
 
@@ -244,14 +267,14 @@ export function ReservationCreatePage() {
                     <option value="">Pasirinkti įrašą</option>
                     {sortedItems.map((inventoryItem) => (
                       <option key={inventoryItem.id} value={inventoryItem.id}>
-                        {inventoryItem.name} / {itemTypeLabel(inventoryItem.type)} / {inventoryItem.quantity} {inventoryItem.unitOfMeasure ?? "vnt."}
+                        {inventoryItem.name} / {itemTypeLabel(inventoryItem.type)} / galima {availability[inventoryItem.id]?.availableQuantity ?? inventoryItem.quantity} {inventoryItem.unitOfMeasure ?? "vnt."}
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="form-field">
                   <span>Kiekis</span>
-                  <input min="1" type="number" value={item.quantity} onChange={(event) => updateItem(index, { quantity: event.target.value })} required />
+                  <input min="1" max={item.itemId ? availability[item.itemId]?.availableQuantity ?? items.find((candidate) => candidate.id === item.itemId)?.quantity : undefined} type="number" value={item.quantity} onChange={(event) => updateItem(index, { quantity: event.target.value })} required />
                 </label>
                 <button className="icon-button danger-icon-button" type="button" title="Pašalinti eilutę" onClick={() => removeItemRow(index)}>
                   <Trash2 size={17} aria-hidden="true" />

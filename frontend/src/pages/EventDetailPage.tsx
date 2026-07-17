@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CalendarDays, ClipboardList, Edit3, Euro, Loader2, PackageCheck, UsersRound, type LucideIcon } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { AlertCircle, ArrowLeft, Boxes, CalendarDays, ClipboardCheck, ClipboardList, Edit3, Euro, Flag, Loader2, PackageCheck, Play, TentTree, Trash2, UsersRound, type LucideIcon } from "lucide-react";
 import { api } from "../api/client";
 import type { Event } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -9,9 +9,12 @@ import { eventTypeLabel, roleLabel, statusLabel } from "../utils/display";
 export function EventDetailPage() {
   const { eventId } = useParams();
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const [event, setEvent] = useState<Event | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
   const canManage = auth?.permissions.some((permission) => permission === "events.manage" || permission.startsWith("events.manage:")) ?? false;
 
   useEffect(() => {
@@ -48,6 +51,21 @@ export function EventDetailPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, eventId]);
 
+  async function changeStatus(status: "ACTIVE" | "WRAP_UP") {
+    if (!eventId || !auth?.token || !auth.activeTuntasId || busyAction) return;
+    setBusyAction(status); setError(null); setMessage(null);
+    try { const updated = await api.updateEvent(auth.token, auth.activeTuntasId, eventId, { status }); setEvent(updated); setMessage(status === "ACTIVE" ? "Renginys pradėtas." : "Renginys perduotas užbaigimo etapui."); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Renginio būsenos pakeisti nepavyko."); }
+    finally { setBusyAction(null); }
+  }
+
+  async function cancelEvent() {
+    if (!eventId || !auth?.token || !auth.activeTuntasId || busyAction || !window.confirm("Atšaukti šį renginį?")) return;
+    setBusyAction("cancel"); setError(null);
+    try { await api.deleteEvent(auth.token, auth.activeTuntasId, eventId); navigate("/events"); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Renginio atšaukti nepavyko."); setBusyAction(null); }
+  }
+
   return (
     <section className="detail-page">
       <div className="section-heading">
@@ -65,6 +83,9 @@ export function EventDetailPage() {
               Redaguoti
             </Link>
           )}
+          {event && canManage && !["ACTIVE", "WRAP_UP", "COMPLETED", "CANCELLED"].includes(event.status) && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("ACTIVE")}><Play size={17} />Pradėti</button>}
+          {event && canManage && event.status === "ACTIVE" && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("WRAP_UP")}><Flag size={17} />Užbaigimo etapas</button>}
+          {event && canManage && !["COMPLETED", "CANCELLED"].includes(event.status) && <button className="icon-button danger-icon-button" type="button" title="Atšaukti renginį" disabled={Boolean(busyAction)} onClick={() => void cancelEvent()}><Trash2 size={17} /></button>}
           {event && <StatusBadge status={event.status} />}
         </div>
       </div>
@@ -84,8 +105,9 @@ export function EventDetailPage() {
           <span>{error}</span>
         </div>
       )}
+      {message && <p className="inline-success">{message}</p>}
 
-      {!isLoading && !error && event && (
+      {!isLoading && event && (
         <div className="detail-grid">
           <article className="detail-main">
             <div className="detail-title-row">
@@ -109,6 +131,18 @@ export function EventDetailPage() {
               <InfoTile icon={Euro} label="Išlaidos" value={financeSpent(event)} />
               <InfoTile icon={UsersRound} label="Komanda" value={`${event.eventRoles.length} rolės`} />
             </div>
+
+            <section className="detail-section">
+              <h3>Renginio darbo sritys</h3>
+              <div className="event-workspace-launcher">
+                <WorkspaceLink eventId={event.id} section="staff" icon={UsersRound} title="Komanda" description="Rolės ir atsakingi žmonės" />
+                <WorkspaceLink eventId={event.id} section="plan" icon={Boxes} title="Inventoriaus planas" description="Poreikiai, šaltiniai ir paskirstymas" />
+                <WorkspaceLink eventId={event.id} section="pastovykles" icon={TentTree} title="Pastovyklės" description="Stovyklos grupės ir vadovai" />
+                <WorkspaceLink eventId={event.id} section="packing" icon={PackageCheck} title="Pakavimas" description="Dėžės ir pakrovimo kontrolė" />
+                <WorkspaceLink eventId={event.id} section="movements" icon={ClipboardCheck} title="Judėjimas" description="Išdavimas, grąžinimas ir globa" />
+                <WorkspaceLink eventId={event.id} section="purchases" icon={Euro} title="Pirkimai" description="Trūkumai, sąskaitos ir biudžetas" />
+              </div>
+            </section>
 
             <section className="detail-section">
               <h3>Renginio rolės</h3>
@@ -142,6 +176,10 @@ export function EventDetailPage() {
       )}
     </section>
   );
+}
+
+function WorkspaceLink({ eventId, section, icon: Icon, title, description }: { eventId: string; section: string; icon: LucideIcon; title: string; description: string }) {
+  return <Link className="workspace-launch-card" to={`/events/${eventId}/${section}`}><Icon size={20} /><strong>{title}</strong><span>{description}</span></Link>;
 }
 
 function InfoTile({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {

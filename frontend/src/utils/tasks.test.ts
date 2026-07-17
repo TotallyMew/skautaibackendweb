@@ -26,8 +26,8 @@ describe("taskRoutePath", () => {
   });
 
   it("opens event tasks in the matching workspace tab", () => {
-    expect(taskRoutePath("event_plan/event-1")).toBe("/events/event-1/workspace?tab=plan");
-    expect(taskRoutePath("event_reconciliation/event-1")).toBe("/events/event-1/workspace?tab=reconciliation");
-    expect(taskRoutePath("event_packing/event-1")).toBe("/events/event-1/workspace?tab=logistics");
+    expect(taskRoutePath("event_plan/event-1")).toBe("/events/event-1/plan");
+    expect(taskRoutePath("event_reconciliation/event-1")).toBe("/events/event-1/reconciliation");
+    expect(taskRoutePath("event_packing/event-1")).toBe("/events/event-1/packing");
   });
 });

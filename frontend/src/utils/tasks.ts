@@ -18,10 +18,10 @@ export function taskRoutePath(routeTarget: string, entityId?: string | null) {
   if (targetKind === "event_plan" || targetKind === "event_reconciliation" || targetKind === "event_packing") {
     const eventId = embeddedId ?? entityId;
     if (!eventId) return "/events";
-    const tab = targetKind === "event_plan" ? "plan" : targetKind === "event_reconciliation" ? "reconciliation" : "logistics";
-    return `/events/${eventId}/workspace?tab=${tab}`;
+    const section = targetKind === "event_plan" ? "plan" : targetKind === "event_reconciliation" ? "reconciliation" : "packing";
+    return `/events/${eventId}/${section}`;
   }
-  if (targetKind.startsWith("event_")) return entityId ? `/events/${entityId}/workspace` : "/events";
+  if (targetKind.startsWith("event_")) return entityId ? `/events/${entityId}` : "/events";
   if (routeTarget === "my_tasks") return "/tasks";
   return "/";
 }

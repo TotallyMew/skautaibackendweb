@@ -316,6 +316,7 @@ export type CreateItemRequest = {
   responsibleUserId?: string | null;
   purchaseDate?: string | null;
   purchasePrice?: number | null;
+  photoUrl?: string | null;
   notes?: string | null;
   customFields?: ItemCustomFieldRequest[];
   duplicateHandling?: string;
@@ -826,7 +827,11 @@ export type SharedInventoryRequest = {
   requestingUnitName?: string | null;
   needsDraugininkasApproval: boolean;
   draugininkasStatus?: string | null;
+  draugininkasReviewedByUserId?: string | null;
+  draugininkasRejectionReason?: string | null;
   topLevelStatus: string;
+  topLevelReviewedByUserId?: string | null;
+  topLevelRejectionReason?: string | null;
   notes?: string | null;
   items: SharedInventoryRequestItem[];
   createdAt: string;
@@ -1195,6 +1200,240 @@ export type UpdateEventRequest = Partial<CreateEventRequest> & {
 };
 
 export type EventWorkspacePayload = Record<string, unknown>;
+
+export type EventInventoryBucket = {
+  id: string;
+  eventId: string;
+  name: string;
+  type: string;
+  pastovykleId?: string | null;
+  pastovykleName?: string | null;
+  locationId?: string | null;
+  locationPath?: string | null;
+  notes?: string | null;
+};
+
+export type EventInventorySource = {
+  id: string;
+  eventInventoryItemId: string;
+  itemId?: string | null;
+  reservationGroupId?: string | null;
+  plannedQuantity: number;
+  reservedQuantity: number;
+  pickupCustodianName?: string | null;
+  pickupLocationPath?: string | null;
+  pickupTemporaryStorageLabel?: string | null;
+  pickupResponsibleUserName?: string | null;
+  pickupSummary?: string | null;
+  sourceStatus: string;
+  notes?: string | null;
+  createdAt: string;
+};
+
+export type EventInventoryItem = {
+  id: string;
+  eventId: string;
+  itemId?: string | null;
+  bucketId?: string | null;
+  bucketName?: string | null;
+  reservationGroupId?: string | null;
+  name: string;
+  plannedQuantity: number;
+  availableQuantity: number;
+  shortageQuantity: number;
+  allocatedQuantity: number;
+  unallocatedQuantity: number;
+  needsPurchase: boolean;
+  notes?: string | null;
+  sources: EventInventorySource[];
+  responsibleUserId?: string | null;
+  responsibleUserName?: string | null;
+  createdAt: string;
+};
+
+export type EventInventoryAllocation = {
+  id: string;
+  eventInventoryItemId: string;
+  bucketId: string;
+  bucketName: string;
+  quantity: number;
+  notes?: string | null;
+};
+
+export type EventInventoryPlan = {
+  buckets: EventInventoryBucket[];
+  items: EventInventoryItem[];
+  allocations: EventInventoryAllocation[];
+};
+
+export type EventPurchaseItem = {
+  id: string;
+  purchaseId: string;
+  eventInventoryItemId: string;
+  itemName: string;
+  purchasedQuantity: number;
+  unitPrice?: number | null;
+  lineTotal?: number | null;
+  addedToInventory: boolean;
+  addedToInventoryItemId?: string | null;
+  notes?: string | null;
+};
+
+export type EventPurchaseInvoice = { id: string; purchaseId: string; fileUrl: string; createdAt: string };
+
+export type EventPurchase = {
+  id: string;
+  eventId: string;
+  purchasedByUserId?: string | null;
+  purchasedByName?: string | null;
+  status: string;
+  purchaseDate?: string | null;
+  totalAmount?: number | null;
+  invoiceFileUrl?: string | null;
+  invoices: EventPurchaseInvoice[];
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  items: EventPurchaseItem[];
+};
+
+export type EventPurchaseListResponse = { purchases: EventPurchase[]; total: number; limit?: number | null; offset: number; hasMore: boolean };
+
+export type EventExtraCost = {
+  id: string;
+  eventId: string;
+  category: string;
+  label: string;
+  quantity?: number | null;
+  unit?: string | null;
+  unitPrice?: number | null;
+  totalAmount: number;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EventFinance = { eventId: string; summary: EventFinanceSummary; extraCosts: EventExtraCost[] };
+
+export type EventInventoryCustody = {
+  id: string;
+  eventInventoryItemId: string;
+  itemName: string;
+  pastovykleId?: string | null;
+  pastovykleName?: string | null;
+  holderUserId?: string | null;
+  holderUserName?: string | null;
+  quantity: number;
+  returnedQuantity: number;
+  remainingQuantity: number;
+  status: string;
+  createdByUserName?: string | null;
+  createdAt: string;
+  closedAt?: string | null;
+  notes?: string | null;
+};
+
+export type EventInventoryMovement = {
+  id: string;
+  eventId: string;
+  eventInventoryItemId: string;
+  itemName: string;
+  custodyId?: string | null;
+  movementType: string;
+  quantity: number;
+  fromPastovykleName?: string | null;
+  toPastovykleName?: string | null;
+  fromUserName?: string | null;
+  toUserName?: string | null;
+  performedByUserName?: string | null;
+  notes?: string | null;
+  createdAt: string;
+};
+
+export type EventInventoryCustodyListResponse = { custody: EventInventoryCustody[]; total: number };
+export type EventInventoryMovementListResponse = { movements: EventInventoryMovement[]; total: number };
+
+export type EventInventoryTransferRequest = {
+  id: string;
+  eventId: string;
+  sourceCustodyId: string;
+  eventInventoryItemId: string;
+  itemName: string;
+  requestedByUserId: string;
+  requestedByUserName?: string | null;
+  requestedFromUserId: string;
+  requestedFromUserName?: string | null;
+  quantity: number;
+  status: string;
+  notes?: string | null;
+  createdAt: string;
+  respondedAt?: string | null;
+  respondedByUserId?: string | null;
+  movementId?: string | null;
+};
+
+export type EventInventoryTransferRequestListResponse = { requests: EventInventoryTransferRequest[]; total: number };
+
+export type EventInventoryReadiness = {
+  readinessPercent: number;
+  totalQuantity: number;
+  completedQuantity: number;
+  openQuantity: number;
+  overdueCount: number;
+  unassignedCount: number;
+  conflicts: Array<{ itemId: string; itemName: string; availableQuantity: number; requestedQuantity: number; overlappingEvents: string[] }>;
+};
+
+export type EventReconciliationReturnLine = {
+  custodyId: string;
+  eventInventoryItemId: string;
+  itemId?: string | null;
+  itemName: string;
+  pastovykleName?: string | null;
+  holderUserName?: string | null;
+  quantity: number;
+  returnedQuantity: number;
+  remainingQuantity: number;
+  pendingQuantity: number;
+  status: string;
+  isReturned: boolean;
+  currentHolderSummary?: string | null;
+  sourcePickupSummary?: string | null;
+  notes?: string | null;
+};
+
+export type EventReconciliationPurchaseLine = {
+  purchaseId: string;
+  purchaseItemId: string;
+  eventInventoryItemId: string;
+  itemId?: string | null;
+  itemName: string;
+  purchasedQuantity: number;
+  status: string;
+  invoiceFileUrl?: string | null;
+  notes?: string | null;
+};
+
+export type EventReconciliation = {
+  eventId: string;
+  sessionId?: string | null;
+  status: string;
+  openReturns: EventReconciliationReturnLine[];
+  returnedToEventStorage: EventReconciliationReturnLine[];
+  unresolvedPurchases: EventReconciliationPurchaseLine[];
+  canComplete: boolean;
+};
+
+export type EventPackingContainer = { id: string; eventId: string; name: string; type: string; status: string; sortOrder: number; notes?: string | null; createdAt: string; updatedAt: string };
+export type EventPackingLine = { id: string; eventId: string; eventInventoryItemId: string; allocationId?: string | null; containerId?: string | null; containerName?: string | null; bucketId?: string | null; bucketName?: string | null; itemId?: string | null; itemName: string; requiredQuantity: number; status: string; sourceSummary?: string | null; notes?: string | null; checkedByUserName?: string | null; checkedAt?: string | null; createdAt: string; updatedAt: string };
+export type EventPackingList = { eventId: string; containers: EventPackingContainer[]; lines: EventPackingLine[]; summary: { totalLines: number; doneLines: number; totalQuantity: number; doneQuantity: number; progressPercent: number } };
+export type CreateEventPackingContainerRequest = { name: string; type?: string; notes?: string | null };
+export type UpdateEventPackingLineRequest = { status?: string | null; containerId?: string | null; clearContainer?: boolean; notes?: string | null };
+
+export type Pastovykle = { id: string; eventId: string; name: string; responsibleUserId?: string | null; ageGroup?: string | null; notes?: string | null };
+export type PastovykleListResponse = { pastovykles: Pastovykle[]; total: number };
+export type CreatePastovykleRequest = { name: string; responsibleUserId?: string | null; ageGroup?: string | null; notes?: string | null };
+export type UpdatePastovykleRequest = Partial<CreatePastovykleRequest> & { clearResponsibleUser?: boolean };
 
 export type EventCandidateMembersResponse = {
   members: Member[];

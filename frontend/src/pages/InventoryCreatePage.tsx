@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CheckCircle2, Loader2, PackagePlus, Save, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowLeft, CheckCircle2, FileImage, Loader2, PackagePlus, Save, ShieldCheck } from "lucide-react";
 import { ApiError, api } from "../api/client";
 import type { CreateItemRequest, Item, Location, Member, OrganizationalUnit, UpdateItemRequest } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -23,6 +23,7 @@ type FormState = {
   purchaseDate: string;
   purchasePrice: string;
   notes: string;
+  photoUrl: string;
   status: string;
 };
 
@@ -43,6 +44,7 @@ const initialForm: FormState = {
   purchaseDate: "",
   purchasePrice: "",
   notes: "",
+  photoUrl: "",
   status: "ACTIVE"
 };
 
@@ -57,6 +59,7 @@ export function InventoryCreatePage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(itemId));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isEditing = Boolean(itemId);
@@ -138,6 +141,20 @@ export function InventoryCreatePage() {
     }
   }
 
+  async function uploadPhoto(file: File) {
+    if (!auth?.token || !auth.activeTuntasId) return;
+    setIsUploadingPhoto(true);
+    setError(null);
+    try {
+      const uploaded = await api.uploadImage(auth.token, auth.activeTuntasId, file);
+      update("photoUrl", uploaded.url);
+    } catch (cause) {
+      setError(cause instanceof ApiError || cause instanceof Error ? cause.message : "Nuotraukos įkelti nepavyko.");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  }
+
   if (!hasAccess) {
     return (
       <section className="work-area">
@@ -212,6 +229,19 @@ export function InventoryCreatePage() {
               <span>Aprašymas</span>
               <textarea rows={3} value={form.description} onChange={(event) => update("description", event.target.value)} />
             </label>
+            <div className="form-field wide item-photo-field">
+              <span>Nuotrauka</span>
+              <div className="item-photo-editor">
+                {form.photoUrl ? <img src={form.photoUrl} alt="Inventoriaus peržiūra" /> : <div className="item-photo-placeholder"><FileImage size={26} /><span>Nuotrauka dar neįkelta</span></div>}
+                <div>
+                  <label className="secondary-button file-action-button">
+                    <FileImage size={17} />{isUploadingPhoto ? "Įkeliama..." : "Įkelti nuotrauką"}
+                    <input type="file" accept="image/*" disabled={isUploadingPhoto} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadPhoto(file); event.currentTarget.value = ""; }} />
+                  </label>
+                  {form.photoUrl && form.photoUrl !== (originalItem?.photoUrl ?? "") && <button className="text-button" type="button" onClick={() => update("photoUrl", originalItem?.photoUrl ?? "")}>Atšaukti įkėlimą</button>}
+                </div>
+              </div>
+            </div>
             {isEditing && (
               <label className="form-field">
                 <span>Būsena</span>
@@ -350,6 +380,7 @@ function toPayload(form: FormState): CreateItemRequest {
     purchaseDate: optional(form.purchaseDate),
     purchasePrice: numberOrNull(form.purchasePrice),
     notes: optional(form.notes),
+    photoUrl: optional(form.photoUrl),
     duplicateHandling: "ASK"
   };
 }
@@ -383,6 +414,7 @@ function fromItem(item: Item): FormState {
     purchaseDate: dateInputValue(item.purchaseDate),
     purchasePrice: item.purchasePrice == null ? "" : String(item.purchasePrice),
     notes: item.notes ?? "",
+    photoUrl: item.photoUrl ?? "",
     status: item.status
   };
 }

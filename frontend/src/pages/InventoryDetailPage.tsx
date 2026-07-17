@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import type { Item } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { finiteCount, itemCategoryLabel, itemConditionLabel, itemOriginLabel, itemTypeLabel, statusLabel } from "../utils/display";
+import { InventoryLifecycle } from "./InventoryLifecycle";
 
 export function InventoryDetailPage() {
   const { itemId } = useParams();
@@ -82,6 +83,7 @@ export function InventoryDetailPage() {
       )}
 
       {!isLoading && !error && item && (
+        <>
         <div className="detail-grid">
           <article className="detail-main">
             <div className="detail-title-row">
@@ -138,6 +140,8 @@ export function InventoryDetailPage() {
             {item.rejectionReason && <DetailFact label="Atmetimo priežastis" value={item.rejectionReason} />}
           </aside>
         </div>
+        <InventoryLifecycle item={item} onItemUpdated={setItem} />
+        </>
       )}
     </section>
   );

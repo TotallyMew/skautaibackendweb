@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2, PackageCheck, RefreshCw, ShieldCheck, ShoppingCart } from "lucide-react";
+import { Eye, Loader2, PackageCheck, Plus, RefreshCw, ShieldCheck, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Requisition, RequisitionListResponse, SharedInventoryRequest, SharedInventoryRequestListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { SkautaiDataTable, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill, SkautaiTableFooter, type SkautaiDataTableColumn } from "../components/ui/Skautai";
 import { countLabel, finiteCount, reviewStatusLabel, statusLabel } from "../utils/display";
-import { canUseRequisitions, canUseSharedInventoryRequests } from "../utils/permissions";
+import { canUseRequisitions, canUseSharedInventoryRequests, hasPermission } from "../utils/permissions";
 
 type RequestTab = "requisitions" | "shared";
 type RequestMode = RequestTab | "all";
@@ -109,7 +109,8 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
       ? "Valdykite pirkimo ir turimų atsargų papildymo prašymus vienoje darbo eilėje."
       : "Valdykite pirkimo, papildymo ir bendro inventoriaus paėmimo prašymus.";
   const actions = (
-    <button
+    <>
+      <button
           className="secondary-button"
           type="button"
           onClick={() => setReloadKey((value) => value + 1)}
@@ -117,7 +118,14 @@ export function RequestsPage({ mode = "all" }: { mode?: RequestMode }) {
         >
           <RefreshCw size={17} aria-hidden="true" />
           Atnaujinti
-    </button>
+      </button>
+      {activeTab === "requisitions" && hasPermission(permissions, "requisitions.create") && (
+        <Link className="primary-button compact-primary-button" to="/purchases/new"><Plus size={17} aria-hidden="true" />Naujas prašymas</Link>
+      )}
+      {activeTab === "shared" && hasPermission(permissions, "items.request.bendras") && (
+        <Link className="primary-button compact-primary-button" to="/pickup-requests/new"><Plus size={17} aria-hidden="true" />Naujas prašymas</Link>
+      )}
+    </>
   );
 
   return (

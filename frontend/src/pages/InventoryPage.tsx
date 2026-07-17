@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Eye, Loader2, PackageCheck, PackageSearch, Plus, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Loader2, PackageCheck, PackageSearch, Plus, QrCode, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
@@ -96,6 +96,7 @@ export function InventoryPage() {
     <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={!canFetch || isLoading}>
       <RefreshCw size={17} aria-hidden="true" />Atnaujinti
     </button>
+    <Link className="secondary-button" to="/inventory/scan"><QrCode size={17} aria-hidden="true" />Skenuoti QR</Link>
     {canCreate && <Link className="primary-button compact-primary-button" to="/inventory/new"><Plus size={17} aria-hidden="true" />Naujas įrašas</Link>}
   </>;
 

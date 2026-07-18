@@ -18,7 +18,15 @@ export type EventWorkspaceContext = {
   token: string;
   tuntasId: string;
   userId: string;
+  canViewStaff: boolean;
+  canViewPlan: boolean;
+  canViewInventory: boolean;
+  canViewPastovykles: boolean;
   canManage: boolean;
+  canManageInventory: boolean;
+  canManagePurchases: boolean;
+  canManageFinance: boolean;
+  canViewFinance: boolean;
   refreshEvent: () => Promise<void>;
 };
 
@@ -56,8 +64,26 @@ export function EventWorkspacePage({ section }: { section: EventWorkspaceSection
   }, [refreshEvent]);
 
   const activeSection = sections.find((candidate) => candidate.key === section);
-  const canManage = hasPermission(auth?.permissions, "events.manage") || hasPermission(auth?.permissions, "events.inventory.distribute");
-  const context = event && auth?.token && auth.activeTuntasId ? { event, token: auth.token, tuntasId: auth.activeTuntasId, userId: auth.userId, canManage, refreshEvent } : null;
+  const myRoles = event?.eventRoles.filter((role) => role.userId === auth?.userId).map((role) => role.role) ?? [];
+  const isReadOnly = event ? ["COMPLETED", "CANCELLED"].includes(event.status) : true;
+  const canViewStaff = myRoles.includes("VIRSININKAS");
+  const canViewPlan = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "PROGRAMERIS"].includes(role));
+  const canViewInventory = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS"].includes(role));
+  const canViewPastovykles = canViewInventory || myRoles.includes("PASTOVYKLES_GURU");
+  const hasPurchaseRole = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "FINANSININKAS"].includes(role));
+  const hasFinanceRole = myRoles.some((role) => ["VIRSININKAS", "FINANSININKAS"].includes(role));
+  const canManage = !isReadOnly && canViewStaff;
+  const canManageInventory = !isReadOnly && canViewInventory;
+  const canManagePurchases = !isReadOnly && hasPurchaseRole;
+  const canManageFinance = !isReadOnly && hasFinanceRole;
+  const canViewFinance = hasPurchaseRole || hasPermission(auth?.permissions, "event_purchases.invoice.download");
+  const context = event && auth?.token && auth.activeTuntasId ? {
+    event, token: auth.token, tuntasId: auth.activeTuntasId, userId: auth.userId,
+    canViewStaff, canViewPlan, canViewInventory, canViewPastovykles,
+    canManage, canManageInventory, canManagePurchases, canManageFinance, canViewFinance, refreshEvent
+  } : null;
+  const visibleSections = context ? sections.filter((candidate) => canViewSection(candidate.key, context)) : [];
+  const canViewActiveSection = context ? canViewSection(section, context) : false;
 
   return (
     <SkautaiPageShell
@@ -69,12 +95,26 @@ export function EventWorkspacePage({ section }: { section: EventWorkspaceSection
       width="wide"
     >
       <Link className="back-link" to={eventId ? `/events/${eventId}` : "/events"}><ArrowLeft size={17} aria-hidden="true" />Grįžti į renginio apžvalgą</Link>
-      {eventId && <nav className="event-workspace-nav" aria-label="Renginio darbo sritys">{sections.map(({ key, label, icon: Icon }) => <NavLink key={key} to={`/events/${eventId}/${key}`}><Icon size={17} /><span>{label}</span></NavLink>)}</nav>}
+      {eventId && visibleSections.length > 0 && <nav className="event-workspace-nav" aria-label="Renginio darbo sritys">{visibleSections.map(({ key, label, icon: Icon }) => <NavLink key={key} to={`/events/${eventId}/${key}`}><Icon size={17} /><span>{label}</span></NavLink>)}</nav>}
       {isLoading && <div className="table-state"><Loader2 className="spin" size={22} />Kraunama renginio darbo sritis...</div>}
       {error && <SkautaiErrorState description={error} />}
-      {!isLoading && context && <WorkspaceSection section={section} context={context} />}
+      {!isLoading && context && !canViewActiveSection && <SkautaiErrorState description="Jums nepriskirta renginio rolė, suteikianti prieigą prie šios darbo srities." />}
+      {!isLoading && context && canViewActiveSection && <WorkspaceSection section={section} context={context} />}
     </SkautaiPageShell>
   );
+}
+
+function canViewSection(section: EventWorkspaceSection, context: EventWorkspaceContext): boolean {
+  switch (section) {
+    case "staff": return context.canViewStaff;
+    case "plan": return context.canViewPlan;
+    case "pastovykles": return context.canViewPastovykles;
+    case "packing":
+    case "movements":
+    case "reconciliation":
+    case "templates": return context.canViewInventory;
+    case "purchases": return context.canViewFinance;
+  }
 }
 
 function WorkspaceSection({ section, context }: { section: EventWorkspaceSection; context: EventWorkspaceContext }) {

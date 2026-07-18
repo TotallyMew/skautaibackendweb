@@ -159,6 +159,26 @@ async function requestFormData<T>(
   return (await response.json()) as T;
 }
 
+async function requestBlob(path: string, token: string, tuntasId: string): Promise<Blob> {
+  const headers = new Headers({
+    Accept: "application/octet-stream",
+    Authorization: `Bearer ${token}`,
+    "X-Tuntas-Id": tuntasId
+  });
+  const response = await fetch(`${API_BASE_URL}${path}`, { headers });
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+    try {
+      const body = (await response.json()) as ApiErrorBody;
+      message = body.error ?? body.message ?? message;
+    } catch {
+      // The fallback contains the HTTP status when a file endpoint returns no JSON body.
+    }
+    throw new ApiError(message, response.status);
+  }
+  return response.blob();
+}
+
 function normalizeMember(member: Member): Member {
   return {
     ...member,
@@ -1210,6 +1230,15 @@ export const api = {
       body
     }),
 
+  downloadEventPurchaseInvoice: (token: string, tuntasId: string, eventId: string, purchaseId: string, invoiceId?: string | null) =>
+    requestBlob(
+      invoiceId
+        ? `/api/events/${eventId}/purchases/${purchaseId}/invoices/${invoiceId}/download`
+        : `/api/events/${eventId}/purchases/${purchaseId}/invoice/download`,
+      token,
+      tuntasId
+    ),
+
   completeEventPurchase: (token: string, tuntasId: string, eventId: string, purchaseId: string) =>
     request<ApiTypes.EventPurchase>(`/api/events/${eventId}/purchases/${purchaseId}/complete`, {
       token,
@@ -1236,6 +1265,21 @@ export const api = {
       tuntasId,
       method: "PUT",
       body
+    }),
+
+  createEventExtraCost: (token: string, tuntasId: string, eventId: string, body: ApiTypes.CreateEventExtraCostRequest) =>
+    request<ApiTypes.EventFinance>(`/api/events/${eventId}/finance/costs`, {
+      token, tuntasId, method: "POST", body
+    }),
+
+  updateEventExtraCost: (token: string, tuntasId: string, eventId: string, costId: string, body: ApiTypes.UpdateEventExtraCostRequest) =>
+    request<ApiTypes.EventFinance>(`/api/events/${eventId}/finance/costs/${costId}`, {
+      token, tuntasId, method: "PUT", body
+    }),
+
+  deleteEventExtraCost: (token: string, tuntasId: string, eventId: string, costId: string) =>
+    request<ApiTypes.EventFinance>(`/api/events/${eventId}/finance/costs/${costId}`, {
+      token, tuntasId, method: "DELETE"
     }),
 
   getEventReconciliation: (token: string, tuntasId: string, eventId: string) =>

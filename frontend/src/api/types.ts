@@ -1444,6 +1444,18 @@ export type UpdateEventFinanceBudgetRequest = {
   inventoryBudgetAmount?: number | null;
 };
 
+export type CreateEventExtraCostRequest = {
+  category: string;
+  label: string;
+  quantity?: number | null;
+  unit?: string | null;
+  unitPrice?: number | null;
+  totalAmount?: number | null;
+  notes?: string | null;
+};
+
+export type UpdateEventExtraCostRequest = Partial<CreateEventExtraCostRequest>;
+
 export type AssignEventRoleRequest = {
   userId: string;
   role: string;

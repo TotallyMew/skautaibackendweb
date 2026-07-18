@@ -15,7 +15,15 @@ export function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
-  const canManage = auth?.permissions.some((permission) => permission === "events.manage" || permission.startsWith("events.manage:")) ?? false;
+  const myRoles = event?.eventRoles.filter((role) => role.userId === auth?.userId).map((role) => role.role) ?? [];
+  const isReadOnly = event ? ["COMPLETED", "CANCELLED"].includes(event.status) : true;
+  const canManage = !isReadOnly && myRoles.includes("VIRSININKAS");
+  const canStart = !isReadOnly && myRoles.some((role) => role === "VIRSININKAS" || role === "KOMENDANTAS");
+  const canManageInventory = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS"].includes(role));
+  const canViewPlan = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "PROGRAMERIS"].includes(role));
+  const canViewFinance = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "FINANSININKAS"].includes(role)) ||
+    (auth?.permissions.some((permission) => permission === "event_purchases.invoice.download" || permission.startsWith("event_purchases.invoice.download:")) ?? false);
+  const canViewPastovykles = canManageInventory || myRoles.includes("PASTOVYKLES_GURU");
 
   useEffect(() => {
     if (!eventId || !auth?.token || !auth.activeTuntasId) {
@@ -83,9 +91,9 @@ export function EventDetailPage() {
               Redaguoti
             </Link>
           )}
-          {event && canManage && !["ACTIVE", "WRAP_UP", "COMPLETED", "CANCELLED"].includes(event.status) && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("ACTIVE")}><Play size={17} />Pradėti</button>}
+          {event && canStart && event.status === "PLANNING" && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("ACTIVE")}><Play size={17} />Pradėti</button>}
           {event && canManage && event.status === "ACTIVE" && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("WRAP_UP")}><Flag size={17} />Užbaigimo etapas</button>}
-          {event && canManage && !["COMPLETED", "CANCELLED"].includes(event.status) && <button className="icon-button danger-icon-button" type="button" title="Atšaukti renginį" disabled={Boolean(busyAction)} onClick={() => void cancelEvent()}><Trash2 size={17} /></button>}
+          {event && canManage && event.status === "PLANNING" && <button className="icon-button danger-icon-button" type="button" title="Atšaukti renginį" disabled={Boolean(busyAction)} onClick={() => void cancelEvent()}><Trash2 size={17} /></button>}
           {event && <StatusBadge status={event.status} />}
         </div>
       </div>
@@ -135,12 +143,12 @@ export function EventDetailPage() {
             <section className="detail-section">
               <h3>Renginio darbo sritys</h3>
               <div className="event-workspace-launcher">
-                <WorkspaceLink eventId={event.id} section="staff" icon={UsersRound} title="Komanda" description="Rolės ir atsakingi žmonės" />
-                <WorkspaceLink eventId={event.id} section="plan" icon={Boxes} title="Inventoriaus planas" description="Poreikiai, šaltiniai ir paskirstymas" />
-                <WorkspaceLink eventId={event.id} section="pastovykles" icon={TentTree} title="Pastovyklės" description="Stovyklos grupės ir vadovai" />
-                <WorkspaceLink eventId={event.id} section="packing" icon={PackageCheck} title="Pakavimas" description="Dėžės ir pakrovimo kontrolė" />
-                <WorkspaceLink eventId={event.id} section="movements" icon={ClipboardCheck} title="Judėjimas" description="Išdavimas, grąžinimas ir globa" />
-                <WorkspaceLink eventId={event.id} section="purchases" icon={Euro} title="Pirkimai" description="Trūkumai, sąskaitos ir biudžetas" />
+                {canManage && <WorkspaceLink eventId={event.id} section="staff" icon={UsersRound} title="Komanda" description="Rolės ir atsakingi žmonės" />}
+                {canViewPlan && <WorkspaceLink eventId={event.id} section="plan" icon={Boxes} title="Inventoriaus planas" description="Poreikiai, šaltiniai ir paskirstymas" />}
+                {canViewPastovykles && <WorkspaceLink eventId={event.id} section="pastovykles" icon={TentTree} title="Pastovyklės" description="Stovyklos grupės ir vadovai" />}
+                {canManageInventory && <WorkspaceLink eventId={event.id} section="packing" icon={PackageCheck} title="Pakavimas" description="Dėžės ir pakrovimo kontrolė" />}
+                {canManageInventory && <WorkspaceLink eventId={event.id} section="movements" icon={ClipboardCheck} title="Judėjimas" description="Išdavimas, grąžinimas ir globa" />}
+                {canViewFinance && <WorkspaceLink eventId={event.id} section="purchases" icon={Euro} title="Pirkimai" description="Trūkumai, sąskaitos ir biudžetas" />}
               </div>
             </section>
 

@@ -94,11 +94,13 @@ export function RequisitionDetailPage() {
   const isOwner = request?.createdByUserId === auth?.userId;
   const canUnitReview = Boolean(
     request?.requestingUnitId &&
+    !isOwner &&
     request.unitReviewStatus === "PENDING" &&
-    hasAnyPermission(auth?.permissions, ["items.request.approve.unit", "items.request.forward.bendras"]) &&
-    (auth?.leadershipUnitIds.includes(request.requestingUnitId) ?? false)
+    ((hasAnyPermission(auth?.permissions, ["items.request.approve.unit", "items.request.forward.bendras"]) &&
+      (auth?.leadershipUnitIds.includes(request.requestingUnitId) ?? false)) ||
+      hasPermission(auth?.permissions, "requisitions.approve"))
   );
-  const canTopLevelReview = Boolean(request?.topLevelReviewStatus === "PENDING" && hasPermission(auth?.permissions, "requisitions.approve"));
+  const canTopLevelReview = Boolean(!isOwner && request?.topLevelReviewStatus === "PENDING" && hasPermission(auth?.permissions, "requisitions.approve"));
   const canMarkPurchased = Boolean(request?.status === "APPROVED" && hasPermission(auth?.permissions, "requisitions.approve"));
   const canAddToInventory = Boolean(request?.status === "PURCHASED" && hasPermission(auth?.permissions, "items.create"));
   const canDelete = Boolean(isOwner && request && !["APPROVED", "REJECTED", "CANCELLED"].includes(request.status));

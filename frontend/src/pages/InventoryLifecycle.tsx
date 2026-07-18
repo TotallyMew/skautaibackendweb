@@ -42,15 +42,17 @@ export function InventoryLifecycle({ item, onItemUpdated }: { item: Item; onItem
   const canManageShared = hasScoped(permissions, "items.transfer", "ALL") || permissions.includes("items.transfer");
   const canManageAll = hasScoped(permissions, "items.update", "ALL") || hasScoped(permissions, "items.delete", "ALL") || canManageShared;
   const canManageOwnUnit = hasScoped(permissions, "items.update", "OWN_UNIT") && Boolean(item.custodianId && auth?.leadershipUnitIds.includes(item.custodianId));
-  const canEdit = item.custodianId == null ? canManageAll : canManageAll || canManageOwnUnit;
   const transferredFromShared = item.origin === "TRANSFERRED_FROM_TUNTAS";
+  const canEdit = transferredFromShared
+    ? hasScoped(permissions, "items.update", "ALL")
+    : item.custodianId == null ? canManageAll : canManageAll || canManageOwnUnit;
   const canDelete = canEdit && item.status !== "INACTIVE" && (!transferredFromShared || canManageShared);
   const canRestock = canEdit && item.status === "ACTIVE";
   const canConsume = canEdit && item.isConsumable === true && item.status === "ACTIVE" && item.quantity > 0;
   const availableToLoan = Math.max(0, item.quantity - activeLoanQuantity);
   const canLoan = canEdit && item.status === "ACTIVE" && item.type !== "INDIVIDUAL" && availableToLoan > 0 && (!transferredFromShared || canManageShared);
   const canTransfer = canManageShared && item.custodianId == null && item.status === "ACTIVE" && item.quantity > 0 && item.type !== "INDIVIDUAL";
-  const canReturnToShared = transferredFromShared && item.status === "ACTIVE" && item.quantity > 0 && (canManageShared || canManageOwnUnit);
+  const canReturnToShared = transferredFromShared && item.status === "ACTIVE" && item.quantity > 0 && canManageShared;
   const canReview = item.status === "PENDING_APPROVAL" && (
     item.targetScope === "UNIT"
       ? hasScoped(permissions, "items.review", "OWN_UNIT") && Boolean(item.custodianId && auth?.leadershipUnitIds.includes(item.custodianId))

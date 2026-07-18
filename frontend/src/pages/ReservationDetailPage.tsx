@@ -82,6 +82,7 @@ export function ReservationDetailPage() {
   const canReviewUnit = Boolean(
     reservation &&
     reservation.status === "PENDING" &&
+    !isOwner &&
     reservation.unitReviewStatus === "PENDING" &&
     reservation.items.some((item) => item.custodianId != null) &&
     (canApproveTopLevel || (canApproveOwnUnit && hasManagedUnitItem))
@@ -89,6 +90,7 @@ export function ReservationDetailPage() {
   const canReviewTopLevel = Boolean(
     reservation &&
     reservation.status === "PENDING" &&
+    !isOwner &&
     reservation.topLevelReviewStatus === "PENDING" &&
     reservation.items.some((item) => item.custodianId == null) &&
     canApproveTopLevel

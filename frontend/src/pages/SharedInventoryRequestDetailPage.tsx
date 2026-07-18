@@ -75,6 +75,7 @@ export function SharedInventoryRequestDetailPage() {
   const isOwner = request?.requestedByUserId === auth?.userId;
   const canForward = Boolean(
     request?.needsDraugininkasApproval &&
+    !isOwner &&
     request.draugininkasStatus === "PENDING" &&
     request.requestingUnitId &&
     auth?.leadershipUnitIds.includes(request.requestingUnitId) &&
@@ -82,6 +83,7 @@ export function SharedInventoryRequestDetailPage() {
   );
   const canTopLevelReview = Boolean(
     request?.topLevelStatus === "PENDING" &&
+    !isOwner &&
     (!request.needsDraugininkasApproval || request.draugininkasStatus === "FORWARDED") &&
     hasPermission(auth?.permissions, "items.request.approve.bendras")
   );

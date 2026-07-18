@@ -15,7 +15,6 @@ type EventFormState = {
   endDate: string;
   locationId: string;
   organizationalUnitId: string;
-  status: string;
   notes: string;
 };
 
@@ -27,12 +26,10 @@ const initialForm: EventFormState = {
   endDate: todayInputValue(),
   locationId: "",
   organizationalUnitId: "",
-  status: "PLANNING",
   notes: ""
 };
 
 const eventTypes = ["STOVYKLA", "SUEIGA", "RENGINYS"];
-const eventStatuses = ["PLANNING", "ACTIVE", "WRAP_UP", "COMPLETED", "CANCELLED"];
 
 export function EventFormPage() {
   const { eventId } = useParams();
@@ -45,13 +42,14 @@ export function EventFormPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [canEditEvent, setCanEditEvent] = useState<boolean | null>(isEditing ? null : true);
 
   const canCreate = hasPermission(auth?.permissions, "events.create");
-  const canManage = hasPermission(auth?.permissions, "events.manage");
-  const hasAccess = isEditing ? canManage : canCreate;
+  const canLoad = isEditing || canCreate;
+  const hasAccess = isEditing ? canEditEvent === true : canCreate;
 
   useEffect(() => {
-    if (!auth?.token || !auth.activeTuntasId || !hasAccess) return;
+    if (!auth?.token || !auth.activeTuntasId || !canLoad) return;
     let isCancelled = false;
     setIsLoading(true);
     setError(null);
@@ -66,6 +64,10 @@ export function EventFormPage() {
         setLocations(locationResponse.locations);
         setUnits(unitResponse.units);
         if (event) {
+          setCanEditEvent(
+            !["COMPLETED", "CANCELLED"].includes(event.status) &&
+            event.eventRoles.some((role) => role.userId === auth.userId && role.role === "VIRSININKAS")
+          );
           setForm({
             name: event.name,
             type: event.type,
@@ -74,7 +76,6 @@ export function EventFormPage() {
             endDate: dateInputValue(event.endDate),
             locationId: event.locationId ?? "",
             organizationalUnitId: event.organizationalUnitId ?? "",
-            status: event.status,
             notes: event.notes ?? ""
           });
         }
@@ -89,7 +90,7 @@ export function EventFormPage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, eventId, hasAccess, isEditing]);
+  }, [auth?.activeTuntasId, auth?.token, auth?.userId, canLoad, eventId, isEditing]);
 
   const sortedLocations = useMemo(
     () => [...locations].filter((location) => location.isLeafSelectable).sort((left, right) => left.fullPath.localeCompare(right.fullPath, "lt")),
@@ -125,7 +126,7 @@ export function EventFormPage() {
         notes: optional(form.notes)
       };
       const saved = isEditing && eventId
-        ? await api.updateEvent(auth.token, auth.activeTuntasId, eventId, { ...payload, status: form.status })
+        ? await api.updateEvent(auth.token, auth.activeTuntasId, eventId, payload)
         : await api.createEvent(auth.token, auth.activeTuntasId, payload);
       navigate(`/events/${saved.id}`);
     } catch (cause) {
@@ -135,7 +136,7 @@ export function EventFormPage() {
     }
   }
 
-  if (!hasAccess) {
+  if (!canLoad || (isEditing && canEditEvent === false)) {
     return (
       <section className="work-area">
         <ShieldCheck size={34} aria-hidden="true" />
@@ -202,16 +203,6 @@ export function EventFormPage() {
               <span>Pabaiga</span>
               <input type="date" value={form.endDate} onChange={(event) => update("endDate", event.target.value)} required />
             </label>
-            {isEditing && (
-              <label className="form-field">
-                <span>Būsena</span>
-                <select value={form.status} onChange={(event) => update("status", event.target.value)}>
-                  {eventStatuses.map((status) => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </label>
-            )}
           </div>
         </section>
 

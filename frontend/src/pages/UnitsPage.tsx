@@ -523,6 +523,7 @@ export function UnitsPage() {
         open={Boolean(managedUnit)}
         title={managedUnit ? `${managedUnit.name} · nariai` : "Vieneto nariai"}
         description="Priskirkite tunto narius šiam vienetui ir tvarkykite aktyvias narystes pagal savo rolės apimtį."
+        variant="workspace"
         onClose={closeUnitMembersPanel}
       >
         {managedUnit && (

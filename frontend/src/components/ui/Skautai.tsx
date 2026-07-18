@@ -1,6 +1,6 @@
 import { AlertCircle, ChevronDown, Search, UploadCloud, X, type LucideIcon } from "lucide-react";
 import { Link, type To } from "react-router-dom";
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import { useEffect, useId, useRef, type ComponentPropsWithoutRef, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 
 type Tone = "default" | "success" | "warning" | "danger" | "muted" | "info";
 
@@ -325,6 +325,28 @@ export function SkautaiTabs({
   label?: string;
   className?: string;
 }) {
+  const tabListId = useId();
+
+  function moveFocus(event: ReactKeyboardEvent<HTMLButtonElement>, currentTabId: string) {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+
+    const enabledTabs = tabs.filter((tab) => !tab.disabled);
+    if (enabledTabs.length === 0) return;
+
+    const currentIndex = Math.max(0, enabledTabs.findIndex((tab) => tab.id === currentTabId));
+    const nextIndex = event.key === "Home"
+      ? 0
+      : event.key === "End"
+        ? enabledTabs.length - 1
+        : (currentIndex + (event.key === "ArrowRight" ? 1 : -1) + enabledTabs.length) % enabledTabs.length;
+    const nextTab = enabledTabs[nextIndex];
+    if (!nextTab) return;
+
+    event.preventDefault();
+    onChange(nextTab.id);
+    window.requestAnimationFrame(() => document.getElementById(`${tabListId}-${nextTab.id}`)?.focus());
+  }
+
   return (
     <div className={classNames("skautai-tabs", className)} role="tablist" aria-label={label}>
       {tabs.map((tab) => (
@@ -332,10 +354,13 @@ export function SkautaiTabs({
           key={tab.id}
           type="button"
           role="tab"
+          id={`${tabListId}-${tab.id}`}
           aria-selected={tab.id === activeTab}
+          tabIndex={tab.id === activeTab ? 0 : -1}
           className={tab.id === activeTab ? "active" : undefined}
           disabled={tab.disabled}
           onClick={() => onChange(tab.id)}
+          onKeyDown={(event) => moveFocus(event, tab.id)}
         >
           <span>{tab.label}</span>
           {tab.count != null && <em>{tab.count}</em>}
@@ -395,7 +420,7 @@ export function SkautaiPanel({
   onClose,
   children,
   footer,
-  variant = "drawer"
+  variant = "modal"
 }: {
   open: boolean;
   title: string;
@@ -403,22 +428,80 @@ export function SkautaiPanel({
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
-  variant?: "drawer" | "modal";
+  variant?: "drawer" | "modal" | "workspace";
 }) {
+  const titleId = useId();
+  const panelRef = useRef<HTMLElement>(null);
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      const firstFocusable = panelRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      (firstFocusable ?? panelRef.current)?.focus();
+    });
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !panelRef.current) return;
+
+      const focusable = Array.from(panelRef.current.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      ));
+      const first = focusable[0];
+      const last = focusable.at(-1);
+      if (!first || !last) {
+        event.preventDefault();
+        panelRef.current.focus();
+      } else if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      window.requestAnimationFrame(() => previouslyFocused?.focus());
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
     <div className="skautai-overlay" role="presentation" onMouseDown={onClose}>
       <section
+        ref={panelRef}
         className={classNames("skautai-panel", `skautai-panel-${variant}`)}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="skautai-panel-title"
+        aria-labelledby={titleId}
+        tabIndex={-1}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <header className="skautai-panel-header">
           <div>
-            <h2 id="skautai-panel-title">{title}</h2>
+            <h2 id={titleId}>{title}</h2>
             {description && <p>{description}</p>}
           </div>
           <button className="icon-button" type="button" onClick={onClose} aria-label="Uždaryti" title="Uždaryti">

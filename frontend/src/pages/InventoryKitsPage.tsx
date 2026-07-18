@@ -484,6 +484,7 @@ export function InventoryKitsPage() {
         open={isFormOpen}
         title={editingKit ? "Redaguoti komplektą" : "Naujas komplektas"}
         description="Komplekto daiktai turi priklausyti tam pačiam inventoriaus saugotojui."
+        variant="workspace"
         onClose={closeForm}
       >
         <form className="form-panel" onSubmit={submit}>

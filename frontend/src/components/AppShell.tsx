@@ -204,6 +204,7 @@ export function AppShell() {
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">Pereiti prie pagrindinio turinio</a>
       {isDrawerOpen && (
         <button
           className="drawer-backdrop"
@@ -305,7 +306,7 @@ export function AppShell() {
         </footer>
       </aside>
 
-      <main className="content">
+      <div className="content">
         <header className="topbar">
           <div className="topbar-inner">
             <div className="topbar-leading">
@@ -354,10 +355,10 @@ export function AppShell() {
             </div>
           </div>
         </header>
-        <div className="content-frame">
+        <main id="main-content" className="content-frame" tabIndex={-1}>
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
 
       {isCommandOpen && (
         <div className="command-overlay" role="presentation" onMouseDown={closeCommand}>

@@ -3,7 +3,7 @@ import { Award, Network, Plus, ShieldCheck, Trash2, UserMinus, UsersRound } from
 import { api } from "../api/client";
 import type { Member, OrganizationalUnit, Role } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { SkautaiPanel, SkautaiStatusPill } from "../components/ui/Skautai";
+import { SkautaiPanel, SkautaiStatusPill, SkautaiTabs } from "../components/ui/Skautai";
 import { assignmentTypeLabel, roleLabel } from "../utils/display";
 import { hasPermission } from "../utils/permissions";
 
@@ -96,9 +96,19 @@ export function MemberManagementPanel({ member, onClose, onMemberUpdated, onMemb
   const rankRoles = useMemo(() => roles.filter((role) => role.roleType === "RANK"), [roles]);
   const availableUnits = units.filter((unit) => !(detail?.unitAssignments ?? []).some((assignment) => assignment.organizationalUnitId === unit.id));
 
-  return <SkautaiPanel open={Boolean(member)} title={detail ? memberName(detail) : "Narys"} description={detail ? primaryRole(detail) : undefined} onClose={onClose}>
+  return <SkautaiPanel open={Boolean(member)} title={detail ? memberName(detail) : "Narys"} description={detail ? primaryRole(detail) : undefined} variant="workspace" onClose={onClose}>
     {detail && <div className="member-management-panel">{error && <p className="inline-alert">{error}</p>}{message && <p className="inline-success">{message}</p>}
-      <div className="segmented-tabs member-management-tabs" role="tablist"><Tab active={tab === "profile"} label="Profilis" onClick={() => setTab("profile")} /><Tab active={tab === "leadership"} label="Rolės ir laipsniai" onClick={() => setTab("leadership")} /><Tab active={tab === "units"} label="Vienetai" onClick={() => setTab("units")} /></div>
+      <SkautaiTabs
+        className="member-management-tabs"
+        label="Nario valdymo skyriai"
+        activeTab={tab}
+        onChange={(value) => setTab(value as PanelTab)}
+        tabs={[
+          { id: "profile", label: "Profilis" },
+          { id: "leadership", label: "Rolės ir laipsniai" },
+          { id: "units", label: "Vienetai" }
+        ]}
+      />
       {tab === "profile" && <div className="member-detail-content"><section className="member-detail-section"><h3>Kontaktai</h3><dl className="member-detail-list"><div><dt>El. paštas</dt><dd>{detail.email}</dd></div><div><dt>Telefonas</dt><dd>{detail.phone?.trim() || "–"}</dd></div><div><dt>Įstojo</dt><dd>{formatDate(detail.joinedAt)}</dd></div><div><dt>Matomumas</dt><dd>{detail.isIdentityHidden ? "Tapatybė ribojama" : "Įprastas"}</dd></div></dl></section><section className="member-detail-section"><h3>Organizacijos suvestinė</h3><dl className="member-detail-list"><div><dt>Aktyvios rolės</dt><dd>{(detail.leadershipRoles ?? []).length}</dd></div><div><dt>Laipsniai</dt><dd>{(detail.ranks ?? []).map((rank) => roleLabel(rank.roleName)).join(", ") || "–"}</dd></div><div><dt>Vienetai</dt><dd>{(detail.unitAssignments ?? []).map((assignment) => assignment.organizationalUnitName).join(", ") || "–"}</dd></div></dl></section>{canRemoveMembers && !isSelf && <section className="member-danger-zone"><div><h3>Pašalinti iš tunto</h3><p>Naudokite tik kai narystė iš tikrųjų baigiama.</p></div><button className="primary-button tone-danger" type="button" disabled={Boolean(busy)} onClick={removeMember}><UserMinus size={17} />Pašalinti narį</button></section>}</div>}
       {tab === "leadership" && <div className="member-detail-content">{canManageMembers && <><form className="form-panel member-inline-form" onSubmit={assignLeadership}><div className="form-section-heading"><ShieldCheck /><div><h3>Priskirti vadovavimo rolę</h3><span>Organizacinis kontekstas ir kadencijos datos tikrinami serveryje.</span></div></div><div className="form-grid"><label className="form-field"><span>Rolė *</span><select value={leadershipRoleId} onChange={(event) => { setLeadershipRoleId(event.target.value); setLeadershipUnitId(""); }} required><option value="">Pasirinkite</option>{leadershipRoles.map((role) => <option key={role.id} value={role.id}>{roleLabel(role.name)}</option>)}</select></label><label className="form-field"><span>Vienetas{roleRequiresUnit ? " *" : ""}</span><select value={leadershipUnitId} onChange={(event) => setLeadershipUnitId(event.target.value)} required={roleRequiresUnit} disabled={Boolean(selectedLeadershipRole && !roleRequiresUnit)}><option value="">Tunto lygmuo</option>{units.map((unit) => <option key={unit.id} value={unit.id}>{unit.name}</option>)}</select></label><label className="form-field"><span>Pradžia</span><input type="datetime-local" value={startsAt} onChange={(event) => setStartsAt(event.target.value)} /></label><label className="form-field"><span>Pabaiga</span><input type="datetime-local" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} /></label></div><div className="form-actions"><button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}><Plus size={16} />Priskirti</button></div></form><form className="form-panel member-inline-form" onSubmit={assignRank}><div className="form-section-heading"><Award /><div><h3>Priskirti patyrimo laipsnį</h3><span>Galimi tunto rolėse sukonfigūruoti laipsniai.</span></div></div><label className="form-field"><span>Laipsnis *</span><select value={rankRoleId} onChange={(event) => setRankRoleId(event.target.value)} required><option value="">Pasirinkite</option>{rankRoles.map((role) => <option key={role.id} value={role.id}>{roleLabel(role.name)}</option>)}</select></label><div className="form-actions"><button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}>Priskirti</button></div></form></>}
         <section className="member-detail-section"><h3>Aktyvios vadovavimo rolės</h3>{(detail.leadershipRoles ?? []).length === 0 ? <p>Aktyvių vadovavimo rolių nėra.</p> : <div className="workspace-card-grid">{(detail.leadershipRoles ?? []).map((assignment) => <article className="workspace-record-card" key={assignment.id}><span className="record-icon"><ShieldCheck size={17} /></span><div><strong>{roleLabel(assignment.roleName)}</strong><span>{assignment.organizationalUnitName ?? "Tunto lygmuo"}</span><small>{assignment.termStatus} · kadencija {assignment.termNumber}</small></div>{(canManageMembers || isSelf) && <div className="row-actions">{isSelf && assignment.termStatus === "ACTIVE" && <button className="icon-button" type="button" title="Pateikti atsistatydinimo prašymą" onClick={() => requestResignation(assignment.id)}><UserMinus size={16} /></button>}<button className="icon-button danger-icon-button" type="button" title={isSelf ? "Pasitraukti" : "Užbaigti rolę"} onClick={() => removeLeadership(assignment.id)}><Trash2 size={16} /></button></div>}</article>)}</div>}{isSelf && <label className="form-field"><span>Atsistatydinimo priežastis (nebūtina)</span><textarea rows={2} value={resignationReason} onChange={(event) => setResignationReason(event.target.value)} /></label>}</section>
@@ -111,7 +121,6 @@ export function MemberManagementPanel({ member, onClose, onMemberUpdated, onMemb
   </SkautaiPanel>;
 }
 
-function Tab({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) { return <button className={active ? "active" : ""} type="button" role="tab" aria-selected={active} onClick={onClick}>{label}</button>; }
 function memberName(member: Member) { return [member.name, member.surname].filter(Boolean).join(" ") || member.email; }
 function primaryRole(member: Member) { return roleLabel(member.leadershipRoles?.[0]?.roleName ?? member.ranks?.[0]?.roleName ?? "eilinis_narys"); }
 function optional(value: string) { const trimmed = value.trim(); return trimmed ? trimmed : null; }

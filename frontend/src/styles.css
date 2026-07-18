@@ -3108,8 +3108,12 @@ fieldset {
   border-bottom-color: rgba(13, 18, 14, 0.1);
 }
 
+.units-data-table tbody tr.unit-table-row td:first-child {
+  box-shadow: inset 4px 0 0 var(--unit-accent-tone);
+}
+
 .units-data-table tbody tr.unit-table-row:hover td {
-  filter: saturate(1.04);
+  background: color-mix(in srgb, var(--unit-card-tone) 90%, var(--unit-icon-tone));
 }
 
 .unit-type-icon {

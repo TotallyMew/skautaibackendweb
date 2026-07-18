@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { ClipboardCopy, Edit3, Loader2, Network, Plus, RefreshCw, ShieldCheck, Trash2, UsersRound } from "lucide-react";
+import { ClipboardCopy, Edit3, Loader2, Network, Plus, RefreshCw, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
 import { ApiError, api } from "../api/client";
-import type { InvitationResponse, OrganizationalUnit, Role } from "../api/types";
+import type { InvitationResponse, Member, OrganizationalUnit, Role, UnitMembership } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import {
   SkautaiConfirmDialog,
@@ -13,7 +13,7 @@ import {
   SkautaiStatusPill,
   type SkautaiDataTableColumn
 } from "../components/ui/Skautai";
-import { countLabel, roleLabel } from "../utils/display";
+import { assignmentTypeLabel, countLabel, roleLabel } from "../utils/display";
 import { canUseUnits, hasPermission } from "../utils/permissions";
 
 type UnitForm = {
@@ -65,6 +65,17 @@ export function UnitsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isUnitPanelOpen, setIsUnitPanelOpen] = useState(false);
   const [isInvitePanelOpen, setIsInvitePanelOpen] = useState(false);
+  const [managedUnit, setManagedUnit] = useState<OrganizationalUnit | null>(null);
+  const [unitMembers, setUnitMembers] = useState<UnitMembership[]>([]);
+  const [tuntasMembers, setTuntasMembers] = useState<Member[]>([]);
+  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [selectedAssignmentType, setSelectedAssignmentType] = useState<"MEMBER" | "VADOVO_PADEJEJAS">("MEMBER");
+  const [memberToRemove, setMemberToRemove] = useState<UnitMembership | null>(null);
+  const [unitMembersReloadKey, setUnitMembersReloadKey] = useState(0);
+  const [isLoadingUnitMembers, setIsLoadingUnitMembers] = useState(false);
+  const [unitMemberBusy, setUnitMemberBusy] = useState<string | null>(null);
+  const [unitMemberMessage, setUnitMemberMessage] = useState<string | null>(null);
+  const [unitMemberError, setUnitMemberError] = useState<string | null>(null);
   const [unitToDelete, setUnitToDelete] = useState<OrganizationalUnit | null>(null);
   const [latestInvite, setLatestInvite] = useState<InvitationResponse | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -78,9 +89,12 @@ export function UnitsPage() {
   const permissions = auth?.permissions;
   const canViewUnits = hasPermission(permissions, "organizational_units.view");
   const canManageUnits = hasPermission(permissions, "organizational_units.manage");
+  const canManageAllUnitMembers = permissions?.includes("unit.members.manage:ALL") ?? false;
+  const canManageOwnUnitMembers = permissions?.includes("unit.members.manage:OWN_UNIT") ?? false;
+  const canManageUnitMembers = canManageAllUnitMembers || canManageOwnUnitMembers;
   const canCreateInvites = hasPermission(permissions, "invitations.create");
   const canOpenPage = canUseUnits(permissions);
-  const canFetch = Boolean(auth?.token && auth.activeTuntasId && (canViewUnits || canManageUnits || canCreateInvites));
+  const canFetch = Boolean(auth?.token && auth.activeTuntasId && (canViewUnits || canManageUnits || canManageUnitMembers || canCreateInvites));
 
   useEffect(() => {
     if (!auth?.token || !auth.activeTuntasId || !canOpenPage) {
@@ -123,10 +137,61 @@ export function UnitsPage() {
     };
   }, [auth?.activeTuntasId, auth?.token, canCreateInvites, canManageUnits, canOpenPage, canViewUnits, reloadKey]);
 
+  const managedUnitId = managedUnit?.id ?? null;
+
+  useEffect(() => {
+    if (!managedUnitId || !auth?.token || !auth.activeTuntasId) {
+      setUnitMembers([]);
+      setTuntasMembers([]);
+      setIsLoadingUnitMembers(false);
+      return;
+    }
+
+    let isCancelled = false;
+    setIsLoadingUnitMembers(true);
+    setUnitMemberError(null);
+
+    Promise.all([
+      api.listOrganizationalUnitMembers(auth.token, auth.activeTuntasId, managedUnitId),
+      api.listMembers(auth.token, auth.activeTuntasId).catch(() => ({ members: [], total: 0 }))
+    ])
+      .then(([memberResponse, tuntasMemberResponse]) => {
+        if (isCancelled) return;
+        setUnitMembers(memberResponse.members);
+        setTuntasMembers(tuntasMemberResponse.members);
+      })
+      .catch((cause) => {
+        if (!isCancelled) {
+          setUnitMemberError(cause instanceof Error ? cause.message : "Vieneto narių įkelti nepavyko.");
+          setUnitMembers([]);
+        }
+      })
+      .finally(() => {
+        if (!isCancelled) setIsLoadingUnitMembers(false);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [auth?.activeTuntasId, auth?.token, managedUnitId, unitMembersReloadKey]);
+
   const sortedUnits = useMemo(
     () => [...units].sort((left, right) => unitTypeSortOrder(left) - unitTypeSortOrder(right) || unitDisplayTypeLabel(left).localeCompare(unitDisplayTypeLabel(right), "lt") || left.name.localeCompare(right.name, "lt")),
     [units]
   );
+
+  const availableTuntasMembers = useMemo(() => {
+    const assignedUserIds = new Set(unitMembers.map((membership) => membership.userId));
+    return tuntasMembers
+      .filter((member) => !assignedUserIds.has(member.userId) && !member.isIdentityHidden)
+      .sort((left, right) => `${left.name} ${left.surname}`.localeCompare(`${right.name} ${right.surname}`, "lt"));
+  }, [tuntasMembers, unitMembers]);
+
+  function canManageMembersForUnit(unit: OrganizationalUnit) {
+    return canManageAllUnitMembers || (
+      canManageOwnUnitMembers && (auth?.leadershipUnitIds.includes(unit.id) ?? false)
+    );
+  }
 
   const rankRoles = useMemo(
     () => roles.filter((role) => role.roleType === "RANK").sort((left, right) => roleLabel(left.name).localeCompare(roleLabel(right.name), "lt")),
@@ -185,6 +250,84 @@ export function UnitsPage() {
   function closeInvitePanel() {
     if (isCreatingInvite) return;
     setIsInvitePanelOpen(false);
+  }
+
+  function openUnitMembersPanel(unit: OrganizationalUnit) {
+    if (!canManageMembersForUnit(unit)) return;
+    setManagedUnit(unit);
+    setSelectedMemberId("");
+    setSelectedAssignmentType("MEMBER");
+    setUnitMemberMessage(null);
+    setUnitMemberError(null);
+  }
+
+  function closeUnitMembersPanel() {
+    if (unitMemberBusy) return;
+    setManagedUnit(null);
+    setMemberToRemove(null);
+  }
+
+  async function assignUnitMember(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!managedUnit || !selectedMemberId || !auth?.token || !auth.activeTuntasId || !canManageMembersForUnit(managedUnit)) return;
+    setUnitMemberBusy("assign");
+    setUnitMemberMessage(null);
+    setUnitMemberError(null);
+    try {
+      await api.addOrganizationalUnitMember(auth.token, auth.activeTuntasId, managedUnit.id, {
+        userId: selectedMemberId,
+        assignmentType: selectedAssignmentType
+      });
+      setSelectedMemberId("");
+      setUnitMemberMessage("Narys priskirtas vienetui.");
+      setUnitMembersReloadKey((value) => value + 1);
+      setReloadKey((value) => value + 1);
+    } catch (cause) {
+      setUnitMemberError(cause instanceof Error ? cause.message : "Nario priskirti nepavyko.");
+    } finally {
+      setUnitMemberBusy(null);
+    }
+  }
+
+  async function removeUnitMember() {
+    const membership = memberToRemove;
+    if (!managedUnit || !membership || !auth?.token || !auth.activeTuntasId || !canManageMembersForUnit(managedUnit)) return;
+    setUnitMemberBusy(`remove-${membership.userId}`);
+    setUnitMemberMessage(null);
+    setUnitMemberError(null);
+    try {
+      await api.removeOrganizationalUnitMember(auth.token, auth.activeTuntasId, managedUnit.id, membership.userId);
+      setMemberToRemove(null);
+      setUnitMemberMessage("Narys pašalintas iš vieneto.");
+      setUnitMembersReloadKey((value) => value + 1);
+      setReloadKey((value) => value + 1);
+    } catch (cause) {
+      setUnitMemberError(cause instanceof Error ? cause.message : "Nario pašalinti nepavyko.");
+    } finally {
+      setUnitMemberBusy(null);
+    }
+  }
+
+  async function updateMemberVisibility(membership: UnitMembership, isPubliclyVisible: boolean) {
+    if (!managedUnit || !auth?.token || !auth.activeTuntasId) return;
+    setUnitMemberBusy(`visibility-${membership.userId}`);
+    setUnitMemberMessage(null);
+    setUnitMemberError(null);
+    try {
+      const updated = await api.updateOrganizationalUnitMemberVisibility(
+        auth.token,
+        auth.activeTuntasId,
+        managedUnit.id,
+        membership.userId,
+        { isPubliclyVisible }
+      );
+      setUnitMembers((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setUnitMemberMessage("Kandidato matomumas atnaujintas.");
+    } catch (cause) {
+      setUnitMemberError(cause instanceof Error ? cause.message : "Matomumo atnaujinti nepavyko.");
+    } finally {
+      setUnitMemberBusy(null);
+    }
   }
 
   async function saveUnit(event: FormEvent<HTMLFormElement>) {
@@ -344,7 +487,15 @@ export function UnitsPage() {
                   description="Sukurk draugoves, gildijas ar būrelius, kad nariai ir inventorius turėtų aiškų kontekstą."
                 />
               ) : (
-                <UnitsTable units={sortedUnits} canManageUnits={canManageUnits} busyId={busyId} onEdit={startEdit} onDelete={setUnitToDelete} />
+                <UnitsTable
+                  units={sortedUnits}
+                  canManageUnits={canManageUnits}
+                  canManageMembersForUnit={canManageMembersForUnit}
+                  busyId={busyId}
+                  onEdit={startEdit}
+                  onDelete={setUnitToDelete}
+                  onManageMembers={openUnitMembersPanel}
+                />
               )}
           </section>
         </>
@@ -366,6 +517,100 @@ export function UnitsPage() {
           onSubmit={saveUnit}
           onUnitFormChange={setUnitForm}
         />
+      </SkautaiPanel>
+
+      <SkautaiPanel
+        open={Boolean(managedUnit)}
+        title={managedUnit ? `${managedUnit.name} · nariai` : "Vieneto nariai"}
+        description="Priskirkite tunto narius šiam vienetui ir tvarkykite aktyvias narystes pagal savo rolės apimtį."
+        onClose={closeUnitMembersPanel}
+      >
+        {managedUnit && (
+          <div className="member-management-panel">
+            {unitMemberError && <p className="inline-alert">{unitMemberError}</p>}
+            {unitMemberMessage && <p className="inline-success">{unitMemberMessage}</p>}
+
+            <form className="form-panel member-inline-form" onSubmit={assignUnitMember}>
+              <div className="form-section-heading">
+                <UserPlus aria-hidden="true" />
+                <div>
+                  <h3>Priskirti narį</h3>
+                  <span>Rodomi matomi tunto nariai, kurie dar nėra šiame vienete.</span>
+                </div>
+              </div>
+              <div className="form-grid">
+                <label className="form-field">
+                  <span>Narys *</span>
+                  <select value={selectedMemberId} onChange={(event) => setSelectedMemberId(event.target.value)} required disabled={Boolean(unitMemberBusy) || availableTuntasMembers.length === 0}>
+                    <option value="">{availableTuntasMembers.length === 0 ? "Galimų narių nėra" : "Pasirinkite narį"}</option>
+                    {availableTuntasMembers.map((member) => (
+                      <option key={member.userId} value={member.userId}>{member.name} {member.surname}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="form-field">
+                  <span>Priskyrimo tipas</span>
+                  <select value={selectedAssignmentType} onChange={(event) => setSelectedAssignmentType(event.target.value as "MEMBER" | "VADOVO_PADEJEJAS")} disabled={Boolean(unitMemberBusy)}>
+                    <option value="MEMBER">Narys</option>
+                    <option value="VADOVO_PADEJEJAS">Vadovo padėjėjas</option>
+                  </select>
+                </label>
+              </div>
+              <div className="form-actions">
+                <button className="primary-button compact-primary-button" type="submit" disabled={Boolean(unitMemberBusy) || !selectedMemberId}>
+                  {unitMemberBusy === "assign" ? <Loader2 size={16} aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />}
+                  Priskirti
+                </button>
+              </div>
+            </form>
+
+            <section className="member-detail-section">
+              <h3>Aktyvios narystės</h3>
+              {isLoadingUnitMembers ? (
+                <p>Kraunami vieneto nariai…</p>
+              ) : unitMembers.length === 0 ? (
+                <p>Šiame vienete aktyvių narių nėra.</p>
+              ) : (
+                <div className="workspace-card-grid">
+                  {unitMembers.map((membership) => {
+                    const memberDetail = tuntasMembers.find((member) => member.userId === membership.userId);
+                    const isCandidate = memberDetail?.ranks?.some((rank) => rank.roleName === "Vyr. skautas kandidatas") ?? false;
+                    const canChangeVisibility = canManageOwnUnitMembers &&
+                      (auth?.leadershipUnitIds.includes(managedUnit.id) ?? false) &&
+                      ["VYR_SKAUTU_VIENETAS", "VYR_SKAUCIU_VIENETAS"].includes(managedUnit.type) &&
+                      isCandidate;
+                    return (
+                      <article className="workspace-summary-card" key={membership.id}>
+                        <span className="record-icon"><UsersRound size={17} aria-hidden="true" /></span>
+                        <div>
+                          <strong>{membership.isIdentityHidden ? "Tapatybė neviešinama" : `${membership.userName} ${membership.userSurname}`.trim()}</strong>
+                          <span>{assignmentTypeLabel(membership.assignmentType)}</span>
+                          <small>Nuo {formatUnitDate(membership.joinedAt)}</small>
+                        </div>
+                        <div className="workspace-card-actions">
+                          {canChangeVisibility && (
+                            <label className="toggle-field">
+                              <input
+                                type="checkbox"
+                                checked={membership.isPubliclyVisible}
+                                disabled={Boolean(unitMemberBusy)}
+                                onChange={(event) => void updateMemberVisibility(membership, event.target.checked)}
+                              />
+                              Viešai matomas
+                            </label>
+                          )}
+                          <button className="icon-button danger-icon-button" type="button" title="Pašalinti iš vieneto" disabled={Boolean(unitMemberBusy)} onClick={() => setMemberToRemove(membership)}>
+                            <UserMinus size={16} aria-hidden="true" />
+                          </button>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </section>
+          </div>
+        )}
       </SkautaiPanel>
 
       <SkautaiPanel
@@ -398,6 +643,18 @@ export function UnitsPage() {
           if (!busyId) setUnitToDelete(null);
         }}
       />
+
+      <SkautaiConfirmDialog
+        open={Boolean(memberToRemove)}
+        title="Pašalinti narį iš vieneto?"
+        description={memberToRemove ? `${memberToRemove.userName} ${memberToRemove.userSurname} nebeturės aktyvios narystės vienete „${managedUnit?.name ?? ""}“.` : undefined}
+        confirmLabel="Pašalinti"
+        isBusy={Boolean(memberToRemove && unitMemberBusy === `remove-${memberToRemove.userId}`)}
+        onConfirm={() => void removeUnitMember()}
+        onCancel={() => {
+          if (!unitMemberBusy) setMemberToRemove(null);
+        }}
+      />
     </SkautaiPageShell>
   );
 }
@@ -405,15 +662,19 @@ export function UnitsPage() {
 function UnitsTable({
   units,
   canManageUnits,
+  canManageMembersForUnit,
   busyId,
   onEdit,
-  onDelete
+  onDelete,
+  onManageMembers
 }: {
   units: OrganizationalUnit[];
   canManageUnits: boolean;
+  canManageMembersForUnit: (unit: OrganizationalUnit) => boolean;
   busyId: string | null;
   onEdit: (unit: OrganizationalUnit) => void;
   onDelete: (unit: OrganizationalUnit) => void;
+  onManageMembers: (unit: OrganizationalUnit) => void;
 }) {
   const columns: Array<SkautaiDataTableColumn<OrganizationalUnit>> = [
     {
@@ -466,14 +727,23 @@ function UnitsTable({
       key: "actions",
       header: "",
       className: "table-actions-cell",
-      cell: (unit) => canManageUnits ? (
+      cell: (unit) => (canManageUnits || canManageMembersForUnit(unit)) ? (
         <div className="row-actions">
-          <button className="icon-button" type="button" title="Redaguoti" onClick={() => onEdit(unit)}>
-            <Edit3 size={17} aria-hidden="true" />
-          </button>
-          <button className="icon-button danger-icon-button" type="button" title="Ištrinti" disabled={busyId === unit.id} onClick={() => onDelete(unit)}>
-            <Trash2 size={17} aria-hidden="true" />
-          </button>
+          {canManageMembersForUnit(unit) && (
+            <button className="icon-button" type="button" title="Valdyti narius" aria-label={`Valdyti vieneto ${unit.name} narius`} onClick={() => onManageMembers(unit)}>
+              <UsersRound size={17} aria-hidden="true" />
+            </button>
+          )}
+          {canManageUnits && (
+            <>
+              <button className="icon-button" type="button" title="Redaguoti" onClick={() => onEdit(unit)}>
+                <Edit3 size={17} aria-hidden="true" />
+              </button>
+              <button className="icon-button danger-icon-button" type="button" title="Ištrinti" disabled={busyId === unit.id} onClick={() => onDelete(unit)}>
+                <Trash2 size={17} aria-hidden="true" />
+              </button>
+            </>
+          )}
         </div>
       ) : null
     }
@@ -485,6 +755,7 @@ function UnitsTable({
       rows={units}
       columns={columns}
       getRowKey={(unit) => unit.id}
+      getRowClassName={(unit) => `unit-table-row ${unitPaletteClass(unit)}`}
     />
   );
 }
@@ -775,6 +1046,13 @@ function normalizeUnitCounts(unit: OrganizationalUnit): OrganizationalUnit {
     memberCount: safeCount(unit.memberCount),
     itemCount: safeCount(unit.itemCount)
   };
+}
+
+function formatUnitDate(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat("lt-LT", { dateStyle: "medium" }).format(date);
 }
 
 function safeCount(value: unknown) {

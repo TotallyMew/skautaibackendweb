@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canUseRequisitions, canUseSharedInventoryRequests, getPermissionSet } from "./permissions";
+import { canUseRequisitions, canUseSharedInventoryRequests, canUseUnits, getPermissionSet } from "./permissions";
 
 describe("permission helpers", () => {
   it("keeps purchase and pickup request permissions separate", () => {
@@ -25,5 +25,9 @@ describe("permission helpers", () => {
     expect(permissions.sharedRequests).toBe(true);
     expect(permissions.events).toBe(true);
     expect(permissions.locations).toBe(true);
+  });
+
+  it("opens unit navigation for scoped unit member managers", () => {
+    expect(canUseUnits(["unit.members.manage:OWN_UNIT"])).toBe(true);
   });
 });

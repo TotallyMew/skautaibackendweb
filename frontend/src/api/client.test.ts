@@ -364,6 +364,55 @@ describe("api client", () => {
     }));
   });
 
+  it("assigns a unit member through the collection route and request body", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        id: "assignment-1",
+        userId: "user-1",
+        userName: "Jonas",
+        userSurname: "Jonaitis",
+        organizationalUnitId: "unit-1",
+        organizationalUnitName: "Draugovė",
+        tuntasId: "tuntas-1",
+        assignmentType: "MEMBER",
+        isPubliclyVisible: true,
+        joinedAt: "2026-07-18T10:00:00Z"
+      }, 201)
+    );
+
+    await api.addOrganizationalUnitMember("access-token", "tuntas-1", "unit-1", {
+      userId: "user-1",
+      assignmentType: "MEMBER"
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8081/api/organizational-units/unit-1/members");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBe(JSON.stringify({ userId: "user-1", assignmentType: "MEMBER" }));
+  });
+
+  it("moves a unit member using the destination unit in the route", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({
+      id: "assignment-2",
+      userId: "user-1",
+      userName: "Jonas",
+      userSurname: "Jonaitis",
+      organizationalUnitId: "unit-target",
+      organizationalUnitName: "Kita draugovė",
+      tuntasId: "tuntas-1",
+      assignmentType: "MEMBER",
+      isPubliclyVisible: true,
+      joinedAt: "2026-07-18T10:00:00Z"
+    }));
+
+    await api.moveOrganizationalUnitMember("access-token", "tuntas-1", "unit-target", "user-1");
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8081/api/organizational-units/unit-target/members/user-1/move");
+    expect(init?.method).toBe("POST");
+    expect(init?.body).toBeUndefined();
+  });
+
   it("surfaces backend error messages", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ error: "Bad credentials" }, 401));
 

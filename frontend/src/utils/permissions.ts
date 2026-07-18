@@ -50,6 +50,7 @@ export function canUseUnits(permissions: string[] | undefined) {
   return hasAnyPermission(permissions, [
     "organizational_units.view",
     "organizational_units.manage",
+    "unit.members.manage",
     "invitations.create"
   ]);
 }

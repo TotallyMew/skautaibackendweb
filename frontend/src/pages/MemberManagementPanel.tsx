@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Award, Network, Plus, ShieldCheck, Trash2, UserMinus, UsersRound } from "lucide-react";
 import { api } from "../api/client";
 import type { Member, OrganizationalUnit, Role } from "../api/types";
@@ -34,6 +34,12 @@ export function MemberManagementPanel({ member, onClose, onMemberUpdated, onMemb
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const onMemberUpdatedRef = useRef(onMemberUpdated);
+  const memberId = member?.userId ?? null;
+
+  useEffect(() => {
+    onMemberUpdatedRef.current = onMemberUpdated;
+  }, [onMemberUpdated]);
 
   const canManageMembers = hasPermission(auth?.permissions, "members.manage");
   const canManageUnits = hasPermission(auth?.permissions, "unit.members.manage");
@@ -41,16 +47,24 @@ export function MemberManagementPanel({ member, onClose, onMemberUpdated, onMemb
   const isSelf = detail?.userId === auth?.userId;
 
   const refresh = useCallback(async () => {
-    if (!member || !auth?.token || !auth.activeTuntasId) return;
+    if (!memberId || !auth?.token || !auth.activeTuntasId) return;
     const [memberResponse, roleResponse, unitResponse] = await Promise.all([
-      api.getMember(auth.token, auth.activeTuntasId, member.userId),
+      api.getMember(auth.token, auth.activeTuntasId, memberId),
       api.listRoles(auth.token, auth.activeTuntasId).catch(() => ({ roles: [], total: 0 })),
       api.listOrganizationalUnits(auth.token, auth.activeTuntasId).catch(() => ({ units: [], total: 0 }))
     ]);
-    setDetail(memberResponse); setRoles(roleResponse.roles); setUnits(unitResponse.units); onMemberUpdated(memberResponse);
-  }, [auth?.activeTuntasId, auth?.token, member, onMemberUpdated]);
+    setDetail(memberResponse); setRoles(roleResponse.roles); setUnits(unitResponse.units); onMemberUpdatedRef.current(memberResponse);
+  }, [auth?.activeTuntasId, auth?.token, memberId]);
 
-  useEffect(() => { setDetail(member); setTab("profile"); setError(null); setMessage(null); if (member) refresh().catch((cause) => setError(messageOf(cause, "Nario informacijos įkelti nepavyko."))); }, [member, refresh]);
+  useEffect(() => {
+    setDetail(member);
+    setTab("profile");
+    setError(null);
+    setMessage(null);
+    if (memberId) refresh().catch((cause) => setError(messageOf(cause, "Nario informacijos įkelti nepavyko.")));
+    // Parent list refreshes may replace the member object. Only an actual selection
+    // change may reset this panel and its active tab.
+  }, [memberId, refresh]);
 
   async function execute(action: string, success: string, operation: () => Promise<unknown>, refreshAfter = true) {
     if (busy) return; setBusy(action); setError(null); setMessage(null);
@@ -70,8 +84,8 @@ export function MemberManagementPanel({ member, onClose, onMemberUpdated, onMemb
   function requestResignation(assignmentId: string) { if (!auth?.token || !auth.activeTuntasId) return; void execute(`resign-${assignmentId}`, "Atsistatydinimo prašymas pateiktas.", () => api.requestLeadershipResignation(auth.token, auth.activeTuntasId!, assignmentId, { reason: optional(resignationReason) }), false); }
   function assignRank(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!detail || !auth?.token || !auth.activeTuntasId || !rankRoleId) return; void execute("rank", "Patyrimo laipsnis priskirtas.", () => api.assignRank(auth.token, auth.activeTuntasId!, detail.userId, { roleId: rankRoleId })).then(() => setRankRoleId("")); }
   function removeRank(rankId: string) { if (!detail || !auth?.token || !auth.activeTuntasId || !window.confirm("Pašalinti šį patyrimo laipsnį?")) return; void execute(rankId, "Patyrimo laipsnis pašalintas.", () => api.deleteRank(auth.token, auth.activeTuntasId!, detail.userId, rankId)); }
-  function addToUnit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!detail || !auth?.token || !auth.activeTuntasId || !addUnitId) return; void execute("add-unit", "Narys pridėtas į vienetą.", () => api.addOrganizationalUnitMember(auth.token, auth.activeTuntasId!, addUnitId, detail.userId)).then(() => setAddUnitId("")); }
-  function moveMember(fromUnitId: string) { const target = moveTargets[fromUnitId]; if (!detail || !auth?.token || !auth.activeTuntasId || !target) return; void execute(`move-${fromUnitId}`, "Narys perkeltas į kitą vienetą.", () => api.moveOrganizationalUnitMember(auth.token, auth.activeTuntasId!, fromUnitId, detail.userId, { targetOrganizationalUnitId: target })); }
+  function addToUnit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (!detail || !auth?.token || !auth.activeTuntasId || !addUnitId) return; void execute("add-unit", "Narys pridėtas į vienetą.", () => api.addOrganizationalUnitMember(auth.token, auth.activeTuntasId!, addUnitId, { userId: detail.userId, assignmentType: "MEMBER" })).then(() => setAddUnitId("")); }
+  function moveMember(fromUnitId: string) { const target = moveTargets[fromUnitId]; if (!detail || !auth?.token || !auth.activeTuntasId || !target) return; void execute(`move-${fromUnitId}`, "Narys perkeltas į kitą vienetą.", () => api.moveOrganizationalUnitMember(auth.token, auth.activeTuntasId!, target, detail.userId)); }
   function toggleVisibility(unitId: string, visible: boolean) { if (!detail || !auth?.token || !auth.activeTuntasId) return; void execute(`visibility-${unitId}`, "Nario matomumas atnaujintas.", () => api.updateOrganizationalUnitMemberVisibility(auth.token, auth.activeTuntasId!, unitId, detail.userId, { isPubliclyVisible: visible })); }
   function removeFromUnit(unitId: string) { if (!detail || !auth?.token || !auth.activeTuntasId || !window.confirm("Pašalinti narį iš šio vieneto?")) return; void execute(`remove-unit-${unitId}`, "Narys pašalintas iš vieneto.", () => api.removeOrganizationalUnitMember(auth.token, auth.activeTuntasId!, unitId, detail.userId)); }
   function removeMember() { if (!detail || !auth?.token || !auth.activeTuntasId || !window.confirm("Pašalinti narį iš tunto? Šis veiksmas nutrauks aktyvias jo roles ir narystes.")) return; setBusy("remove-member"); api.removeMember(auth.token, auth.activeTuntasId, detail.userId).then(() => { onMemberRemoved(detail.userId); onClose(); }).catch((cause) => { setError(messageOf(cause, "Nario pašalinti nepavyko.")); setBusy(null); }); }

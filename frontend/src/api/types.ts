@@ -1000,8 +1000,30 @@ export type UnitMemberVisibilityRequest = {
   isPubliclyVisible: boolean;
 };
 
-export type UnitMemberMoveRequest = {
-  targetOrganizationalUnitId: string;
+export type AssignUnitMemberRequest = {
+  userId: string;
+  assignmentType?: "MEMBER" | "VADOVO_PADEJEJAS";
+};
+
+export type UnitMembership = {
+  id: string;
+  userId: string;
+  userName: string;
+  userSurname: string;
+  organizationalUnitId: string;
+  organizationalUnitName: string;
+  tuntasId: string;
+  assignmentType: string;
+  isPubliclyVisible: boolean;
+  assignedByUserId?: string | null;
+  joinedAt: string;
+  leftAt?: string | null;
+  isIdentityHidden?: boolean;
+};
+
+export type UnitMembershipListResponse = {
+  members: UnitMembership[];
+  total: number;
 };
 
 export type InventoryKitItemRequest = {

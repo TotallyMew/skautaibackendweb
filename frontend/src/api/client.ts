@@ -40,6 +40,8 @@ import type {
   SharedInventoryRequestListResponse,
   SuperAdminNotificationRequest,
   TokenResponse,
+  UnitMembership,
+  UnitMembershipListResponse,
   UpdateLocationRequest,
   UpdateEventRequest,
   UpdateMyProfileRequest,
@@ -883,33 +885,33 @@ export const api = {
     }),
 
   listOrganizationalUnitMembers: (token: string, tuntasId: string, unitId: string) =>
-    request<MemberListResponse>(`/api/organizational-units/${unitId}/members`, {
+    request<UnitMembershipListResponse>(`/api/organizational-units/${unitId}/members`, {
       token,
       tuntasId
-    }).then(normalizeMemberList),
+    }),
 
-  addOrganizationalUnitMember: (token: string, tuntasId: string, unitId: string, userId: string) =>
-    request<Member>(`/api/organizational-units/${unitId}/members/${userId}`, {
-      token,
-      tuntasId,
-      method: "POST"
-    }).then(normalizeMember),
-
-  updateOrganizationalUnitMemberVisibility: (token: string, tuntasId: string, unitId: string, userId: string, body: ApiTypes.UnitMemberVisibilityRequest) =>
-    request<Member>(`/api/organizational-units/${unitId}/members/${userId}/visibility`, {
-      token,
-      tuntasId,
-      method: "PUT",
-      body
-    }).then(normalizeMember),
-
-  moveOrganizationalUnitMember: (token: string, tuntasId: string, unitId: string, userId: string, body: ApiTypes.UnitMemberMoveRequest) =>
-    request<Member>(`/api/organizational-units/${unitId}/members/${userId}/move`, {
+  addOrganizationalUnitMember: (token: string, tuntasId: string, unitId: string, body: ApiTypes.AssignUnitMemberRequest) =>
+    request<UnitMembership>(`/api/organizational-units/${unitId}/members`, {
       token,
       tuntasId,
       method: "POST",
       body
-    }).then(normalizeMember),
+    }),
+
+  updateOrganizationalUnitMemberVisibility: (token: string, tuntasId: string, unitId: string, userId: string, body: ApiTypes.UnitMemberVisibilityRequest) =>
+    request<UnitMembership>(`/api/organizational-units/${unitId}/members/${userId}/visibility`, {
+      token,
+      tuntasId,
+      method: "PUT",
+      body
+    }),
+
+  moveOrganizationalUnitMember: (token: string, tuntasId: string, targetUnitId: string, userId: string) =>
+    request<UnitMembership>(`/api/organizational-units/${targetUnitId}/members/${userId}/move`, {
+      token,
+      tuntasId,
+      method: "POST"
+    }),
 
   leaveOrganizationalUnit: (token: string, tuntasId: string, unitId: string) =>
     request<MessageResponse>(`/api/organizational-units/${unitId}/members/me/leave`, {

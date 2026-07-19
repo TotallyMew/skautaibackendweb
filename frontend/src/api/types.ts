@@ -151,6 +151,22 @@ export type InvitationResponse = {
   organizationalUnitName?: string | null;
 };
 
+export type InvitationUnitOption = {
+  id: string;
+  name: string;
+  type: string;
+};
+
+export type InvitationRoleOption = {
+  role: Role;
+  organizationalUnits: InvitationUnitOption[];
+  canInviteWithoutOrganizationalUnit: boolean;
+};
+
+export type InvitationOptionsResponse = {
+  roles: InvitationRoleOption[];
+};
+
 export type CreateInvitationRequest = {
   roleId: string;
   organizationalUnitId?: string | null;
@@ -163,6 +179,9 @@ export type Role = {
   name: string;
   roleType: string;
   isSystemRole: boolean;
+  canBeInvited?: boolean;
+  requiresOrganizationalUnit?: boolean;
+  allowedOrganizationalUnitTypes?: string[];
 };
 
 export type RoleListResponse = {
@@ -266,6 +285,19 @@ export type Item = {
   status: string;
   createdAt: string;
   updatedAt: string;
+  capabilities?: {
+    canEdit: boolean;
+    canChangeStatus: boolean;
+    canDelete: boolean;
+    canRestock: boolean;
+    canConsume: boolean;
+    canLoan: boolean;
+    canReturnLoan: boolean;
+    canTransferToUnit: boolean;
+    canReturnToShared: boolean;
+    canReview: boolean;
+    canWriteOff: boolean;
+  } | null;
 };
 
 export type ItemCustomField = {
@@ -285,6 +317,16 @@ export type ItemListResponse = {
   limit?: number | null;
   offset: number;
   hasMore: boolean;
+  capabilities: {
+    canCreate: boolean;
+    canCreateSharedDirectly: boolean;
+    canViewInactive: boolean;
+    canViewPending: boolean;
+    canReviewPending: boolean;
+    canExport: boolean;
+    canImport: boolean;
+    canGenerateQrPdf: boolean;
+  };
 };
 
 export type ItemListFilters = {
@@ -294,6 +336,7 @@ export type ItemListFilters = {
   category?: string;
   sharedOnly?: boolean;
   personalOwnerUserId?: string;
+  responsibleUserId?: string;
   updatedAfter?: string;
   limit?: number;
   offset?: number;
@@ -590,6 +633,9 @@ export type ReservationItem = {
   remainingToReturn?: number;
   remainingToMarkReturned?: number;
   remainingToReceive?: number;
+  canIssue?: boolean;
+  canConfirmReturn?: boolean;
+  canMarkReturned?: boolean;
 };
 
 export type Reservation = {
@@ -625,6 +671,16 @@ export type Reservation = {
   createdAt: string;
   updatedAt: string;
   items: ReservationItem[];
+  capabilities?: {
+    canReviewUnit: boolean;
+    canReviewTopLevel: boolean;
+    canCancel: boolean;
+    canIssue: boolean;
+    canConfirmReturn: boolean;
+    canMarkReturned: boolean;
+    canManagePickup: boolean;
+    canManageReturn: boolean;
+  } | null;
 };
 
 export type ReservationListResponse = {
@@ -633,6 +689,10 @@ export type ReservationListResponse = {
   limit?: number | null;
   offset: number;
   hasMore: boolean;
+  capabilities: {
+    canCreate: boolean;
+    canUseReviewModes: boolean;
+  };
 };
 
 export type ReservationListFilters = {
@@ -671,6 +731,28 @@ export type ReservationAvailabilityResponse = {
   startDate: string;
   endDate: string;
   items: ReservationAvailabilityItem[];
+};
+
+export type ReservationCreateItemOption = {
+  itemId: string;
+  custodianId?: string | null;
+};
+
+export type ReservationCreateUnitOption = {
+  id: string;
+  name: string;
+};
+
+export type ReservationCreateLocationOption = {
+  id: string;
+  canUseWithAnyInventory: boolean;
+  requiredCustodianId?: string | null;
+};
+
+export type ReservationCreateOptionsResponse = {
+  items: ReservationCreateItemOption[];
+  requestingUnits: ReservationCreateUnitOption[];
+  locations: ReservationCreateLocationOption[];
 };
 
 export type ReviewReservationRequest = {
@@ -751,6 +833,13 @@ export type Requisition = {
   items: RequisitionItem[];
   createdAt: string;
   updatedAt: string;
+  capabilities?: {
+    canReviewUnit: boolean;
+    canReviewTopLevel: boolean;
+    canCancel: boolean;
+    canMarkPurchased: boolean;
+    canAddToInventory: boolean;
+  } | null;
 };
 
 export type RequisitionListResponse = {
@@ -836,6 +925,11 @@ export type SharedInventoryRequest = {
   items: SharedInventoryRequestItem[];
   createdAt: string;
   updatedAt: string;
+  capabilities?: {
+    canReviewUnit: boolean;
+    canReviewTopLevel: boolean;
+    canCancel: boolean;
+  } | null;
 };
 
 export type SharedInventoryRequestListResponse = {
@@ -935,6 +1029,9 @@ export type UpdateLeadershipRoleRequest = {
   expiresAt?: string | null;
   termStatus?: string | null;
   organizationalUnitId?: string | null;
+  clearStartsAt?: boolean;
+  clearExpiresAt?: boolean;
+  clearOrganizationalUnitId?: boolean;
 };
 
 export type TransferTuntininkasRequest = {
@@ -1015,6 +1112,7 @@ export type UnitMembership = {
   tuntasId: string;
   assignmentType: string;
   isPubliclyVisible: boolean;
+  canManageVisibility: boolean;
   assignedByUserId?: string | null;
   joinedAt: string;
   leftAt?: string | null;
@@ -1102,7 +1200,7 @@ export type CreateInventoryTemplateRequest = {
   items?: InventoryTemplateItemRequest[];
 };
 
-export type UpdateInventoryTemplateRequest = Partial<CreateInventoryTemplateRequest>;
+export type UpdateInventoryTemplateRequest = Partial<CreateInventoryTemplateRequest> & { clearEventType?: boolean };
 
 export type ApplyInventoryTemplateRequest = {
   templateId: string;
@@ -1171,6 +1269,25 @@ export type EventFinanceSummary = {
   overBudget: boolean;
 };
 
+export type EventCapabilities = {
+  isReadOnly: boolean;
+  canManage: boolean;
+  canStart: boolean;
+  canAdvanceToWrapUp: boolean;
+  canCancel: boolean;
+  canViewStaff: boolean;
+  canViewPlan: boolean;
+  canViewInventory: boolean;
+  canRequestInventory: boolean;
+  canViewPastovykles: boolean;
+  canManageInventory: boolean;
+  canManagePurchases: boolean;
+  canManageFinance: boolean;
+  canViewFinance: boolean;
+  canOpenMovement: boolean;
+  canViewReconciliation: boolean;
+};
+
 export type Event = {
   id: string;
   tuntasId: string;
@@ -1189,6 +1306,7 @@ export type Event = {
   eventRoles: EventRole[];
   inventorySummary?: EventInventorySummary | null;
   financeSummary?: EventFinanceSummary | null;
+  capabilities?: EventCapabilities | null;
 };
 
 export type EventListResponse = {
@@ -1219,6 +1337,9 @@ export type CreateEventRequest = {
 
 export type UpdateEventRequest = Partial<CreateEventRequest> & {
   status?: string | null;
+  clearLocationId?: boolean;
+  clearOrganizationalUnitId?: boolean;
+  clearNotes?: boolean;
 };
 
 export type EventWorkspacePayload = Record<string, unknown>;
@@ -1508,7 +1629,11 @@ export type CreateEventInventoryItemsBulkRequest = {
   items: CreateEventInventoryItemRequest[];
 };
 
-export type UpdateEventInventoryItemRequest = Partial<CreateEventInventoryItemRequest>;
+export type UpdateEventInventoryItemRequest = Partial<Omit<CreateEventInventoryItemRequest, "itemId">> & {
+  clearBucketId?: boolean;
+  clearResponsibleUserId?: boolean;
+  clearNotes?: boolean;
+};
 
 export type CreateEventInventorySourceRequest = {
   itemId?: string | null;

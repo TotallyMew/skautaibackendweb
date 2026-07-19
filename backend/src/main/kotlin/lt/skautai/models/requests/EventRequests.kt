@@ -24,7 +24,10 @@ data class UpdateEventRequest(
     val locationId: String? = null,
     val organizationalUnitId: String? = null,
     val notes: String? = null,
-    val status: String? = null
+    val status: String? = null,
+    val clearLocationId: Boolean = false,
+    val clearOrganizationalUnitId: Boolean = false,
+    val clearNotes: Boolean = false
 )
 
 @Serializable
@@ -122,7 +125,10 @@ data class UpdateEventInventoryItemRequest(
     val plannedQuantity: Int? = null,
     val bucketId: String? = null,
     val responsibleUserId: String? = null,
-    val notes: String? = null
+    val notes: String? = null,
+    val clearBucketId: Boolean = false,
+    val clearResponsibleUserId: Boolean = false,
+    val clearNotes: Boolean = false
 )
 
 @Serializable

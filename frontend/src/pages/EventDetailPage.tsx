@@ -4,7 +4,7 @@ import { AlertCircle, ArrowLeft, Boxes, CalendarDays, ClipboardCheck, ClipboardL
 import { api } from "../api/client";
 import type { Event } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
-import { eventTypeLabel, roleLabel, statusLabel } from "../utils/display";
+import { displayTitle, eventTypeLabel, roleLabel, statusLabel } from "../utils/display";
 
 export function EventDetailPage() {
   const { eventId } = useParams();
@@ -15,15 +15,7 @@ export function EventDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<string | null>(null);
-  const myRoles = event?.eventRoles.filter((role) => role.userId === auth?.userId).map((role) => role.role) ?? [];
-  const isReadOnly = event ? ["COMPLETED", "CANCELLED"].includes(event.status) : true;
-  const canManage = !isReadOnly && myRoles.includes("VIRSININKAS");
-  const canStart = !isReadOnly && myRoles.some((role) => role === "VIRSININKAS" || role === "KOMENDANTAS");
-  const canManageInventory = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS"].includes(role));
-  const canViewPlan = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "PROGRAMERIS"].includes(role));
-  const canViewFinance = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "FINANSININKAS"].includes(role)) ||
-    (auth?.permissions.some((permission) => permission === "event_purchases.invoice.download" || permission.startsWith("event_purchases.invoice.download:")) ?? false);
-  const canViewPastovykles = canManageInventory || myRoles.includes("PASTOVYKLES_GURU");
+  const capabilities = event?.capabilities;
 
   useEffect(() => {
     if (!eventId || !auth?.token || !auth.activeTuntasId) {
@@ -62,7 +54,7 @@ export function EventDetailPage() {
   async function changeStatus(status: "ACTIVE" | "WRAP_UP") {
     if (!eventId || !auth?.token || !auth.activeTuntasId || busyAction) return;
     setBusyAction(status); setError(null); setMessage(null);
-    try { const updated = await api.updateEvent(auth.token, auth.activeTuntasId, eventId, { status }); setEvent(updated); setMessage(status === "ACTIVE" ? "Renginys pradėtas." : "Renginys perduotas užbaigimo etapui."); }
+    try { await api.updateEvent(auth.token, auth.activeTuntasId, eventId, { status }); setEvent(await api.getEvent(auth.token, auth.activeTuntasId, eventId)); setMessage(status === "ACTIVE" ? "Renginys pradėtas." : "Renginys perduotas užbaigimo etapui."); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Renginio būsenos pakeisti nepavyko."); }
     finally { setBusyAction(null); }
   }
@@ -82,19 +74,21 @@ export function EventDetailPage() {
             <ArrowLeft size={17} aria-hidden="true" />
             Grįžti į renginius
           </Link>
-          <h2>{event?.name ?? "Renginys"}</h2>
+          <h2>{event ? displayTitle(event.name) : "Renginys"}</h2>
         </div>
-        <div className="toolbar-actions">
-          {event && canManage && (
-            <Link className="secondary-button" to={`/events/${event.id}/edit`}>
-              <Edit3 size={17} aria-hidden="true" />
-              Redaguoti
-            </Link>
-          )}
-          {event && canStart && event.status === "PLANNING" && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("ACTIVE")}><Play size={17} />Pradėti</button>}
-          {event && canManage && event.status === "ACTIVE" && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("WRAP_UP")}><Flag size={17} />Užbaigimo etapas</button>}
-          {event && canManage && event.status === "PLANNING" && <button className="icon-button danger-icon-button" type="button" title="Atšaukti renginį" disabled={Boolean(busyAction)} onClick={() => void cancelEvent()}><Trash2 size={17} /></button>}
+        <div className="toolbar-actions event-header-toolbar">
           {event && <StatusBadge status={event.status} />}
+          {event && (capabilities?.canManage || capabilities?.canStart || capabilities?.canAdvanceToWrapUp) && <div className="event-header-constructive-actions">
+            {capabilities?.canManage && (
+              <Link className="secondary-button" to={`/events/${event.id}/edit`}>
+                <Edit3 size={17} aria-hidden="true" />
+                Redaguoti
+              </Link>
+            )}
+            {capabilities?.canStart && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("ACTIVE")}><Play size={17} />Pradėti</button>}
+            {capabilities?.canAdvanceToWrapUp && <button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => void changeStatus("WRAP_UP")}><Flag size={17} />Užbaigimo etapas</button>}
+          </div>}
+          {event && capabilities?.canCancel && <div className="event-header-danger-actions"><button className="icon-button danger-icon-button" type="button" title="Atšaukti renginį" aria-label="Atšaukti renginį" disabled={Boolean(busyAction)} onClick={() => void cancelEvent()}><Trash2 size={17} /></button></div>}
         </div>
       </div>
 
@@ -121,7 +115,7 @@ export function EventDetailPage() {
             <div className="detail-title-row">
               <div>
                 <span className="eyebrow">{event.customTypeLabel ?? eventTypeLabel(event.type)}</span>
-                <h3>{event.name}</h3>
+                <h3>{displayTitle(event.name)}</h3>
               </div>
               <div className="quantity-card">
                 <strong>{formatDate(event.startDate)}</strong>
@@ -143,12 +137,12 @@ export function EventDetailPage() {
             <section className="detail-section">
               <h3>Renginio darbo sritys</h3>
               <div className="event-workspace-launcher">
-                {canManage && <WorkspaceLink eventId={event.id} section="staff" icon={UsersRound} title="Komanda" description="Rolės ir atsakingi žmonės" />}
-                {canViewPlan && <WorkspaceLink eventId={event.id} section="plan" icon={Boxes} title="Inventoriaus planas" description="Poreikiai, šaltiniai ir paskirstymas" />}
-                {canViewPastovykles && <WorkspaceLink eventId={event.id} section="pastovykles" icon={TentTree} title="Pastovyklės" description="Stovyklos grupės ir vadovai" />}
-                {canManageInventory && <WorkspaceLink eventId={event.id} section="packing" icon={PackageCheck} title="Pakavimas" description="Dėžės ir pakrovimo kontrolė" />}
-                {canManageInventory && <WorkspaceLink eventId={event.id} section="movements" icon={ClipboardCheck} title="Judėjimas" description="Išdavimas, grąžinimas ir globa" />}
-                {canViewFinance && <WorkspaceLink eventId={event.id} section="purchases" icon={Euro} title="Pirkimai" description="Trūkumai, sąskaitos ir biudžetas" />}
+                {capabilities?.canViewStaff && <WorkspaceLink eventId={event.id} section="staff" icon={UsersRound} title="Komanda" description="Rolės ir atsakingi žmonės" />}
+                {capabilities?.canViewPlan && <WorkspaceLink eventId={event.id} section="plan" icon={Boxes} title="Inventoriaus planas" description="Poreikiai, šaltiniai ir paskirstymas" />}
+                {capabilities?.canViewPastovykles && <WorkspaceLink eventId={event.id} section="pastovykles" icon={TentTree} title="Pastovyklės" description="Stovyklos grupės ir vadovai" />}
+                {capabilities?.canViewInventory && <WorkspaceLink eventId={event.id} section="packing" icon={PackageCheck} title="Pakavimas" description="Dėžės ir pakrovimo kontrolė" />}
+                {capabilities?.canViewInventory && <WorkspaceLink eventId={event.id} section="movements" icon={ClipboardCheck} title="Judėjimas" description="Išdavimas, grąžinimas ir globa" />}
+                {capabilities?.canViewFinance && <WorkspaceLink eventId={event.id} section="purchases" icon={Euro} title="Pirkimai" description="Trūkumai, sąskaitos ir biudžetas" />}
               </div>
             </section>
 
@@ -170,14 +164,23 @@ export function EventDetailPage() {
             </section>
           </article>
 
-          <aside className="detail-side">
-            <DetailFact label="Būsena" value={statusLabel(event.status)} />
-            <DetailFact label="Tipas" value={event.customTypeLabel ?? eventTypeLabel(event.type)} />
-            <DetailFact label="Suplanuota" value={inventoryPlanned(event)} />
-            <DetailFact label="Skirta" value={inventoryAllocated(event)} />
-            <DetailFact label="Pirkti" value={itemsNeedingPurchase(event)} />
-            <DetailFact label="Biudžetas" value={event.inventoryBudgetAmount != null ? formatPrice(event.inventoryBudgetAmount) : "-"} />
-            <DetailFact label="Likutis" value={financeRemaining(event)} />
+          <aside className="detail-side event-detail-side">
+            <section className="detail-fact-group">
+              <h3>Renginys</h3>
+              <DetailFact label="Būsena" value={statusLabel(event.status)} />
+              <DetailFact label="Tipas" value={event.customTypeLabel ?? eventTypeLabel(event.type)} />
+            </section>
+            <section className="detail-fact-group">
+              <h3>Inventoriaus parengtis</h3>
+              <DetailFact label="Suplanuota" value={inventoryPlanned(event)} />
+              <DetailFact label="Skirta" value={inventoryAllocated(event)} />
+              <DetailFact label="Pirkti" value={itemsNeedingPurchase(event)} />
+            </section>
+            <section className="detail-fact-group">
+              <h3>Finansai</h3>
+              <DetailFact label="Biudžetas" value={event.inventoryBudgetAmount != null ? formatPrice(event.inventoryBudgetAmount) : "-"} />
+              <DetailFact label="Likutis" value={financeRemaining(event)} />
+            </section>
             <DetailFact label="Sukurta" value={formatDateTime(event.createdAt)} />
           </aside>
         </div>

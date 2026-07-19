@@ -111,7 +111,7 @@ fun Application.configureRouting() {
                     }
                     bendrasInventoryRequestRoutes(bendrasInventoryRequestService, firebaseNotificationService, notificationRecipientService, apiPrefix)
                     requisitionRoutes(requisitionService, firebaseNotificationService, notificationRecipientService, apiPrefix)
-                    inventoryTemplateRoutes(inventoryTemplateService, apiPrefix)
+                    inventoryTemplateRoutes(inventoryTemplateService, eventService, apiPrefix)
                     inventoryKitRoutes(inventoryKitService, apiPrefix)
                     myTaskRoutes(myTaskService, apiPrefix)
                     rateLimit(MessagingRateLimit) {

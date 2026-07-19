@@ -45,6 +45,8 @@ import org.jetbrains.exposed.sql.update
 import java.util.UUID
 
 class InventoryTemplateService {
+    private val validEventTypes = setOf("STOVYKLA", "SUEIGA", "RENGINYS")
+
     fun listTemplates(tuntasId: UUID, eventType: String?): Result<InventoryTemplateListResponse> = transaction {
         var query = InventoryListTemplates.selectAll()
             .where { InventoryListTemplates.tuntasId eq tuntasId }
@@ -66,10 +68,14 @@ class InventoryTemplateService {
     ): Result<InventoryTemplateResponse> = transaction {
         val name = request.name.trim()
         validateTemplate(name, request.items)?.let { return@transaction Result.failure(it) }
+        val eventType = request.eventType?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
+        if (eventType != null && eventType !in validEventTypes) {
+            return@transaction Result.failure(Exception("Invalid event type"))
+        }
         val id = InventoryListTemplates.insert {
             it[this.tuntasId] = tuntasId
             it[this.name] = name
-            it[eventType] = request.eventType?.takeIf { value -> value.isNotBlank() }
+            it[InventoryListTemplates.eventType] = eventType
             it[this.createdByUserId] = createdByUserId
             it[createdAt] = Clock.System.now()
         } get InventoryListTemplates.id
@@ -89,11 +95,18 @@ class InventoryTemplateService {
         validateTemplate(nextName, nextItems ?: emptyList(), validateItems = nextItems != null)?.let {
             return@transaction Result.failure(it)
         }
+        val nextEventType = request.eventType?.trim()?.uppercase()?.takeIf { it.isNotBlank() }
+        if (nextEventType != null && nextEventType !in validEventTypes) {
+            return@transaction Result.failure(Exception("Invalid event type"))
+        }
         InventoryListTemplates.update({
             (InventoryListTemplates.id eq templateId) and (InventoryListTemplates.tuntasId eq tuntasId)
         }) {
             request.name?.let { _ -> it[name] = nextName }
-            request.eventType?.let { value -> it[eventType] = value.takeIf { it.isNotBlank() } }
+            when {
+                request.clearEventType -> it[eventType] = null
+                request.eventType != null -> it[eventType] = nextEventType
+            }
         }
         nextItems?.let { replaceItems(templateId, it) }
         Result.success(toTemplateResponse(loadTemplate(templateId, tuntasId)!!))
@@ -115,10 +128,11 @@ class InventoryTemplateService {
         createdByUserId: UUID,
         templateId: UUID
     ): Result<EventInventoryItemListResponse> = transaction {
-        Events.selectAll()
+        val event = Events.selectAll()
             .where { (Events.id eq eventId) and (Events.tuntasId eq tuntasId) }
             .firstOrNull()
             ?: return@transaction Result.failure(Exception("Event not found"))
+        ensureEventIsMutable(event)?.let { return@transaction Result.failure(it) }
         loadTemplate(templateId, tuntasId)
             ?: return@transaction Result.failure(Exception("Template not found"))
 
@@ -156,6 +170,7 @@ class InventoryTemplateService {
             .where { (Events.id eq eventId) and (Events.tuntasId eq tuntasId) }
             .firstOrNull()
             ?: return@transaction Result.failure(Exception("Event not found"))
+        ensureEventIsMutable(event)?.let { return@transaction Result.failure(it) }
         loadTemplate(templateId, tuntasId)
             ?: return@transaction Result.failure(Exception("Template not found"))
 
@@ -539,4 +554,11 @@ class InventoryTemplateService {
             .sumOf { it[Reservations.quantity] }
         return (item[Items.quantity] - reserved).coerceAtLeast(0)
     }
+
+    private fun ensureEventIsMutable(event: ResultRow): Exception? =
+        if (event[Events.status] in setOf("COMPLETED", "CANCELLED")) {
+            Exception("Completed or cancelled events are read-only")
+        } else {
+            null
+        }
 }

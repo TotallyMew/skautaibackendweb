@@ -5,8 +5,7 @@ import { api } from "../api/client";
 import type { Event } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill } from "../components/ui/Skautai";
-import { statusLabel } from "../utils/display";
-import { hasPermission } from "../utils/permissions";
+import { displayTitle, statusLabel } from "../utils/display";
 import { EventStaffSection, EventPastovyklesSection, EventTemplatesSection } from "./EventWorkspacePeople";
 import { EventPlanSection } from "./EventWorkspacePlan";
 import { EventMovementsSection, EventPackingSection, EventPurchasesSection, EventReconciliationSection } from "./EventWorkspaceOperations";
@@ -27,6 +26,8 @@ export type EventWorkspaceContext = {
   canManagePurchases: boolean;
   canManageFinance: boolean;
   canViewFinance: boolean;
+  canOpenMovement: boolean;
+  canViewReconciliation: boolean;
   refreshEvent: () => Promise<void>;
 };
 
@@ -64,23 +65,22 @@ export function EventWorkspacePage({ section }: { section: EventWorkspaceSection
   }, [refreshEvent]);
 
   const activeSection = sections.find((candidate) => candidate.key === section);
-  const myRoles = event?.eventRoles.filter((role) => role.userId === auth?.userId).map((role) => role.role) ?? [];
-  const isReadOnly = event ? ["COMPLETED", "CANCELLED"].includes(event.status) : true;
-  const canViewStaff = myRoles.includes("VIRSININKAS");
-  const canViewPlan = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "PROGRAMERIS"].includes(role));
-  const canViewInventory = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS"].includes(role));
-  const canViewPastovykles = canViewInventory || myRoles.includes("PASTOVYKLES_GURU");
-  const hasPurchaseRole = myRoles.some((role) => ["VIRSININKAS", "KOMENDANTAS", "UKVEDYS", "FINANSININKAS"].includes(role));
-  const hasFinanceRole = myRoles.some((role) => ["VIRSININKAS", "FINANSININKAS"].includes(role));
-  const canManage = !isReadOnly && canViewStaff;
-  const canManageInventory = !isReadOnly && canViewInventory;
-  const canManagePurchases = !isReadOnly && hasPurchaseRole;
-  const canManageFinance = !isReadOnly && hasFinanceRole;
-  const canViewFinance = hasPurchaseRole || hasPermission(auth?.permissions, "event_purchases.invoice.download");
+  const capabilities = event?.capabilities;
+  const canViewStaff = capabilities?.canViewStaff ?? false;
+  const canViewPlan = capabilities?.canViewPlan ?? false;
+  const canViewInventory = capabilities?.canViewInventory ?? false;
+  const canViewPastovykles = capabilities?.canViewPastovykles ?? false;
+  const canManage = capabilities?.canManage ?? false;
+  const canManageInventory = capabilities?.canManageInventory ?? false;
+  const canManagePurchases = capabilities?.canManagePurchases ?? false;
+  const canManageFinance = capabilities?.canManageFinance ?? false;
+  const canViewFinance = capabilities?.canViewFinance ?? false;
+  const canOpenMovement = capabilities?.canOpenMovement ?? false;
+  const canViewReconciliation = capabilities?.canViewReconciliation ?? false;
   const context = event && auth?.token && auth.activeTuntasId ? {
     event, token: auth.token, tuntasId: auth.activeTuntasId, userId: auth.userId,
     canViewStaff, canViewPlan, canViewInventory, canViewPastovykles,
-    canManage, canManageInventory, canManagePurchases, canManageFinance, canViewFinance, refreshEvent
+    canManage, canManageInventory, canManagePurchases, canManageFinance, canViewFinance, canOpenMovement, canViewReconciliation, refreshEvent
   } : null;
   const visibleSections = context ? sections.filter((candidate) => canViewSection(candidate.key, context)) : [];
   const canViewActiveSection = context ? canViewSection(section, context) : false;
@@ -89,13 +89,13 @@ export function EventWorkspacePage({ section }: { section: EventWorkspaceSection
     <SkautaiPageShell
       className="event-workspace-page"
       eyebrow="Renginio darbo sritis"
-      title={event?.name ?? activeSection?.label ?? "Renginys"}
+      title={event ? displayTitle(event.name) : activeSection?.label ?? "Renginys"}
       description={activeSection ? `${activeSection.label}: valdykite tą pačią renginio eigą kaip mobiliojoje programėlėje.` : undefined}
       actions={event && <SkautaiStatusPill status={event.status}>{statusLabel(event.status)}</SkautaiStatusPill>}
       width="wide"
     >
       <Link className="back-link" to={eventId ? `/events/${eventId}` : "/events"}><ArrowLeft size={17} aria-hidden="true" />Grįžti į renginio apžvalgą</Link>
-      {eventId && visibleSections.length > 0 && <nav className="event-workspace-nav" aria-label="Renginio darbo sritys">{visibleSections.map(({ key, label, icon: Icon }) => <NavLink key={key} to={`/events/${eventId}/${key}`}><Icon size={17} /><span>{label}</span></NavLink>)}</nav>}
+      {eventId && visibleSections.length > 0 && <nav className="event-workspace-nav" aria-label="Renginio darbo sritys">{visibleSections.map(({ key, label, icon: Icon }) => <NavLink key={key} className={({ isActive }) => isActive ? "active" : undefined} to={`/events/${eventId}/${key}`}><Icon size={17} /><span>{label}</span></NavLink>)}</nav>}
       {isLoading && <div className="table-state"><Loader2 className="spin" size={22} />Kraunama renginio darbo sritis...</div>}
       {error && <SkautaiErrorState description={error} />}
       {!isLoading && context && !canViewActiveSection && <SkautaiErrorState description="Jums nepriskirta renginio rolė, suteikianti prieigą prie šios darbo srities." />}
@@ -111,8 +111,8 @@ function canViewSection(section: EventWorkspaceSection, context: EventWorkspaceC
     case "pastovykles": return context.canViewPastovykles;
     case "packing":
     case "movements":
-    case "reconciliation":
     case "templates": return context.canViewInventory;
+    case "reconciliation": return context.canViewReconciliation;
     case "purchases": return context.canViewFinance;
   }
 }

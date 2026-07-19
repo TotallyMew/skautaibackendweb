@@ -214,7 +214,7 @@ object TestHelper {
                 eventRoutes(eventService, memberService, eventPackingService, firebaseNotificationService)
                 bendrasInventoryRequestRoutes(bendrasInventoryRequestService, firebaseNotificationService, notificationRecipientService)
                 requisitionRoutes(requisitionService, firebaseNotificationService, notificationRecipientService)
-                inventoryTemplateRoutes(inventoryTemplateService)
+                inventoryTemplateRoutes(inventoryTemplateService, eventService)
                 inventoryKitRoutes(inventoryKitService)
                 mobileRoutes(
                     itemService,

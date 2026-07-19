@@ -23,6 +23,13 @@ class EventPackingService {
     private val validContainerTypes = setOf("BOX", "BAG", "TRAILER", "VEHICLE", "OTHER")
     private val validLineStatuses = setOf("TODO", "PICKED", "PACKED", "LOADED", "RETURNED")
     private val doneStatuses = setOf("PACKED", "LOADED", "RETURNED")
+    private val allowedLineStatusTransitions = mapOf(
+        "TODO" to setOf("PICKED"),
+        "PICKED" to setOf("TODO", "PACKED"),
+        "PACKED" to setOf("PICKED", "LOADED"),
+        "LOADED" to setOf("PACKED", "RETURNED"),
+        "RETURNED" to setOf("LOADED")
+    )
 
     fun getPackingList(eventId: UUID, tuntasId: UUID): Result<EventPackingListResponse> = transaction {
         ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
@@ -30,7 +37,8 @@ class EventPackingService {
     }
 
     fun generateFromPlan(eventId: UUID, tuntasId: UUID): Result<EventPackingListResponse> = transaction {
-        ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
+        val event = ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
+        ensureEventIsMutable(event)?.let { return@transaction Result.failure(it) }
         val defaultContainerId = ensureDefaultContainer(eventId)
         val existingAllocationIds = EventPackingLines.selectAll()
             .where {
@@ -92,7 +100,8 @@ class EventPackingService {
         tuntasId: UUID,
         request: CreateEventPackingContainerRequest
     ): Result<EventPackingListResponse> = transaction {
-        ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
+        val event = ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
+        ensureEventIsMutable(event)?.let { return@transaction Result.failure(it) }
         val name = request.name.trim()
         if (name.isBlank()) return@transaction Result.failure(Exception("Container name cannot be blank"))
         val type = request.type.trim().uppercase().ifBlank { "BOX" }
@@ -121,7 +130,8 @@ class EventPackingService {
         userId: UUID,
         request: UpdateEventPackingLineRequest
     ): Result<EventPackingListResponse> = transaction {
-        ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
+        val event = ensureEvent(eventId, tuntasId) ?: return@transaction Result.failure(Exception("Event not found"))
+        ensureEventIsMutable(event)?.let { return@transaction Result.failure(it) }
         val existing = EventPackingLines.selectAll()
             .where { (EventPackingLines.id eq lineId) and (EventPackingLines.eventId eq eventId) }
             .firstOrNull() ?: return@transaction Result.failure(Exception("Packing line not found"))
@@ -129,6 +139,10 @@ class EventPackingService {
         val nextStatus = request.status?.trim()?.uppercase()
         if (nextStatus != null && nextStatus !in validLineStatuses) {
             return@transaction Result.failure(Exception("Invalid packing status"))
+        }
+        val currentStatus = existing[EventPackingLines.status]
+        if (nextStatus != null && nextStatus != currentStatus && nextStatus !in allowedLineStatusTransitions[currentStatus].orEmpty()) {
+            return@transaction Result.failure(Exception("Invalid packing status transition: $currentStatus -> $nextStatus"))
         }
 
         val nextContainerId = when {
@@ -168,6 +182,13 @@ class EventPackingService {
         Events.selectAll()
             .where { (Events.id eq eventId) and (Events.tuntasId eq tuntasId) }
             .firstOrNull()
+
+    private fun ensureEventIsMutable(event: ResultRow): Exception? =
+        if (event[Events.status] in setOf("COMPLETED", "CANCELLED")) {
+            Exception("Completed or cancelled events are read-only")
+        } else {
+            null
+        }
 
     private fun ensureDefaultContainer(eventId: UUID): UUID {
         val existing = EventPackingContainers.selectAll()

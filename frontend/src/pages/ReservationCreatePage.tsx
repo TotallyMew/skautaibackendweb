@@ -2,7 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowLeft, CalendarPlus, PackagePlus, Plus, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { ApiError, api } from "../api/client";
-import type { Item, Location, OrganizationalUnit, ReservationAvailabilityItem } from "../api/types";
+import type { Item, Location, ReservationAvailabilityItem, ReservationCreateItemOption, ReservationCreateLocationOption, ReservationCreateUnitOption } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { itemTypeLabel } from "../utils/display";
 import { hasPermission } from "../utils/permissions";
@@ -40,7 +40,9 @@ export function ReservationCreatePage() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [items, setItems] = useState<Item[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
-  const [units, setUnits] = useState<OrganizationalUnit[]>([]);
+  const [units, setUnits] = useState<ReservationCreateUnitOption[]>([]);
+  const [itemOptions, setItemOptions] = useState<ReservationCreateItemOption[]>([]);
+  const [locationOptions, setLocationOptions] = useState<ReservationCreateLocationOption[]>([]);
   const [availability, setAvailability] = useState<Record<string, ReservationAvailabilityItem>>({});
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [isLoadingContext, setIsLoadingContext] = useState(false);
@@ -48,7 +50,6 @@ export function ReservationCreatePage() {
   const [error, setError] = useState<string | null>(null);
 
   const canCreateReservation = hasPermission(auth?.permissions, "reservations.create");
-  const canViewUnits = hasPermission(auth?.permissions, "organizational_units.view");
   const canSubmit = Boolean(
     auth?.token &&
     auth.activeTuntasId &&
@@ -67,13 +68,17 @@ export function ReservationCreatePage() {
     Promise.all([
       api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 200, offset: 0 }),
       api.listLocations(auth.token, auth.activeTuntasId).catch(() => ({ locations: [], total: 0 })),
-      canViewUnits ? api.listOrganizationalUnits(auth.token, auth.activeTuntasId).catch(() => ({ units: [], total: 0 })) : Promise.resolve({ units: [], total: 0 })
+      api.getReservationCreateOptions(auth.token, auth.activeTuntasId)
     ])
-      .then(([itemResponse, locationResponse, unitResponse]) => {
+      .then(([itemResponse, locationResponse, createOptions]) => {
         if (isCancelled) return;
-        setItems(itemResponse.items);
-        setLocations(locationResponse.locations);
-        setUnits(unitResponse.units);
+        const allowedItemIds = new Set(createOptions.items.map((item) => item.itemId));
+        const allowedLocationIds = new Set(createOptions.locations.map((location) => location.id));
+        setItems(itemResponse.items.filter((item) => allowedItemIds.has(item.id)));
+        setLocations(locationResponse.locations.filter((location) => allowedLocationIds.has(location.id)));
+        setUnits(createOptions.requestingUnits);
+        setItemOptions(createOptions.items);
+        setLocationOptions(createOptions.locations);
       })
       .catch((cause) => {
         if (!isCancelled) {
@@ -90,7 +95,7 @@ export function ReservationCreatePage() {
     return () => {
       isCancelled = true;
     };
-  }, [auth?.activeTuntasId, auth?.token, canCreateReservation, canViewUnits]);
+  }, [auth?.activeTuntasId, auth?.token, canCreateReservation]);
 
   useEffect(() => {
     if (!auth?.token || !auth.activeTuntasId || !form.startDate || !form.endDate || form.endDate < form.startDate) {
@@ -113,10 +118,32 @@ export function ReservationCreatePage() {
     [items]
   );
 
-  const sortedLocations = useMemo(
-    () => [...locations].filter((location) => location.isLeafSelectable).sort((left, right) => left.fullPath.localeCompare(right.fullPath, "lt")),
-    [locations]
-  );
+  const sortedLocations = useMemo(() => {
+    const selectedItemIds = new Set(form.items.map((item) => item.itemId).filter(Boolean));
+    const selectedCustodianIds = new Set(
+      itemOptions
+        .filter((option) => selectedItemIds.has(option.itemId) && option.custodianId)
+        .map((option) => option.custodianId as string)
+    );
+    const optionsById = new Map(locationOptions.map((option) => [option.id, option]));
+    return [...locations]
+      .filter((location) => {
+        const option = optionsById.get(location.id);
+        return option?.canUseWithAnyInventory || Boolean(option?.requiredCustodianId && selectedCustodianIds.has(option.requiredCustodianId));
+      })
+      .sort((left, right) => left.fullPath.localeCompare(right.fullPath, "lt"));
+  }, [form.items, itemOptions, locationOptions, locations]);
+
+  useEffect(() => {
+    const allowedLocationIds = new Set(sortedLocations.map((location) => location.id));
+    setForm((current) => {
+      const pickupLocationId = current.pickupLocationId && !allowedLocationIds.has(current.pickupLocationId) ? "" : current.pickupLocationId;
+      const returnLocationId = current.returnLocationId && !allowedLocationIds.has(current.returnLocationId) ? "" : current.returnLocationId;
+      return pickupLocationId === current.pickupLocationId && returnLocationId === current.returnLocationId
+        ? current
+        : { ...current, pickupLocationId, returnLocationId };
+    });
+  }, [sortedLocations]);
 
   const sortedUnits = useMemo(
     () => [...units].sort((left, right) => left.name.localeCompare(right.name, "lt")),

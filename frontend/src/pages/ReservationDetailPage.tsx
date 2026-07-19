@@ -74,45 +74,25 @@ export function ReservationDetailPage() {
     void refreshReservation(true);
   }, [refreshReservation]);
 
-  const isOwner = reservation?.reservedByUserId === auth?.userId;
-  const canApproveTopLevel = hasScopedPermission(auth?.permissions, "reservations.approve", "ALL");
-  const canApproveOwnUnit = hasScopedPermission(auth?.permissions, "reservations.approve", "OWN_UNIT");
-  const managedUnitIds = auth?.leadershipUnitIds ?? [];
-  const hasManagedUnitItem = reservation?.items.some((item) => Boolean(item.custodianId && managedUnitIds.includes(item.custodianId))) ?? false;
-  const canReviewUnit = Boolean(
-    reservation &&
-    reservation.status === "PENDING" &&
-    !isOwner &&
-    reservation.unitReviewStatus === "PENDING" &&
-    reservation.items.some((item) => item.custodianId != null) &&
-    (canApproveTopLevel || (canApproveOwnUnit && hasManagedUnitItem))
-  );
-  const canReviewTopLevel = Boolean(
-    reservation &&
-    reservation.status === "PENDING" &&
-    !isOwner &&
-    reservation.topLevelReviewStatus === "PENDING" &&
-    reservation.items.some((item) => item.custodianId == null) &&
-    canApproveTopLevel
-  );
-  const canCancel = Boolean(isOwner && reservation && ["PENDING", "APPROVED"].includes(reservation.status));
-  const canAccessProposal = Boolean(isOwner || canApproveTopLevel || (canApproveOwnUnit && hasManagedUnitItem));
+  const capabilities = reservation?.capabilities;
+  const canReviewUnit = capabilities?.canReviewUnit === true;
+  const canReviewTopLevel = capabilities?.canReviewTopLevel === true;
+  const canCancel = capabilities?.canCancel === true;
 
   const movementOptions = useMemo(() => {
     if (!reservation) return [] as Array<{ value: MovementType; label: string }>;
     const options: Array<{ value: MovementType; label: string }> = [];
-    const canManageCustody = reservation.items.some((item) => canManageCustodiedItem(item.custodianId, canApproveTopLevel, canApproveOwnUnit, managedUnitIds));
-    if (["APPROVED", "ACTIVE"].includes(reservation.status) && canManageCustody && reservation.items.some((item) => (item.remainingToIssue ?? 0) > 0)) {
+    if (capabilities?.canIssue) {
       options.push({ value: "ISSUE", label: "Išduoti inventorių" });
     }
-    if (reservation.status === "ACTIVE" && canManageCustody && reservation.items.some((item) => (item.remainingToReceive ?? 0) > 0)) {
+    if (capabilities?.canConfirmReturn) {
       options.push({ value: "RETURN", label: "Patvirtinti grąžinimą" });
     }
-    if (reservation.status === "ACTIVE" && isOwner && reservation.items.some((item) => (item.remainingToMarkReturned ?? 0) > 0)) {
+    if (capabilities?.canMarkReturned) {
       options.push({ value: "RETURN_MARKED", label: "Pažymėti kaip grąžintą" });
     }
     return options;
-  }, [canApproveOwnUnit, canApproveTopLevel, isOwner, managedUnitIds, reservation]);
+  }, [capabilities, reservation]);
 
   useEffect(() => {
     if (movementOptions.length > 0 && !movementOptions.some((option) => option.value === movementType)) {
@@ -159,8 +139,8 @@ export function ReservationDetailPage() {
       const quantity = Number(movementQuantities[item.itemId] ?? 0);
       const maximum = movementMaximum(item, movementType);
       const canUseItem = movementType === "RETURN_MARKED"
-        ? isOwner
-        : canManageCustodiedItem(item.custodianId, canApproveTopLevel, canApproveOwnUnit, managedUnitIds);
+        ? item.canMarkReturned === true
+        : movementType === "RETURN" ? item.canConfirmReturn === true : item.canIssue === true;
       return canUseItem && Number.isInteger(quantity) && quantity > 0 && quantity <= maximum
         ? [{ itemId: item.itemId, quantity }]
         : [];
@@ -316,7 +296,7 @@ export function ReservationDetailPage() {
                 <label className="form-field wide"><span>Veiksmas</span><select value={movementType} onChange={(event) => { setMovementType(event.target.value as MovementType); setMovementQuantities({}); }} disabled={Boolean(busyAction)}>{movementOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
                 {reservation.items.map((item) => {
                   const maximum = movementMaximum(item, movementType);
-                  const canUseItem = movementType === "RETURN_MARKED" ? isOwner : canManageCustodiedItem(item.custodianId, canApproveTopLevel, canApproveOwnUnit, managedUnitIds);
+                  const canUseItem = movementType === "RETURN_MARKED" ? item.canMarkReturned === true : movementType === "RETURN" ? item.canConfirmReturn === true : item.canIssue === true;
                   return (
                     <label className="form-field" key={`${movementType}-${item.itemId}`}>
                       <span>{item.itemName} (galima {canUseItem ? maximum : 0})</span>
@@ -331,11 +311,11 @@ export function ReservationDetailPage() {
             </form>
           )}
 
-          {canAccessProposal && ["APPROVED", "ACTIVE"].includes(reservation.status) && (
+          {capabilities?.canManagePickup && (
             <TimeProposalForm kind="pickup" title="Paėmimo laikas ir vieta" value={pickupAt} locationId={pickupLocationId} proposalStatus={reservation.pickupProposalStatus} canAccept={reservation.pickupProposalStatus === "PENDING" && reservation.pickupProposedByUserId !== auth?.userId} locations={selectableLocations} disabled={Boolean(busyAction)} onValueChange={setPickupAt} onLocationChange={setPickupLocationId} onSubmit={(event) => submitProposal("pickup", event)} onAccept={() => acceptProposal("pickup")} />
           )}
 
-          {canAccessProposal && reservation.status === "ACTIVE" && (
+          {capabilities?.canManageReturn && (
             <TimeProposalForm kind="return" title="Grąžinimo laikas ir vieta" value={returnAt} locationId={returnLocationId} proposalStatus={reservation.returnProposalStatus} canAccept={reservation.returnProposalStatus === "PENDING" && reservation.returnProposedByUserId !== auth?.userId} locations={selectableLocations} disabled={Boolean(busyAction)} onValueChange={setReturnAt} onLocationChange={setReturnLocationId} onSubmit={(event) => submitProposal("return", event)} onAccept={() => acceptProposal("return")} />
           )}
 
@@ -374,8 +354,6 @@ function InfoTile({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
 function DetailFact({ label, value }: { label: string; value: string }) { return <div className="detail-fact"><span>{label}</span><strong>{value}</strong></div>; }
 function StatusBadge({ status }: { status: string }) { return <span className={`status-badge status-${status.toLowerCase()}`}>{statusLabel(status)}</span>; }
 
-function hasScopedPermission(permissions: string[] | undefined, permission: string, scope: string) { return permissions?.some((value) => value === permission || value === `${permission}:${scope}`) ?? false; }
-function canManageCustodiedItem(custodianId: string | null | undefined, canApproveTopLevel: boolean, canApproveOwnUnit: boolean, managedUnitIds: string[]) { return custodianId == null ? canApproveTopLevel : canApproveOwnUnit && managedUnitIds.includes(custodianId); }
 function movementMaximum(item: Reservation["items"][number], type: MovementType) { if (type === "ISSUE") return item.remainingToIssue ?? 0; if (type === "RETURN") return item.remainingToReceive ?? 0; return item.remainingToMarkReturned ?? 0; }
 function movementTypeLabel(type: string) { return ({ ISSUE: "Išduota", RETURN_MARKED: "Pažymėta grąžinimui", RETURN: "Grąžinimas patvirtintas" } as Record<string, string>)[type] ?? type; }
 function pickupSummary(reservation: Reservation) { return [formatDateTime(reservation.pickupAt), reservation.pickupLocationPath].filter(Boolean).join(" / ") || "-"; }

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2, RefreshCw, ShieldCheck, UsersRound } from "lucide-react";
+import { Eye, Loader2, RefreshCw, ShieldCheck, UserPlus, UsersRound } from "lucide-react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
-import type { Member, MemberListResponse } from "../api/types";
+import type { Member, MemberListResponse, OrganizationalUnit } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import {
   SkautaiDataTable,
@@ -16,6 +17,8 @@ import {
   type SkautaiDataTableColumn
 } from "../components/ui/Skautai";
 import { assignmentTypeLabel, finiteCount, roleLabel } from "../utils/display";
+import { hasPermission } from "../utils/permissions";
+import { unitPaletteClass } from "../utils/unitPalette";
 import { MemberManagementPanel } from "./MemberManagementPanel";
 
 const leadersFilter = "__leaders__";
@@ -23,6 +26,7 @@ const leadersFilter = "__leaders__";
 export function MembersPage() {
   const { auth } = useAuth();
   const [membersState, setMembersState] = useState<MemberListResponse | null>(null);
+  const [units, setUnits] = useState<OrganizationalUnit[]>([]);
   const [query, setQuery] = useState("");
   const [unitFilter, setUnitFilter] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
@@ -32,6 +36,7 @@ export function MembersPage() {
   const [error, setError] = useState<string | null>(null);
 
   const canViewMembers = auth?.permissions.some((permission) => permission === "members.view" || permission.startsWith("members.view:")) ?? false;
+  const canCreateInvites = hasPermission(auth?.permissions, "invitations.create");
   const canFetch = Boolean(auth?.token && auth.activeTuntasId && canViewMembers);
 
   useEffect(() => {
@@ -45,9 +50,15 @@ export function MembersPage() {
     setIsLoading(true);
     setError(null);
 
-    api.listMembers(auth.token, auth.activeTuntasId)
-      .then((response) => {
-        if (!isCancelled) setMembersState(response);
+    Promise.all([
+      api.listMembers(auth.token, auth.activeTuntasId),
+      api.listOrganizationalUnits(auth.token, auth.activeTuntasId).catch(() => ({ units: [], total: 0 }))
+    ])
+      .then(([response, unitResponse]) => {
+        if (!isCancelled) {
+          setMembersState(response);
+          setUnits(unitResponse.units);
+        }
       })
       .catch((cause) => {
         if (!isCancelled) {
@@ -76,10 +87,13 @@ export function MembersPage() {
   }, [roleFilter, roleOptions, unitFilter, unitOptions]);
 
   const actions = (
-    <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={!canFetch || isLoading}>
-      <RefreshCw size={17} aria-hidden="true" />
-      Atnaujinti
-    </button>
+    <>
+      <button className="secondary-button" type="button" onClick={() => setReloadKey((value) => value + 1)} disabled={!canFetch || isLoading}>
+        <RefreshCw size={17} aria-hidden="true" />
+        Atnaujinti
+      </button>
+      {canCreateInvites && <Link className="primary-button compact-primary-button" to="/units?panel=invite"><UserPlus size={17} aria-hidden="true" />Pakviesti narį</Link>}
+    </>
   );
 
   return (
@@ -130,7 +144,7 @@ export function MembersPage() {
           />
         )}
         {canViewMembers && !isLoading && !error && filteredMembers.length > 0 && (
-          <MembersTable members={filteredMembers} onOpen={setSelectedMember} />
+          <MembersTable members={filteredMembers} units={units} onOpen={setSelectedMember} />
         )}
         {canViewMembers && !error && members.length > 0 && <SkautaiTableFooter meta={`${filteredMembers.length} rodoma · ${total} iš viso`} />}
       </section>
@@ -151,7 +165,7 @@ export function MembersPage() {
   );
 }
 
-function MembersTable({ members, onOpen }: { members: Member[]; onOpen: (member: Member) => void }) {
+function MembersTable({ members, units, onOpen }: { members: Member[]; units: OrganizationalUnit[]; onOpen: (member: Member) => void }) {
   const columns: Array<SkautaiDataTableColumn<Member>> = [
     {
       key: "member",
@@ -174,7 +188,7 @@ function MembersTable({ members, onOpen }: { members: Member[]; onOpen: (member:
     {
       key: "unit",
       header: "Vienetas",
-      cell: (member) => summarizeUnits(member)
+      cell: (member) => <MemberUnitPills member={member} units={units} />
     },
     {
       key: "contact",
@@ -201,7 +215,7 @@ function MembersTable({ members, onOpen }: { members: Member[]; onOpen: (member:
       mobileLabel: "Veiksmai",
       className: "table-actions-cell",
       cell: (member) => (
-        <button className="icon-button" type="button" onClick={() => onOpen(member)} aria-label={`Peržiūrėti ${displayName(member)}`} title="Peržiūrėti">
+        <button className="icon-button" type="button" disabled={member.isIdentityHidden} onClick={() => onOpen(member)} aria-label={`Peržiūrėti ${displayName(member)}`} title={member.isIdentityHidden ? "Tapatybė ribojama" : "Peržiūrėti"}>
           <Eye size={17} aria-hidden="true" />
         </button>
       )
@@ -209,6 +223,28 @@ function MembersTable({ members, onOpen }: { members: Member[]; onOpen: (member:
   ];
 
   return <SkautaiDataTable rows={members} columns={columns} getRowKey={(member) => member.userId} className="management-data-table members-data-table" />;
+}
+
+function MemberUnitPills({ member, units }: { member: Member; units: OrganizationalUnit[] }) {
+  const assignments = safeUnitAssignments(member);
+  const fallbackLeadershipUnits = safeLeadershipRoles(member)
+    .filter((role) => role.organizationalUnitId && role.organizationalUnitName)
+    .map((role) => ({ organizationalUnitId: role.organizationalUnitId!, organizationalUnitName: role.organizationalUnitName!, assignmentType: "LEADERSHIP" }));
+  const memberships: Array<{ organizationalUnitId: string; organizationalUnitName: string; assignmentType: string }> = assignments.length > 0
+    ? assignments.map((assignment) => ({
+        organizationalUnitId: assignment.organizationalUnitId,
+        organizationalUnitName: assignment.organizationalUnitName,
+        assignmentType: assignment.assignmentType
+      }))
+    : fallbackLeadershipUnits;
+  if (memberships.length === 0) return <span>Be vieneto</span>;
+
+  return <div className="member-unit-pill-list">{memberships.map((assignment) => {
+    const unit = units.find((candidate) => candidate.id === assignment.organizationalUnitId);
+    return <span className={`member-unit-pill ${unit ? unitPaletteClass(unit) : "unit-palette-default"}`} key={`${assignment.organizationalUnitId}-${assignment.assignmentType}`}>
+      {assignment.organizationalUnitName}
+    </span>;
+  })}</div>;
 }
 
 function MemberDetailsPanel({ member, onClose }: { member: Member | null; onClose: () => void }) {

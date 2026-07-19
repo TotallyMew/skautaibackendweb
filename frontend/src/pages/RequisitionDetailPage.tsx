@@ -5,7 +5,6 @@ import { api } from "../api/client";
 import type { AddRequisitionItemToInventoryRequest, Item, OrganizationalUnit, Requisition, RequisitionItem } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { finiteCount, requisitionActionLabel, requestTypeLabel, reviewLevelLabel, reviewStatusLabel, statusLabel } from "../utils/display";
-import { hasAnyPermission, hasPermission } from "../utils/permissions";
 
 type InventoryAction = "NEW_ITEM" | "RESTOCK_EXISTING";
 
@@ -48,7 +47,7 @@ export function RequisitionDetailPage() {
       const nextRequest = await api.getRequisition(auth.token, auth.activeTuntasId, requisitionId);
       setRequest(nextRequest);
 
-      if (nextRequest.status === "PURCHASED" && hasPermission(auth.permissions, "items.create")) {
+      if (nextRequest.capabilities?.canAddToInventory) {
         const [itemsResponse, unitsResponse] = await Promise.all([
           api.listItems(auth.token, auth.activeTuntasId, { status: "ACTIVE", limit: 200, offset: 0 }).catch(() => null),
           api.listOrganizationalUnits(auth.token, auth.activeTuntasId).catch(() => null)
@@ -69,7 +68,7 @@ export function RequisitionDetailPage() {
     } finally {
       if (showLoading) setIsLoading(false);
     }
-  }, [auth?.activeTuntasId, auth?.permissions, auth?.token, requisitionId]);
+  }, [auth?.activeTuntasId, auth?.token, requisitionId]);
 
   useEffect(() => {
     void refreshRequest(true);
@@ -91,19 +90,11 @@ export function RequisitionDetailPage() {
     }
   }
 
-  const isOwner = request?.createdByUserId === auth?.userId;
-  const canUnitReview = Boolean(
-    request?.requestingUnitId &&
-    !isOwner &&
-    request.unitReviewStatus === "PENDING" &&
-    ((hasAnyPermission(auth?.permissions, ["items.request.approve.unit", "items.request.forward.bendras"]) &&
-      (auth?.leadershipUnitIds.includes(request.requestingUnitId) ?? false)) ||
-      hasPermission(auth?.permissions, "requisitions.approve"))
-  );
-  const canTopLevelReview = Boolean(!isOwner && request?.topLevelReviewStatus === "PENDING" && hasPermission(auth?.permissions, "requisitions.approve"));
-  const canMarkPurchased = Boolean(request?.status === "APPROVED" && hasPermission(auth?.permissions, "requisitions.approve"));
-  const canAddToInventory = Boolean(request?.status === "PURCHASED" && hasPermission(auth?.permissions, "items.create"));
-  const canDelete = Boolean(isOwner && request && !["APPROVED", "REJECTED", "CANCELLED"].includes(request.status));
+  const canUnitReview = request?.capabilities?.canReviewUnit === true;
+  const canTopLevelReview = request?.capabilities?.canReviewTopLevel === true;
+  const canMarkPurchased = request?.capabilities?.canMarkPurchased === true;
+  const canAddToInventory = request?.capabilities?.canAddToInventory === true;
+  const canDelete = request?.capabilities?.canCancel === true;
   const pendingInventoryItems = request?.items.filter((item) => item.itemId == null) ?? [];
 
   function review(level: "unit" | "top", action: "APPROVED" | "FORWARDED" | "REJECTED") {

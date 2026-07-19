@@ -194,6 +194,12 @@ export function finiteCount(value: unknown) {
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
 }
 
+export function displayTitle(value: string) {
+  const normalized = value.trim();
+  if (!normalized) return value;
+  return normalized.charAt(0).toLocaleUpperCase("lt-LT") + normalized.slice(1);
+}
+
 export function codeLabel(value: string) {
   const normalized = value.trim().replaceAll("_", " ").toLocaleLowerCase("lt-LT");
   if (!normalized) return "—";

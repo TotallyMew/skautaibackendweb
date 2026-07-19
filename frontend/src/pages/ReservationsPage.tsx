@@ -6,7 +6,7 @@ import type { Reservation, ReservationListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { SkautaiDataTable, SkautaiEmptyState, SkautaiErrorState, SkautaiPageShell, SkautaiStatusPill, SkautaiTableFooter, SkautaiToolbar, type SkautaiDataTableColumn } from "../components/ui/Skautai";
 import { countLabel, finiteCount, reservationStatusLabel, reviewStatusLabel } from "../utils/display";
-import { canViewReservations, hasPermission } from "../utils/permissions";
+import { canViewReservations } from "../utils/permissions";
 
 const pageSize = 25;
 
@@ -32,7 +32,7 @@ export function ReservationsPage() {
   const [error, setError] = useState<string | null>(null);
 
   const canView = canViewReservations(auth?.permissions);
-  const canCreate = hasPermission(auth?.permissions, "reservations.create");
+  const canCreate = reservationsState?.capabilities.canCreate === true;
   const canFetch = Boolean(auth?.token && auth.activeTuntasId && canView);
 
   useEffect(() => {

@@ -19,10 +19,11 @@ import lt.skautai.models.responses.ErrorResponse
 import lt.skautai.models.responses.MessageResponse
 import lt.skautai.plugins.checkPermission
 import lt.skautai.services.InventoryTemplateService
+import lt.skautai.services.EventService
 import lt.skautai.services.PermissionContextService
 import java.util.UUID
 
-fun Route.inventoryTemplateRoutes(service: InventoryTemplateService, apiPrefix: String = "/api") {
+fun Route.inventoryTemplateRoutes(service: InventoryTemplateService, eventService: EventService, apiPrefix: String = "/api") {
     authenticate("auth-jwt") {
         route("$apiPrefix/inventory-templates") {
             get {
@@ -72,8 +73,10 @@ fun Route.inventoryTemplateRoutes(service: InventoryTemplateService, apiPrefix: 
             val principal = call.principal<JWTPrincipal>()!!
             val userId = UUID.fromString(principal.getClaim("userId", String::class))
             val tuntasUUID = call.tuntasIdOrRespond() ?: return@post
-            if (!checkPermission("events.manage", tuntasUUID, null)) return@post
             val eventUUID = call.eventIdOrRespond() ?: return@post
+            if (!eventService.canManageEventInventory(eventUUID, tuntasUUID, userId)) {
+                return@post call.respond(HttpStatusCode.Forbidden, ErrorResponse("Insufficient permissions"))
+            }
             val request = call.receiveValidated<ApplyInventoryTemplateRequest>()
             val templateUUID = try {
                 UUID.fromString(request.templateId)
@@ -89,8 +92,10 @@ fun Route.inventoryTemplateRoutes(service: InventoryTemplateService, apiPrefix: 
             val principal = call.principal<JWTPrincipal>()!!
             val userId = UUID.fromString(principal.getClaim("userId", String::class))
             val tuntasUUID = call.tuntasIdOrRespond() ?: return@post
-            if (!checkPermission("events.manage", tuntasUUID, null)) return@post
             val eventUUID = call.eventIdOrRespond() ?: return@post
+            if (!eventService.canManageEventInventory(eventUUID, tuntasUUID, userId)) {
+                return@post call.respond(HttpStatusCode.Forbidden, ErrorResponse("Insufficient permissions"))
+            }
             val request = call.receiveValidated<ApplyInventoryTemplateRequest>()
             val templateUUID = try {
                 UUID.fromString(request.templateId)

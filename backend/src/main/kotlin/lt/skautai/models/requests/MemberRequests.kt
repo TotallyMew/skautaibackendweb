@@ -16,7 +16,10 @@ data class UpdateLeadershipRoleRequest(
     val startsAt: String? = null,
     val expiresAt: String? = null,
     val termStatus: String? = null,
-    val organizationalUnitId: String? = null
+    val organizationalUnitId: String? = null,
+    val clearStartsAt: Boolean = false,
+    val clearExpiresAt: Boolean = false,
+    val clearOrganizationalUnitId: Boolean = false
 )
 
 @Serializable

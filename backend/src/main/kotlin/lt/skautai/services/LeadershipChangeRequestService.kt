@@ -16,6 +16,7 @@ import lt.skautai.models.responses.LeadershipChangeRequestResponse
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.inList
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.innerJoin
@@ -83,7 +84,8 @@ class LeadershipChangeRequestService {
 
             val rows = LeadershipChangeRequests.selectAll()
                 .where {
-                    val base = LeadershipChangeRequests.tuntasId eq tuntasId
+                    val base = (LeadershipChangeRequests.tuntasId eq tuntasId) and
+                        (LeadershipChangeRequests.requesterUserId neq callerUserId)
                     status?.let { base and (LeadershipChangeRequests.status eq it) } ?: base
                 }
                 .toList()
@@ -114,6 +116,9 @@ class LeadershipChangeRequestService {
 
         if (pending[LeadershipChangeRequests.status] != "PENDING") {
             return@transaction Result.failure(Exception("Leadership change request is already resolved"))
+        }
+        if (pending[LeadershipChangeRequests.requesterUserId] == reviewerUserId) {
+            return@transaction Result.failure(Exception("You cannot review your own leadership change request"))
         }
 
         when (request.action.uppercase()) {

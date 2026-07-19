@@ -177,7 +177,7 @@ class MemberService {
                 }
             }
 
-            if (orgUnitUUID != null) {
+            val orgUnitType = orgUnitUUID?.let {
                 OrganizationalUnits.selectAll()
                     .where {
                         (OrganizationalUnits.id eq orgUnitUUID) and
@@ -185,9 +185,11 @@ class MemberService {
                     }
                     .firstOrNull()
                     ?: return@transaction Result.failure(Exception("Organizational unit not found in this tuntas"))
-            }
+            }?.get(OrganizationalUnits.type)
 
             LeadershipRoleRules.validateOrganizationalUnitScope(role[Roles.name], orgUnitUUID)
+                ?.let { return@transaction Result.failure(Exception(it)) }
+            LeadershipRoleRules.validateOrganizationalUnitType(role[Roles.name], orgUnitType)
                 ?.let { return@transaction Result.failure(Exception(it)) }
 
             LeadershipRoleRules.validatePrincipalUnitLeaderSlot(roleUUID, tuntasId, orgUnitUUID)
@@ -255,6 +257,16 @@ class MemberService {
                 .firstOrNull()
                 ?: return@transaction Result.failure(Exception("Leadership role assignment not found"))
 
+            if (request.clearStartsAt && request.startsAt != null) {
+                return@transaction Result.failure(Exception("startsAt cannot be set and cleared at the same time"))
+            }
+            if (request.clearExpiresAt && request.expiresAt != null) {
+                return@transaction Result.failure(Exception("expiresAt cannot be set and cleared at the same time"))
+            }
+            if (request.clearOrganizationalUnitId && request.organizationalUnitId != null) {
+                return@transaction Result.failure(Exception("organizationalUnitId cannot be set and cleared at the same time"))
+            }
+
             request.termStatus?.let {
                 if (it !in listOf("ACTIVE", "COMPLETED", "RESIGNED")) {
                     return@transaction Result.failure(Exception("Invalid term status"))
@@ -305,12 +317,25 @@ class MemberService {
             }
 
             val finalStatus = request.termStatus ?: assignment[UserLeadershipRoles.termStatus]
-            val finalOrgUnit = orgUnitUUID ?: assignment[UserLeadershipRoles.organizationalUnitId]
+            val finalOrgUnit = when {
+                request.clearOrganizationalUnitId -> null
+                orgUnitUUID != null -> orgUnitUUID
+                else -> assignment[UserLeadershipRoles.organizationalUnitId]
+            }
             if (finalStatus == "ACTIVE") {
                 val roleName = Roles.selectAll()
                     .where { Roles.id eq assignment[UserLeadershipRoles.roleId] }
                     .first()[Roles.name]
                 LeadershipRoleRules.validateOrganizationalUnitScope(roleName, finalOrgUnit)
+                    ?.let { return@transaction Result.failure(Exception(it)) }
+                val finalOrgUnitType = finalOrgUnit?.let { unitId ->
+                    OrganizationalUnits.selectAll()
+                        .where { (OrganizationalUnits.id eq unitId) and (OrganizationalUnits.tuntasId eq tuntasId) }
+                        .firstOrNull()
+                        ?.get(OrganizationalUnits.type)
+                        ?: return@transaction Result.failure(Exception("Organizational unit not found in this tuntas"))
+                }
+                LeadershipRoleRules.validateOrganizationalUnitType(roleName, finalOrgUnitType)
                     ?.let { return@transaction Result.failure(Exception(it)) }
                 LeadershipRoleRules.validatePrincipalUnitLeaderSlot(
                     roleId = assignment[UserLeadershipRoles.roleId],
@@ -326,9 +351,18 @@ class MemberService {
                         (UserLeadershipRoles.tuntasId eq tuntasId)
             }) {
                 request.termStatus?.let { v -> it[termStatus] = v }
-                startsAt?.let { v -> it[UserLeadershipRoles.startsAt] = v }
-                expiresAt?.let { v -> it[UserLeadershipRoles.expiresAt] = v }
-                orgUnitUUID?.let { v -> it[organizationalUnitId] = v }
+                when {
+                    request.clearStartsAt -> it[UserLeadershipRoles.startsAt] = null
+                    startsAt != null -> it[UserLeadershipRoles.startsAt] = startsAt
+                }
+                when {
+                    request.clearExpiresAt -> it[UserLeadershipRoles.expiresAt] = null
+                    expiresAt != null -> it[UserLeadershipRoles.expiresAt] = expiresAt
+                }
+                when {
+                    request.clearOrganizationalUnitId -> it[organizationalUnitId] = null
+                    orgUnitUUID != null -> it[organizationalUnitId] = orgUnitUUID
+                }
                 when (request.termStatus) {
                     "ACTIVE" -> it[leftAt] = null
                     "COMPLETED", "RESIGNED" -> it[leftAt] = kotlinx.datetime.Clock.System.now()

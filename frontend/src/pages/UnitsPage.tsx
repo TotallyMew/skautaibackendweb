@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { ClipboardCopy, Edit3, Loader2, Network, Plus, RefreshCw, ShieldCheck, Trash2, UserMinus, UserPlus, UsersRound } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { ApiError, api } from "../api/client";
-import type { InvitationResponse, Member, OrganizationalUnit, Role, UnitMembership } from "../api/types";
+import type { InvitationResponse, InvitationRoleOption, Member, OrganizationalUnit, Role, UnitMembership } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import {
   SkautaiConfirmDialog,
@@ -15,6 +16,7 @@ import {
 } from "../components/ui/Skautai";
 import { assignmentTypeLabel, countLabel, roleLabel } from "../utils/display";
 import { canUseUnits, hasPermission } from "../utils/permissions";
+import { unitPaletteClass, unitTypeSortOrder } from "../utils/unitPalette";
 
 type UnitForm = {
   name: string;
@@ -58,8 +60,10 @@ const seniorSubtypeOptions = [
 
 export function UnitsPage() {
   const { auth } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [units, setUnits] = useState<OrganizationalUnit[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [invitationRoleOptions, setInvitationRoleOptions] = useState<InvitationRoleOption[]>([]);
   const [unitForm, setUnitForm] = useState<UnitForm>(emptyUnitForm);
   const [inviteForm, setInviteForm] = useState<InviteForm>(emptyInviteForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,9 +101,16 @@ export function UnitsPage() {
   const canFetch = Boolean(auth?.token && auth.activeTuntasId && (canViewUnits || canManageUnits || canManageUnitMembers || canCreateInvites));
 
   useEffect(() => {
+    if (searchParams.get("panel") === "invite" && canCreateInvites) {
+      setIsInvitePanelOpen(true);
+    }
+  }, [canCreateInvites, searchParams]);
+
+  useEffect(() => {
     if (!auth?.token || !auth.activeTuntasId || !canOpenPage) {
       setUnits([]);
       setRoles([]);
+      setInvitationRoleOptions([]);
       setIsLoading(false);
       return;
     }
@@ -112,14 +123,18 @@ export function UnitsPage() {
       canViewUnits
         ? api.listOrganizationalUnits(auth.token, auth.activeTuntasId).catch(() => ({ units: [], total: 0 }))
         : Promise.resolve({ units: [], total: 0 }),
-      (canManageUnits || canCreateInvites)
+      canManageUnits
         ? api.listRoles(auth.token, auth.activeTuntasId).catch(() => ({ roles: [], total: 0 }))
-        : Promise.resolve({ roles: [], total: 0 })
+        : Promise.resolve({ roles: [], total: 0 }),
+      canCreateInvites
+        ? api.getInvitationOptions(auth.token, auth.activeTuntasId).catch(() => ({ roles: [] }))
+        : Promise.resolve({ roles: [] })
     ])
-      .then(([unitResponse, roleResponse]) => {
+      .then(([unitResponse, roleResponse, invitationOptionsResponse]) => {
         if (isCancelled) return;
         setUnits(unitResponse.units.map(normalizeUnitCounts));
         setRoles(roleResponse.roles);
+        setInvitationRoleOptions(invitationOptionsResponse.roles);
       })
       .catch((cause) => {
         if (!isCancelled) {
@@ -198,11 +213,10 @@ export function UnitsPage() {
     [roles]
   );
 
-  const inviteRoles = useMemo(
-    () => roles
-      .filter((role) => role.name !== "tuntininkas")
-      .sort((left, right) => roleLabel(left.name).localeCompare(roleLabel(right.name), "lt")),
-    [roles]
+  const inviteRoleOptions = useMemo(
+    () => [...invitationRoleOptions]
+      .sort((left, right) => roleLabel(left.role.name).localeCompare(roleLabel(right.role.name), "lt")),
+    [invitationRoleOptions]
   );
 
   const totalMembers = sortedUnits.reduce((sum, unit) => sum + safeCount(unit.memberCount), 0);
@@ -241,6 +255,7 @@ export function UnitsPage() {
   }
 
   function openInvitePanel() {
+    setInviteForm(emptyInviteForm);
     setLatestInvite(null);
     setMessage(null);
     setError(null);
@@ -250,6 +265,11 @@ export function UnitsPage() {
   function closeInvitePanel() {
     if (isCreatingInvite) return;
     setIsInvitePanelOpen(false);
+    if (searchParams.get("panel") === "invite") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("panel");
+      setSearchParams(next, { replace: true });
+    }
   }
 
   function openUnitMembersPanel(unit: OrganizationalUnit) {
@@ -395,6 +415,15 @@ export function UnitsPage() {
     if (!auth?.token || !auth.activeTuntasId || !canCreateInvites) return;
     if (!inviteForm.roleId) {
       setError("Pasirinkite rolę pakvietimui.");
+      return;
+    }
+    const selectedOption = inviteRoleOptions.find((option) => option.role.id === inviteForm.roleId);
+    if (!selectedOption) {
+      setError("Pasirinkta rolÄ— nebepasiekiama.");
+      return;
+    }
+    if (!selectedOption.canInviteWithoutOrganizationalUnit && !inviteForm.organizationalUnitId) {
+      setError("Pasirinkite vienetÄ….");
       return;
     }
 
@@ -574,12 +603,7 @@ export function UnitsPage() {
               ) : (
                 <div className="workspace-card-grid">
                   {unitMembers.map((membership) => {
-                    const memberDetail = tuntasMembers.find((member) => member.userId === membership.userId);
-                    const isCandidate = memberDetail?.ranks?.some((rank) => rank.roleName === "Vyr. skautas kandidatas") ?? false;
-                    const canChangeVisibility = canManageOwnUnitMembers &&
-                      (auth?.leadershipUnitIds.includes(managedUnit.id) ?? false) &&
-                      ["VYR_SKAUTU_VIENETAS", "VYR_SKAUCIU_VIENETAS"].includes(managedUnit.type) &&
-                      isCandidate;
+                    const canChangeVisibility = membership.canManageVisibility;
                     return (
                       <article className="workspace-summary-card" key={membership.id}>
                         <span className="record-icon"><UsersRound size={17} aria-hidden="true" /></span>
@@ -624,10 +648,9 @@ export function UnitsPage() {
         <InviteFormCard
           canCreateInvites={canCreateInvites}
           inviteForm={inviteForm}
-          inviteRoles={inviteRoles}
+          inviteRoleOptions={inviteRoleOptions}
           isCreatingInvite={isCreatingInvite}
           latestInvite={latestInvite}
-          units={sortedUnits}
           onInviteFormChange={setInviteForm}
           onSubmit={createInvite}
         />
@@ -838,38 +861,53 @@ function UnitFormCard({
 function InviteFormCard({
   canCreateInvites,
   inviteForm,
-  inviteRoles,
+  inviteRoleOptions,
   isCreatingInvite,
   latestInvite,
-  units,
   onInviteFormChange,
   onSubmit
 }: {
   canCreateInvites: boolean;
   inviteForm: InviteForm;
-  inviteRoles: Role[];
+  inviteRoleOptions: InvitationRoleOption[];
   isCreatingInvite: boolean;
   latestInvite: InvitationResponse | null;
-  units: OrganizationalUnit[];
   onInviteFormChange: (value: InviteForm | ((current: InviteForm) => InviteForm)) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const selectedOption = inviteRoleOptions.find((option) => option.role.id === inviteForm.roleId);
+  const units = selectedOption?.organizationalUnits ?? [];
+  const requiresUnit = selectedOption?.canInviteWithoutOrganizationalUnit === false;
+
+  function handleInviteRoleChange(roleId: string) {
+    const option = inviteRoleOptions.find((candidate) => candidate.role.id === roleId);
+    const organizationalUnitId = option && !option.canInviteWithoutOrganizationalUnit && option.organizationalUnits.length === 1
+      ? option.organizationalUnits[0].id
+      : "";
+    onInviteFormChange((current) => ({ ...current, roleId, organizationalUnitId }));
+  }
+
   return (
     <form className="form-panel unit-invite-form" onSubmit={onSubmit}>
       <fieldset disabled={!canCreateInvites || isCreatingInvite}>
         <div className="form-grid one-column-grid">
           <label className="form-field">
             <span>Rolė *</span>
-            <select value={inviteForm.roleId} onChange={(event) => onInviteFormChange((current) => ({ ...current, roleId: event.target.value }))} required>
+            <select value={inviteForm.roleId} onChange={(event) => handleInviteRoleChange(event.target.value)} required>
               <option value="">Pasirinkite rolę</option>
-              {inviteRoles.map((role) => (
+              {inviteRoleOptions.map(({ role }) => (
                 <option key={role.id} value={role.id}>{roleLabel(role.name)} ({role.roleType === "RANK" ? "laipsnis" : "pareigos"})</option>
               ))}
             </select>
           </label>
           <label className="form-field">
             <span>Vienetas</span>
-            <select value={inviteForm.organizationalUnitId} onChange={(event) => onInviteFormChange((current) => ({ ...current, organizationalUnitId: event.target.value }))}>
+            <select
+              value={inviteForm.organizationalUnitId}
+              onChange={(event) => onInviteFormChange((current) => ({ ...current, organizationalUnitId: event.target.value }))}
+              disabled={!selectedOption}
+              required={requiresUnit}
+            >
               <option value="">Tunto lygmuo</option>
               {units.map((unit) => (
                 <option key={unit.id} value={unit.id}>{unit.name}</option>
@@ -921,61 +959,6 @@ function TextField({
       <input type={type} value={value} onChange={(event) => onChange(event.target.value)} required={required} />
     </label>
   );
-}
-
-type UnitTone = "patyre" | "skautai" | "vilkai" | "gildija" | "vyr-skautai" | "vyr-skautes" | "default";
-
-function unitPaletteClass(unit: OrganizationalUnit) {
-  return `unit-palette-${resolveUnitTone(unit)}`;
-}
-
-function resolveUnitTone(unit: OrganizationalUnit): UnitTone {
-  switch (unit.type) {
-    case "PATYRUSIU_SKAUTU_DRAUGOVE":
-      return "patyre";
-    case "SKAUTU_DRAUGOVE":
-      return "skautai";
-    case "VILKU_DRAUGOVE":
-      return "vilkai";
-    case "GILDIJA":
-      return "gildija";
-    case "VYR_SKAUTU_VIENETAS":
-      return "vyr-skautai";
-    case "VYR_SKAUCIU_VIENETAS":
-      return "vyr-skautes";
-    default:
-      break;
-  }
-
-  switch (unit.subType) {
-    case "PATYRE_SKAUTAI":
-      return "patyre";
-    case "SKAUTAI":
-      return "skautai";
-    case "VILKAI":
-      return "vilkai";
-    case "VADOVAI":
-      return "gildija";
-    case "VYR_SKAUTAI":
-      return "vyr-skautai";
-    case "VYR_SKAUTES":
-      return "vyr-skautes";
-    default:
-      return "default";
-  }
-}
-
-function unitTypeSortOrder(unit: OrganizationalUnit) {
-  const order: Record<UnitTone, number> = {
-    "vyr-skautai": 0,
-    "vyr-skautes": 1,
-    gildija: 2,
-    patyre: 3,
-    skautai: 4,
-    vilkai: 5,
-    default: 6
-  };
-  return order[resolveUnitTone(unit)];
 }
 
 function unitDisplayTypeLabel(unit: OrganizationalUnit) {

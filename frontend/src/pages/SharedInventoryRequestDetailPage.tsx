@@ -5,7 +5,6 @@ import { api } from "../api/client";
 import type { SharedInventoryRequest } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
 import { reviewStatusLabel, statusLabel } from "../utils/display";
-import { hasPermission } from "../utils/permissions";
 
 export function SharedInventoryRequestDetailPage() {
   const { requestId } = useParams();
@@ -72,22 +71,9 @@ export function SharedInventoryRequestDetailPage() {
     void runAction("cancel", "Prašymas atšauktas.", () => api.deleteSharedInventoryRequest(auth.token, auth.activeTuntasId!, requestId));
   }
 
-  const isOwner = request?.requestedByUserId === auth?.userId;
-  const canForward = Boolean(
-    request?.needsDraugininkasApproval &&
-    !isOwner &&
-    request.draugininkasStatus === "PENDING" &&
-    request.requestingUnitId &&
-    auth?.leadershipUnitIds.includes(request.requestingUnitId) &&
-    hasPermission(auth?.permissions, "items.request.forward.bendras")
-  );
-  const canTopLevelReview = Boolean(
-    request?.topLevelStatus === "PENDING" &&
-    !isOwner &&
-    (!request.needsDraugininkasApproval || request.draugininkasStatus === "FORWARDED") &&
-    hasPermission(auth?.permissions, "items.request.approve.bendras")
-  );
-  const canCancel = Boolean(isOwner && request?.topLevelStatus === "PENDING");
+  const canForward = request?.capabilities?.canReviewUnit === true;
+  const canTopLevelReview = request?.capabilities?.canReviewTopLevel === true;
+  const canCancel = request?.capabilities?.canCancel === true;
 
   return (
     <section className="detail-page">

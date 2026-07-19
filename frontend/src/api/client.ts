@@ -12,6 +12,7 @@ import type {
   EventListFilters,
   EventListResponse,
   ForgotPasswordRequest,
+  InvitationOptionsResponse,
   InvitationResponse,
   Item,
   ItemListFilters,
@@ -342,6 +343,12 @@ export const api = {
       body
     }),
 
+  getInvitationOptions: (token: string, tuntasId: string) =>
+    request<InvitationOptionsResponse>("/api/invitations/options", {
+      token,
+      tuntasId
+    }),
+
   listRoles: (token: string, tuntasId: string) =>
     request<RoleListResponse>("/api/roles", {
       token,
@@ -612,6 +619,12 @@ export const api = {
       query: { startDate, endDate }
     }),
 
+  getReservationCreateOptions: (token: string, tuntasId: string) =>
+    request<ApiTypes.ReservationCreateOptionsResponse>("/api/reservations/create-options", {
+      token,
+      tuntasId
+    }),
+
   reviewReservationUnit: (token: string, tuntasId: string, reservationId: string, body: ApiTypes.ReviewReservationRequest) =>
     request<Reservation>(`/api/reservations/${reservationId}/unit-review`, {
       token,
@@ -796,34 +809,34 @@ export const api = {
     }).then(normalizeMember),
 
   assignLeadershipRole: (token: string, tuntasId: string, userId: string, body: ApiTypes.AssignLeadershipRoleRequest) =>
-    request<Member>(`/api/members/${userId}/leadership-roles`, {
+    request<ApiTypes.MemberLeadershipRole>(`/api/members/${userId}/leadership-roles`, {
       token,
       tuntasId,
       method: "POST",
       body
-    }).then(normalizeMember),
+    }),
 
   updateLeadershipRole: (token: string, tuntasId: string, userId: string, assignmentId: string, body: ApiTypes.UpdateLeadershipRoleRequest) =>
-    request<Member>(`/api/members/${userId}/leadership-roles/${assignmentId}`, {
+    request<ApiTypes.MemberLeadershipRole>(`/api/members/${userId}/leadership-roles/${assignmentId}`, {
       token,
       tuntasId,
       method: "PUT",
       body
-    }).then(normalizeMember),
+    }),
 
   deleteLeadershipRole: (token: string, tuntasId: string, userId: string, assignmentId: string) =>
-    request<Member>(`/api/members/${userId}/leadership-roles/${assignmentId}`, {
+    request<MessageResponse>(`/api/members/${userId}/leadership-roles/${assignmentId}`, {
       token,
       tuntasId,
       method: "DELETE"
-    }).then(normalizeMember),
+    }),
 
   stepDownLeadershipRole: (token: string, tuntasId: string, assignmentId: string) =>
-    request<Member>(`/api/members/me/leadership-roles/${assignmentId}/step-down`, {
+    request<MessageResponse>(`/api/members/me/leadership-roles/${assignmentId}/step-down`, {
       token,
       tuntasId,
       method: "POST"
-    }).then(normalizeMember),
+    }),
 
   requestLeadershipResignation: (token: string, tuntasId: string, assignmentId: string, body: ApiTypes.CreateLeadershipChangeRequest) =>
     request<ApiTypes.LeadershipChangeRequest>(`/api/members/me/leadership-roles/${assignmentId}/resignation-request`, {
@@ -831,6 +844,13 @@ export const api = {
       tuntasId,
       method: "POST",
       body
+    }),
+
+  listLeadershipChangeRequests: (token: string, tuntasId: string, status = "PENDING") =>
+    request<ApiTypes.LeadershipChangeRequestListResponse>("/api/leadership-change-requests", {
+      token,
+      tuntasId,
+      query: { status }
     }),
 
   transferTuntininkas: (token: string, tuntasId: string, body: ApiTypes.TransferTuntininkasRequest) =>
@@ -842,19 +862,19 @@ export const api = {
     }),
 
   assignRank: (token: string, tuntasId: string, userId: string, body: ApiTypes.AssignRankRequest) =>
-    request<Member>(`/api/members/${userId}/ranks`, {
+    request<ApiTypes.MemberRank>(`/api/members/${userId}/ranks`, {
       token,
       tuntasId,
       method: "POST",
       body
-    }).then(normalizeMember),
+    }),
 
   deleteRank: (token: string, tuntasId: string, userId: string, rankId: string) =>
-    request<Member>(`/api/members/${userId}/ranks/${rankId}`, {
+    request<MessageResponse>(`/api/members/${userId}/ranks/${rankId}`, {
       token,
       tuntasId,
       method: "DELETE"
-    }).then(normalizeMember),
+    }),
 
   removeMember: (token: string, tuntasId: string, userId: string) =>
     request<MessageResponse>(`/api/members/${userId}/remove`, {

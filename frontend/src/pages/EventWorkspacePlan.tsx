@@ -1,7 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Boxes, Edit3, PackagePlus, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { api } from "../api/client";
-import type { EventInventoryItem, EventInventoryPlan, EventInventoryReadiness, Item, Member } from "../api/types";
+import type { EventInventoryItem, EventInventoryPlan, EventInventoryReadiness, Item, Member, Pastovykle } from "../api/types";
 import { SkautaiEmptyState, SkautaiErrorState, SkautaiStatusPill } from "../components/ui/Skautai";
 import type { EventWorkspaceContext } from "./EventWorkspacePage";
 
@@ -10,8 +10,10 @@ export function EventPlanSection({ context }: { context: EventWorkspaceContext }
   const [readiness, setReadiness] = useState<EventInventoryReadiness | null>(null);
   const [inventory, setInventory] = useState<Item[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [pastovykles, setPastovykles] = useState<Pastovykle[]>([]);
   const [bucketName, setBucketName] = useState("");
-  const [bucketType, setBucketType] = useState("GENERAL");
+  const [bucketType, setBucketType] = useState("OTHER");
+  const [bucketPastovykleId, setBucketPastovykleId] = useState("");
   const [bucketNotes, setBucketNotes] = useState("");
   const [editingItem, setEditingItem] = useState<EventInventoryItem | null>(null);
   const [itemId, setItemId] = useState("");
@@ -31,14 +33,17 @@ export function EventPlanSection({ context }: { context: EventWorkspaceContext }
   const [message, setMessage] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    const [planResponse, readinessResponse, itemResponse, memberResponse] = await Promise.all([
+    const [planResponse, readinessResponse, itemResponse, memberResponse, pastovykleResponse] = await Promise.all([
       api.getEventInventoryPlan(context.token, context.tuntasId, context.event.id),
       api.getEventInventoryReadiness(context.token, context.tuntasId, context.event.id).catch(() => null),
       api.listItems(context.token, context.tuntasId, { status: "ACTIVE", limit: 200, offset: 0 }).catch(() => ({ items: [], total: 0, offset: 0, hasMore: false })),
-      api.listEventCandidateMembers(context.token, context.tuntasId, context.event.id).catch(() => ({ members: [], total: 0 }))
+      api.listEventCandidateMembers(context.token, context.tuntasId, context.event.id).catch(() => ({ members: [], total: 0 })),
+      context.event.type === "STOVYKLA"
+        ? api.listEventPastovykles(context.token, context.tuntasId, context.event.id).catch(() => ({ pastovykles: [], total: 0 }))
+        : Promise.resolve({ pastovykles: [], total: 0 })
     ]);
-    setPlan(planResponse); setReadiness(readinessResponse); setInventory(itemResponse.items); setMembers(memberResponse.members);
-  }, [context.event.id, context.token, context.tuntasId]);
+    setPlan(planResponse); setReadiness(readinessResponse); setInventory(itemResponse.items); setMembers(memberResponse.members); setPastovykles(pastovykleResponse.pastovykles);
+  }, [context.event.id, context.event.type, context.token, context.tuntasId]);
 
   useEffect(() => { refresh().catch((cause) => setError(messageOf(cause, "Inventoriaus plano įkelti nepavyko."))); }, [refresh]);
 
@@ -51,15 +56,21 @@ export function EventPlanSection({ context }: { context: EventWorkspaceContext }
 
   function createBucket(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!bucketName.trim()) return;
-    void execute("bucket", "Plano grupė sukurta.", () => api.createEventInventoryBucket(context.token, context.tuntasId, context.event.id, { name: bucketName.trim(), type: bucketType, notes: optional(bucketNotes) })).then(() => { setBucketName(""); setBucketNotes(""); });
+    if (bucketType === "PASTOVYKLE" && !bucketPastovykleId) { setError("Pasirinkite pastovyklę."); return; }
+    void execute("bucket", "Plano grupė sukurta.", () => api.createEventInventoryBucket(context.token, context.tuntasId, context.event.id, { name: bucketName.trim(), type: bucketType, pastovykleId: bucketType === "PASTOVYKLE" ? bucketPastovykleId : null, notes: optional(bucketNotes) })).then(() => { setBucketName(""); setBucketNotes(""); setBucketPastovykleId(""); });
   }
 
   function saveItem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const quantity = positiveInteger(plannedQuantity); const selectedItem = inventory.find((candidate) => candidate.id === itemId);
-    if (!quantity || (!selectedItem && !itemName.trim())) { setError("Nurodykite daiktą arba pavadinimą ir tinkamą kiekį."); return; }
-    const body = { itemId: selectedItem?.id ?? null, name: selectedItem?.name ?? itemName.trim(), plannedQuantity: quantity, bucketId: optional(bucketId), responsibleUserId: optional(responsibleUserId), notes: optional(itemNotes) };
-    const operation = editingItem ? () => api.updateEventInventoryItem(context.token, context.tuntasId, context.event.id, editingItem.id, body) : () => api.createEventInventoryItem(context.token, context.tuntasId, context.event.id, body);
+    if (!quantity || (!selectedItem && !itemName.trim() && !editingItem?.itemId)) { setError("Nurodykite daiktą arba pavadinimą ir tinkamą kiekį."); return; }
+    const operation = editingItem
+      ? () => api.updateEventInventoryItem(context.token, context.tuntasId, context.event.id, editingItem.id, {
+        name: editingItem.itemId ? editingItem.name : itemName.trim(), plannedQuantity: quantity,
+        bucketId: optional(bucketId), responsibleUserId: optional(responsibleUserId), notes: optional(itemNotes),
+        clearBucketId: !bucketId, clearResponsibleUserId: !responsibleUserId, clearNotes: !itemNotes.trim()
+      })
+      : () => api.createEventInventoryItem(context.token, context.tuntasId, context.event.id, { itemId: selectedItem?.id ?? null, name: selectedItem?.name ?? itemName.trim(), plannedQuantity: quantity, bucketId: optional(bucketId), responsibleUserId: optional(responsibleUserId), notes: optional(itemNotes) });
     void execute("item", editingItem ? "Plano eilutė atnaujinta." : "Plano eilutė sukurta.", operation).then(resetItemForm);
   }
 
@@ -87,8 +98,28 @@ export function EventPlanSection({ context }: { context: EventWorkspaceContext }
     {readiness && readiness.conflicts.length > 0 && <section className="inline-alert"><AlertTriangle size={18} /><div><strong>{readiness.conflicts.length} prieinamumo konfliktai</strong><span>Inventorius persidengia su kitais renginiais; patikrinkite šaltinius.</span></div></section>}
 
     {context.canManageInventory && <div className="event-plan-form-grid">
-      <form className="form-panel event-workspace-form" onSubmit={saveItem}><div className="form-section-heading"><PackagePlus /><div><h3>{editingItem ? "Redaguoti poreikį" : "Naujas poreikis"}</h3><span>Naudokite esamą inventorių arba laisvą pavadinimą pirkimui.</span></div></div><div className="form-grid"><label className="form-field wide"><span>Esamas inventorius</span><select value={itemId} onChange={(event) => { setItemId(event.target.value); if (event.target.value) setItemName(""); }}><option value="">Nepririšti prie esamo įrašo</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.quantity} {item.unitOfMeasure ?? "vnt."}</option>)}</select></label>{!itemId && <label className="form-field wide"><span>Pavadinimas *</span><input value={itemName} onChange={(event) => setItemName(event.target.value)} required /></label>}<label className="form-field"><span>Planuojamas kiekis *</span><input type="number" min="1" step="1" value={plannedQuantity} onChange={(event) => setPlannedQuantity(event.target.value)} required /></label><label className="form-field"><span>Plano grupė</span><select value={bucketId} onChange={(event) => setBucketId(event.target.value)}><option value="">Bendra</option>{plan.buckets.map((bucket) => <option key={bucket.id} value={bucket.id}>{bucket.name}</option>)}</select></label><label className="form-field"><span>Atsakingas</span><select value={responsibleUserId} onChange={(event) => setResponsibleUserId(event.target.value)}><option value="">Nepriskirtas</option>{members.map((member) => <option key={member.userId} value={member.userId}>{memberName(member)}</option>)}</select></label><label className="form-field wide"><span>Pastabos</span><textarea rows={2} value={itemNotes} onChange={(event) => setItemNotes(event.target.value)} /></label></div><div className="form-actions">{editingItem && <button className="secondary-button" type="button" onClick={resetItemForm}>Atšaukti</button>}<button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}>{editingItem ? "Išsaugoti" : "Pridėti poreikį"}</button></div></form>
-      <form className="form-panel event-workspace-form" onSubmit={createBucket}><div className="form-section-heading"><Boxes /><div><h3>Nauja plano grupė</h3><span>Skirstykite pagal vietą, pastovyklę arba paskirtį.</span></div></div><div className="form-grid"><label className="form-field wide"><span>Pavadinimas *</span><input value={bucketName} onChange={(event) => setBucketName(event.target.value)} required /></label><label className="form-field"><span>Tipas</span><select value={bucketType} onChange={(event) => setBucketType(event.target.value)}><option value="GENERAL">Bendra</option><option value="LOCATION">Lokacija</option><option value="PASTOVYKLE">Pastovyklė</option><option value="PROGRAM">Programa</option></select></label><label className="form-field wide"><span>Pastabos</span><textarea rows={2} value={bucketNotes} onChange={(event) => setBucketNotes(event.target.value)} /></label></div><div className="form-actions"><button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}><Plus size={17} />Sukurti grupę</button></div></form>
+      <form className={`form-panel event-workspace-form event-create-panel event-plan-item-form${editingItem ? " is-editing" : ""}`} onSubmit={saveItem}>
+        <div className="form-section-heading"><PackagePlus /><div><h3>{editingItem ? "Redaguoti poreikį" : "Naujas poreikis"}</h3><span>Naudokite esamą inventorių arba laisvą pavadinimą pirkimui.</span></div></div>
+        <div className="form-grid">
+          <label className="form-field wide"><span>Esamas inventorius</span><select id="event-plan-item-source" value={itemId} disabled={Boolean(editingItem)} onChange={(event) => { setItemId(event.target.value); if (event.target.value) setItemName(""); }}><option value="">Nepririšti prie esamo įrašo</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.quantity} {item.unitOfMeasure ?? "vnt."}</option>)}</select>{editingItem && <small>Inventoriaus šaltinis redaguojant nekeičiamas; prireikus sukurkite naują poreikį.</small>}</label>
+          {!itemId && <label className="form-field wide"><span>Pavadinimas *</span><input value={itemName} onChange={(event) => setItemName(event.target.value)} required /></label>}
+          <label className="form-field"><span>Planuojamas kiekis *</span><input type="number" min="1" step="1" value={plannedQuantity} onChange={(event) => setPlannedQuantity(event.target.value)} required /></label>
+          <label className="form-field"><span>Plano grupė</span><select value={bucketId} onChange={(event) => setBucketId(event.target.value)}><option value="">Bendra</option>{plan.buckets.map((bucket) => <option key={bucket.id} value={bucket.id}>{bucket.name}</option>)}</select></label>
+          <label className="form-field"><span>Atsakingas</span><select value={responsibleUserId} onChange={(event) => setResponsibleUserId(event.target.value)}><option value="">Nepriskirtas</option>{members.map((member) => <option key={member.userId} value={member.userId}>{memberName(member)}</option>)}</select></label>
+          <label className="form-field wide"><span>Pastabos</span><textarea rows={2} value={itemNotes} onChange={(event) => setItemNotes(event.target.value)} /></label>
+        </div>
+        <div className="form-actions">{editingItem && <button className="secondary-button" type="button" onClick={resetItemForm}>Atšaukti</button>}<button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}>{editingItem ? "Išsaugoti" : "Pridėti poreikį"}</button></div>
+      </form>
+      <form className="form-panel event-workspace-form event-create-panel event-bucket-form" onSubmit={createBucket}>
+        <div className="form-section-heading"><Boxes /><div><h3>Nauja plano grupė</h3><span>Skirstykite pagal pastovyklę arba inventoriaus paskirtį.</span></div></div>
+        <div className="form-grid">
+          <label className="form-field"><span>Pavadinimas *</span><input value={bucketName} onChange={(event) => setBucketName(event.target.value)} required /></label>
+          <label className="form-field"><span>Tipas</span><select value={bucketType} onChange={(event) => { setBucketType(event.target.value); if (event.target.value !== "PASTOVYKLE") setBucketPastovykleId(""); }}><option value="OTHER">Kita</option><option value="PROGRAM">Programa</option><option value="KITCHEN">Virtuvė</option><option value="ADMIN">Administracija</option><option value="MEDICAL">Medicina</option>{context.event.type === "STOVYKLA" && <option value="PASTOVYKLE">Pastovyklė</option>}</select></label>
+          {bucketType === "PASTOVYKLE" && <label className="form-field wide"><span>Pastovyklė *</span><select value={bucketPastovykleId} onChange={(event) => setBucketPastovykleId(event.target.value)} required><option value="">Pasirinkite</option>{pastovykles.map((pastovykle) => <option key={pastovykle.id} value={pastovykle.id}>{pastovykle.name}</option>)}</select></label>}
+          <label className="form-field wide"><span>Pastabos</span><textarea rows={2} value={bucketNotes} onChange={(event) => setBucketNotes(event.target.value)} /></label>
+        </div>
+        <div className="form-actions"><button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}><Plus size={17} />Sukurti grupę</button></div>
+      </form>
     </div>}
 
     {context.canManageInventory && plan.items.length > 0 && <div className="event-plan-form-grid"><form className="form-panel event-workspace-form" onSubmit={createSource}><h3>Pridėti inventoriaus šaltinį</h3><div className="form-grid"><label className="form-field wide"><span>Plano poreikis *</span><select value={sourcePlanItemId} onChange={(event) => setSourcePlanItemId(event.target.value)} required><option value="">Pasirinkite</option>{plan.items.map((item) => <option key={item.id} value={item.id}>{item.name} · reikia {item.plannedQuantity}</option>)}</select></label><label className="form-field wide"><span>Inventoriaus įrašas *</span><select value={sourceItemId} onChange={(event) => setSourceItemId(event.target.value)} required><option value="">Pasirinkite</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · likutis {item.quantity}</option>)}</select></label><label className="form-field"><span>Kiekis *</span><input type="number" min="1" value={sourceQuantity} onChange={(event) => setSourceQuantity(event.target.value)} /></label></div><div className="form-actions"><button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}>Pridėti šaltinį</button></div></form>{plan.buckets.length > 0 && <form className="form-panel event-workspace-form" onSubmit={createAllocation}><h3>Paskirstyti grupei</h3><div className="form-grid"><label className="form-field wide"><span>Poreikis *</span><select value={allocationItemId} onChange={(event) => setAllocationItemId(event.target.value)} required><option value="">Pasirinkite</option>{plan.items.map((item) => <option key={item.id} value={item.id}>{item.name} · nepaskirstyta {item.unallocatedQuantity}</option>)}</select></label><label className="form-field wide"><span>Grupė *</span><select value={allocationBucketId} onChange={(event) => setAllocationBucketId(event.target.value)} required><option value="">Pasirinkite</option>{plan.buckets.map((bucket) => <option key={bucket.id} value={bucket.id}>{bucket.name}</option>)}</select></label><label className="form-field"><span>Kiekis *</span><input type="number" min="1" value={allocationQuantity} onChange={(event) => setAllocationQuantity(event.target.value)} /></label></div><div className="form-actions"><button className="primary-button compact-primary-button" type="submit" disabled={Boolean(busy)}>Paskirstyti</button></div></form>}</div>}

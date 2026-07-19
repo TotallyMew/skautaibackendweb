@@ -64,10 +64,7 @@ export function EventFormPage() {
         setLocations(locationResponse.locations);
         setUnits(unitResponse.units);
         if (event) {
-          setCanEditEvent(
-            !["COMPLETED", "CANCELLED"].includes(event.status) &&
-            event.eventRoles.some((role) => role.userId === auth.userId && role.role === "VIRSININKAS")
-          );
+          setCanEditEvent(event.capabilities?.canManage ?? false);
           setForm({
             name: event.name,
             type: event.type,
@@ -123,7 +120,12 @@ export function EventFormPage() {
         endDate: form.endDate,
         locationId: optional(form.locationId),
         organizationalUnitId: optional(form.organizationalUnitId),
-        notes: optional(form.notes)
+        notes: optional(form.notes),
+        ...(isEditing ? {
+          clearLocationId: !form.locationId,
+          clearOrganizationalUnitId: !form.organizationalUnitId,
+          clearNotes: !form.notes.trim()
+        } : {})
       };
       const saved = isEditing && eventId
         ? await api.updateEvent(auth.token, auth.activeTuntasId, eventId, payload)

@@ -56,6 +56,7 @@ fun Route.itemRoutes(itemService: ItemService, itemCheckService: ItemCheckServic
                 val status = call.request.queryParameters["status"]
                 val sharedOnly = call.request.queryParameters["sharedOnly"]?.toBooleanStrictOrNull() ?: false
                 val createdByUserId = call.request.queryParameters["createdByUserId"]
+                val responsibleUserId = call.request.queryParameters["responsibleUserId"]
                 val updatedAfter = call.request.queryParameters["updatedAfter"]?.let(::parseInstantOrNull)
                 val searchQuery = call.request.queryParameters["q"]?.trim()?.take(100)
                 val limit = call.request.queryParameters["limit"]?.let { raw ->
@@ -78,6 +79,7 @@ fun Route.itemRoutes(itemService: ItemService, itemCheckService: ItemCheckServic
                     status = status,
                     sharedOnly = sharedOnly,
                     createdByUserId = createdByUserId,
+                    responsibleUserId = responsibleUserId,
                     updatedAfter = updatedAfter,
                     searchQuery = searchQuery,
                     limit = limit,

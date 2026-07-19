@@ -175,6 +175,20 @@ class EventService {
             .firstOrNull() != null
     }
 
+    fun canViewEventPlan(eventId: UUID, tuntasId: UUID, userId: UUID): Boolean = transaction {
+        Events.selectAll()
+            .where { (Events.id eq eventId) and (Events.tuntasId eq tuntasId) }
+            .firstOrNull() ?: return@transaction false
+
+        EventRoles.selectAll()
+            .where {
+                (EventRoles.eventId eq eventId) and
+                    (EventRoles.userId eq userId) and
+                    (EventRoles.role inList (eventViewerRoles + eventPurchaseRoles).distinct())
+            }
+            .firstOrNull() != null
+    }
+
     fun canRequestEventInventory(eventId: UUID, tuntasId: UUID, userId: UUID): Boolean = transaction {
         Events.selectAll()
             .where { (Events.id eq eventId) and (Events.tuntasId eq tuntasId) }
@@ -302,7 +316,12 @@ class EventService {
         )
     }
 
-    fun getEvent(eventId: UUID, tuntasId: UUID): Result<EventResponse> {
+    fun getEvent(
+        eventId: UUID,
+        tuntasId: UUID,
+        userId: UUID? = null,
+        canViewFinanceByPermission: Boolean = false
+    ): Result<EventResponse> {
         return transaction {
             val event = Events.selectAll()
                 .where {
@@ -312,8 +331,54 @@ class EventService {
                 .firstOrNull()
                 ?: return@transaction Result.failure(Exception("Event not found"))
 
-            Result.success(toEventResponse(event))
+            val response = toEventResponse(event)
+            Result.success(
+                if (userId == null) response
+                else response.copy(capabilities = resolveEventCapabilities(event, userId, canViewFinanceByPermission))
+            )
         }
+    }
+
+    private fun resolveEventCapabilities(
+        event: ResultRow,
+        userId: UUID,
+        canViewFinanceByPermission: Boolean
+    ): EventCapabilitiesResponse {
+        val eventId = event[Events.id]
+        val roles = EventRoles.select(EventRoles.role)
+            .where { (EventRoles.eventId eq eventId) and (EventRoles.userId eq userId) }
+            .mapTo(linkedSetOf()) { it[EventRoles.role] }
+        val isResponsiblePastovykle = "PASTOVYKLES_GURU" in roles || Pastovykles.select(Pastovykles.id)
+            .where { (Pastovykles.eventId eq eventId) and (Pastovykles.responsibleUserId eq userId) }
+            .firstOrNull() != null
+        val status = event[Events.status]
+        val isStovykla = event[Events.type] == "STOVYKLA"
+        val isReadOnly = status in readOnlyEventStatuses
+        val hasManagerRole = roles.any { it in eventManagerRoles }
+        val hasInventoryRole = roles.any { it in eventInventoryRoles }
+        val hasFinanceRole = roles.any { it in eventFinanceRoles }
+        val hasPurchaseRole = roles.any { it in eventPurchaseRoles }
+        val hasViewerRole = roles.any { it in eventViewerRoles }
+        val hasRequesterRole = roles.any { it in eventInventoryRequesterRoles }
+
+        return EventCapabilitiesResponse(
+            isReadOnly = isReadOnly,
+            canManage = hasManagerRole && !isReadOnly,
+            canStart = !isReadOnly && status == "PLANNING" && roles.any { it in setOf("VIRSININKAS", "KOMENDANTAS") },
+            canAdvanceToWrapUp = !isReadOnly && status == "ACTIVE" && hasManagerRole,
+            canCancel = status == "PLANNING" && hasManagerRole,
+            canViewStaff = hasManagerRole || hasInventoryRole || isResponsiblePastovykle,
+            canViewPlan = hasViewerRole || hasPurchaseRole || isResponsiblePastovykle,
+            canViewInventory = hasViewerRole || isResponsiblePastovykle,
+            canRequestInventory = hasRequesterRole && !isReadOnly,
+            canViewPastovykles = isStovykla && (hasManagerRole || hasInventoryRole || isResponsiblePastovykle),
+            canManageInventory = hasInventoryRole && !isReadOnly,
+            canManagePurchases = hasPurchaseRole && !isReadOnly,
+            canManageFinance = hasFinanceRole && !isReadOnly,
+            canViewFinance = hasPurchaseRole || canViewFinanceByPermission,
+            canOpenMovement = status == "ACTIVE" && (hasManagerRole || hasInventoryRole || isResponsiblePastovykle),
+            canViewReconciliation = hasInventoryRole
+        )
     }
 
     fun canViewEvent(userId: UUID, tuntasId: UUID, eventId: UUID): Boolean = transaction {
@@ -507,11 +572,20 @@ class EventService {
                     it[Events.customTypeLabel] = normalizedCustomTypeLabel
                 }
                 request.status?.let { v -> it[status] = v }
-                request.notes?.let { v -> it[notes] = v }
+                when {
+                    request.clearNotes -> it[notes] = null
+                    request.notes != null -> it[notes] = request.notes
+                }
                 startDate?.let { v -> it[Events.startDate] = v }
                 endDate?.let { v -> it[Events.endDate] = v }
-                locationUUID?.let { v -> it[Events.locationId] = v }
-                orgUnitUUID?.let { v -> it[Events.organizationalUnitId] = v }
+                when {
+                    request.clearLocationId -> it[Events.locationId] = null
+                    locationUUID != null -> it[Events.locationId] = locationUUID
+                }
+                when {
+                    request.clearOrganizationalUnitId -> it[Events.organizationalUnitId] = null
+                    orgUnitUUID != null -> it[Events.organizationalUnitId] = orgUnitUUID
+                }
             }
 
             val updated = Events.selectAll()
@@ -2556,7 +2630,11 @@ class EventService {
                         itemId = itemId,
                         reservedByUserId = existing[EventInventoryItems.createdByUserId],
                         quantity = reservable,
-                        notes = request.notes ?: existing[EventInventoryItems.notes]
+                        notes = when {
+                            request.clearNotes -> null
+                            request.notes != null -> request.notes
+                            else -> existing[EventInventoryItems.notes]
+                        }
                     )?.let { error -> return@transaction Result.failure(error) }
                 }
                 reservable
@@ -2567,9 +2645,18 @@ class EventService {
             EventInventoryItems.update({ (EventInventoryItems.id eq inventoryItemId) and (EventInventoryItems.eventId eq eventId) }) {
                 request.name?.let { v -> it[name] = v.trim() }
                 request.plannedQuantity?.let { v -> it[plannedQuantity] = v }
-                bucketUUID?.let { v -> it[bucketId] = v }
-                responsibleUUID?.let { v -> it[responsibleUserId] = v }
-                request.notes?.let { v -> it[notes] = v }
+                when {
+                    request.clearBucketId -> it[bucketId] = null
+                    bucketUUID != null -> it[bucketId] = bucketUUID
+                }
+                when {
+                    request.clearResponsibleUserId -> it[responsibleUserId] = null
+                    responsibleUUID != null -> it[responsibleUserId] = responsibleUUID
+                }
+                when {
+                    request.clearNotes -> it[notes] = null
+                    request.notes != null -> it[notes] = request.notes
+                }
                 if (itemId != null) {
                     it[availableQuantity] = nextAvailable
                 }
@@ -2583,7 +2670,10 @@ class EventService {
                         it[plannedQuantity] = nextPlanned
                         it[reservedQuantity] = nextAvailable
                         it[sourceStatus] = if (nextAvailable > 0) "RESERVED" else "SHORTAGE"
-                        request.notes?.let { note -> it[notes] = note }
+                        when {
+                            request.clearNotes -> it[notes] = null
+                            request.notes != null -> it[notes] = request.notes
+                        }
                     }
                 }
 
@@ -3509,14 +3599,27 @@ class EventService {
                     .forUpdate()
                     .firstOrNull() ?: return@transaction Result.failure(Exception("Custody record not found"))
             }
+            if (sourceCustody != null && sourceCustody[EventInventoryCustody.eventInventoryItemId] != eventInventoryItemId) {
+                return@transaction Result.failure(Exception("Custody record does not belong to the selected inventory item"))
+            }
 
-            val responsiblePastovykleIds = Pastovykles.selectAll()
+            val primaryPastovykleIds = Pastovykles.selectAll()
                 .where {
                     (Pastovykles.eventId eq eventId) and
                         (Pastovykles.responsibleUserId eq performedByUserId)
                 }
                 .map { it[Pastovykles.id] }
                 .toSet()
+            val coLeaderPastovykleIds = EventRoles.selectAll()
+                .where {
+                    (EventRoles.eventId eq eventId) and
+                        (EventRoles.userId eq performedByUserId) and
+                        (EventRoles.role eq "PASTOVYKLES_GURU") and
+                        EventRoles.pastovykleId.isNotNull()
+                }
+                .mapNotNull { it[EventRoles.pastovykleId] }
+                .toSet()
+            val responsiblePastovykleIds = primaryPastovykleIds + coLeaderPastovykleIds
             fun isResponsiblePastovykle(pastovykleId: UUID?): Boolean =
                 pastovykleId != null && pastovykleId in responsiblePastovykleIds
 
@@ -3529,6 +3632,9 @@ class EventService {
             when (movementType) {
                 "PASTOVYKLE_REQUEST" -> {
                     if (pastovykleId == null) return@transaction Result.failure(Exception("Pastovykle is required"))
+                    if (!canManageInventory && !isResponsiblePastovykle(pastovykleId)) {
+                        return@transaction Result.failure(Exception("Insufficient permissions"))
+                    }
                     val inventoryRequestId = EventInventoryRequests.insert {
                         it[this.eventId] = eventId
                         it[this.eventInventoryItemId] = eventInventoryItemId
@@ -3586,6 +3692,9 @@ class EventService {
                     }
                 }
                 "CHECKOUT_TO_PERSON" -> {
+                    if (!canManageInventory && !isResponsiblePastovykle(pastovykleId)) {
+                        return@transaction Result.failure(Exception("Pastovyklės vadovas gali išduoti tik savo pastovyklės inventorių"))
+                    }
                     val targetUserId = if (canManageInventory || isResponsiblePastovykle(pastovykleId)) {
                         toUserId ?: performedByUserId
                     } else {

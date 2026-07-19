@@ -855,7 +855,7 @@ class OrganizationalUnitRoutesTest {
         configureFullApp()
         val (token, tuntasId) = client.registerAndActivateTuntininkas()
         val unit1Id = createUnit(token, tuntasId, "Skautai 1", "SKAUTU_DRAUGOVE")
-        val unit2Id = createUnit(token, tuntasId, "Gildija", "GILDIJA")
+        val unit2Id = createUnit(token, tuntasId, "Skautai 2", "SKAUTU_DRAUGOVE")
         val helperUnitId = createUnit(token, tuntasId, "Vilkai", "VILKU_DRAUGOVE")
         val (_, secondUserId) = registerSecondUser(token, tuntasId, "Skautas")
 
@@ -909,6 +909,29 @@ class OrganizationalUnitRoutesTest {
         assertFalse(unit1Id in activeUnitIds)
         assertTrue(unit2Id in activeUnitIds)
         assertTrue(helperUnitId in activeUnitIds)
+    }
+
+    @Test
+    fun `move member rejects target of a different unit type`() = testApplication {
+        configureFullApp()
+        val (token, tuntasId) = client.registerAndActivateTuntininkas()
+        val scoutUnitId = createUnit(token, tuntasId, "Skautai", "SKAUTU_DRAUGOVE")
+        val guildUnitId = createUnit(token, tuntasId, "Gildija", "GILDIJA")
+        val (_, secondUserId) = registerSecondUser(token, tuntasId, "Skautas")
+
+        client.post("/api/organizational-units/$scoutUnitId/members") {
+            contentType(ContentType.Application.Json)
+            header("Authorization", "Bearer $token")
+            header("X-Tuntas-Id", tuntasId)
+            setBody("""{ "userId": "$secondUserId", "assignmentType": "MEMBER" }""")
+        }
+
+        val response = client.post("/api/organizational-units/$guildUnitId/members/$secondUserId/move") {
+            header("Authorization", "Bearer $token")
+            header("X-Tuntas-Id", tuntasId)
+        }
+
+        assertEquals(HttpStatusCode.BadRequest, response.status)
     }
 
     @Test

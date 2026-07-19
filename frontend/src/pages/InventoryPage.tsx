@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye, Loader2, PackageCheck, PackageSearch, Plus, QrCode, RefreshCw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Item, ItemListResponse } from "../api/types";
 import { useAuth } from "../auth/AuthProvider";
@@ -16,7 +16,6 @@ import {
   type SkautaiDataTableColumn
 } from "../components/ui/Skautai";
 import { countLabel, finiteCount, itemCategoryLabel, itemConditionLabel, itemTypeLabel, statusLabel } from "../utils/display";
-import { canCreateItems } from "../utils/permissions";
 
 const pageSize = 25;
 const statusOptions = [
@@ -34,6 +33,7 @@ const typeOptions = [
 
 export function InventoryPage() {
   const { auth } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [itemsState, setItemsState] = useState<ItemListResponse | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
@@ -46,7 +46,13 @@ export function InventoryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canFetch = Boolean(auth?.token && auth.activeTuntasId);
-  const canCreate = canCreateItems(auth?.permissions);
+  const responsibleUserId = searchParams.get("responsibleUserId")?.trim() ?? "";
+  const canCreate = itemsState?.capabilities.canCreate === true;
+  const visibleStatusOptions = statusOptions.filter((option) =>
+    option.value !== "INACTIVE" || itemsState?.capabilities.canViewInactive === true
+  ).filter((option) =>
+    option.value !== "PENDING_APPROVAL" || itemsState?.capabilities.canViewPending === true
+  );
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -65,7 +71,7 @@ export function InventoryPage() {
     setIsLoading(true);
     setError(null);
     api.listItems(auth.token, auth.activeTuntasId, {
-      q: query, status, type, category, sharedOnly, limit: pageSize, offset
+      q: query, status, type, category, sharedOnly, responsibleUserId: responsibleUserId || undefined, limit: pageSize, offset
     }).then((response) => {
       if (!isCancelled) setItemsState(response);
     }).catch(() => {
@@ -77,7 +83,7 @@ export function InventoryPage() {
       if (!isCancelled) setIsLoading(false);
     });
     return () => { isCancelled = true; };
-  }, [auth?.activeTuntasId, auth?.token, category, offset, query, reloadKey, sharedOnly, status, type]);
+  }, [auth?.activeTuntasId, auth?.token, category, offset, query, reloadKey, responsibleUserId, sharedOnly, status, type]);
 
   function resetFilters() {
     setSearchInput("");
@@ -87,6 +93,11 @@ export function InventoryPage() {
     setCategory("");
     setSharedOnly(false);
     setOffset(0);
+    if (responsibleUserId) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("responsibleUserId");
+      setSearchParams(next, { replace: true });
+    }
   }
 
   const total = finiteCount(itemsState?.total);
@@ -104,11 +115,12 @@ export function InventoryPage() {
     <SkautaiPageShell className="inventory-page" eyebrow="Inventorius" title="Inventoriaus įrašai"
       description="Peržiūrėkite kiekius, saugojimo vietas, būklę ir atsakingus vienetus vienoje lentelėje."
       actions={actions} width="wide">
+      {responsibleUserId && <div className="active-filter-banner"><PackageSearch size={18} aria-hidden="true" /><span>Rodomas pasirinktam nariui priskirtas inventorius.</span><button type="button" onClick={resetFilters}>Rodyti visą inventorių</button></div>}
       <SkautaiToolbar title="Paieška ir filtrai">
         <div className="filter-bar management-filter-bar inventory-filter-bar">
           <SkautaiSearchBar value={searchInput} placeholder="Ieškoti pagal pavadinimą, kategoriją ar būklę..." onChange={setSearchInput} />
           <select value={status} aria-label="Būsena" onChange={(event) => { setStatus(event.target.value); setOffset(0); }}>
-            {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            {visibleStatusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
           <select value={type} aria-label="Tipas" onChange={(event) => { setType(event.target.value); setOffset(0); }}>
             {typeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}

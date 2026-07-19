@@ -22,7 +22,8 @@ data class CreateInventoryTemplateRequest(
 data class UpdateInventoryTemplateRequest(
     val name: String? = null,
     val eventType: String? = null,
-    val items: List<InventoryTemplateItemRequest>? = null
+    val items: List<InventoryTemplateItemRequest>? = null,
+    val clearEventType: Boolean = false
 )
 
 @Serializable

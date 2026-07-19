@@ -214,6 +214,38 @@ class MemberServiceDirectTest {
         )
         assertTrue(activeAgain.isSuccess)
 
+        val datedRole = service.updateLeadershipRole(
+            memberId,
+            assignmentId,
+            tuntasId,
+            callerUserId = memberId,
+            request = UpdateLeadershipRoleRequest(
+                startsAt = "2026-01-01T00:00:00Z",
+                expiresAt = "2026-12-31T00:00:00Z"
+            )
+        ).getOrThrow()
+        assertEquals("2026-01-01T00:00:00Z", datedRole.startsAt)
+        assertEquals("2026-12-31T00:00:00Z", datedRole.expiresAt)
+
+        val clearedDates = service.updateLeadershipRole(
+            memberId,
+            assignmentId,
+            tuntasId,
+            callerUserId = memberId,
+            request = UpdateLeadershipRoleRequest(clearStartsAt = true, clearExpiresAt = true)
+        ).getOrThrow()
+        assertEquals(null, clearedDates.startsAt)
+        assertEquals(null, clearedDates.expiresAt)
+
+        val conflictingClear = service.updateLeadershipRole(
+            memberId,
+            assignmentId,
+            tuntasId,
+            callerUserId = memberId,
+            request = UpdateLeadershipRoleRequest(startsAt = "2026-01-01T00:00:00Z", clearStartsAt = true)
+        )
+        assertEquals("startsAt cannot be set and cleared at the same time", conflictingClear.exceptionOrNull()?.message)
+
         val removedMissingCaller = service.removeLeadershipRole(
             memberId,
             assignmentId,

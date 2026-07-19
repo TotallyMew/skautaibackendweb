@@ -38,26 +38,20 @@ export function InventoryLifecycle({ item, onItemUpdated }: { item: Item; onItem
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const permissions = auth?.permissions ?? [];
-  const canManageShared = hasScoped(permissions, "items.transfer", "ALL") || permissions.includes("items.transfer");
-  const canManageAll = hasScoped(permissions, "items.update", "ALL") || hasScoped(permissions, "items.delete", "ALL") || canManageShared;
-  const canManageOwnUnit = hasScoped(permissions, "items.update", "OWN_UNIT") && Boolean(item.custodianId && auth?.leadershipUnitIds.includes(item.custodianId));
-  const transferredFromShared = item.origin === "TRANSFERRED_FROM_TUNTAS";
-  const canEdit = transferredFromShared
-    ? hasScoped(permissions, "items.update", "ALL")
-    : item.custodianId == null ? canManageAll : canManageAll || canManageOwnUnit;
-  const canDelete = canEdit && item.status !== "INACTIVE" && (!transferredFromShared || canManageShared);
-  const canRestock = canEdit && item.status === "ACTIVE";
-  const canConsume = canEdit && item.isConsumable === true && item.status === "ACTIVE" && item.quantity > 0;
+  const capabilities = item.capabilities;
+  const canEdit = capabilities?.canEdit === true;
+  const canChangeStatus = capabilities?.canChangeStatus === true;
+  const canDelete = capabilities?.canDelete === true;
+  const canRestock = capabilities?.canRestock === true;
+  const canConsume = capabilities?.canConsume === true;
   const availableToLoan = Math.max(0, item.quantity - activeLoanQuantity);
-  const canLoan = canEdit && item.status === "ACTIVE" && item.type !== "INDIVIDUAL" && availableToLoan > 0 && (!transferredFromShared || canManageShared);
-  const canTransfer = canManageShared && item.custodianId == null && item.status === "ACTIVE" && item.quantity > 0 && item.type !== "INDIVIDUAL";
-  const canReturnToShared = transferredFromShared && item.status === "ACTIVE" && item.quantity > 0 && canManageShared;
-  const canReview = item.status === "PENDING_APPROVAL" && (
-    item.targetScope === "UNIT"
-      ? hasScoped(permissions, "items.review", "OWN_UNIT") && Boolean(item.custodianId && auth?.leadershipUnitIds.includes(item.custodianId))
-      : hasScoped(permissions, "items.review", "ALL")
-  );
+  const canLoan = capabilities?.canLoan === true;
+  const canReturnLoan = capabilities?.canReturnLoan === true;
+  const canTransfer = capabilities?.canTransferToUnit === true;
+  const canReturnToShared = capabilities?.canReturnToShared === true;
+  const canReview = capabilities?.canReview === true;
+  const canWriteOff = capabilities?.canWriteOff === true;
+  const canManageLifecycle = canEdit || canRestock || canConsume || canLoan || canTransfer || canReturnToShared || canWriteOff || canChangeStatus || canDelete;
 
   const refreshSupporting = useCallback(async () => {
     if (!auth?.token || !auth.activeTuntasId) return;
@@ -71,7 +65,7 @@ export function InventoryLifecycle({ item, onItemUpdated }: { item: Item; onItem
       api.listItemHistory(token, tuntasId, item.id).catch(() => ({ entries: [], total: 0 })),
       api.listDirectItemLoans(token, tuntasId, item.id).catch(() => ({ loans: [], total: 0, activeOutstandingQuantity: 0 })),
       api.listOrganizationalUnits(token, tuntasId).catch(() => ({ units: [], total: 0 })),
-      canEdit ? api.listMembers(token, tuntasId).catch(() => ({ members: [], total: 0 })) : Promise.resolve({ members: [], total: 0 })
+      canLoan ? api.listMembers(token, tuntasId).catch(() => ({ members: [], total: 0 })) : Promise.resolve({ members: [], total: 0 })
     ]);
     setAssignments(assignmentResult.assignments);
     setConditionLog(conditionResult.entries);
@@ -83,7 +77,7 @@ export function InventoryLifecycle({ item, onItemUpdated }: { item: Item; onItem
     setMembers(memberResult.members);
     setReturnQuantities(Object.fromEntries(loanResult.loans.filter((loan) => loan.outstandingQuantity > 0).map((loan) => [loan.id, String(loan.outstandingQuantity)])));
     setIsLoading(false);
-  }, [auth?.activeTuntasId, auth?.token, canEdit, item.id]);
+  }, [auth?.activeTuntasId, auth?.token, canLoan, item.id]);
 
   useEffect(() => { void refreshSupporting(); }, [refreshSupporting]);
 
@@ -211,15 +205,15 @@ export function InventoryLifecycle({ item, onItemUpdated }: { item: Item; onItem
         <div className="inventory-lifecycle-content">
           {canReview && <section className="form-panel lifecycle-review"><div className="form-section-heading"><CheckCircle2 aria-hidden="true" /><div><h3>Laukiantis inventoriaus įrašas</h3><span>Patikrinkite duomenis ir priimkite sprendimą.</span></div></div><label className="form-field"><span>Atmetimo priežastis</span><textarea rows={2} value={rejectionReason} onChange={(event) => setRejectionReason(event.target.value)} /></label><div className="form-actions"><button className="secondary-button" type="button" disabled={Boolean(busyAction)} onClick={() => review("REJECTED")}>Atmesti</button><button className="primary-button compact-primary-button" type="button" disabled={Boolean(busyAction)} onClick={() => review("APPROVED")}>Patvirtinti</button></div></section>}
 
-          {canEdit ? <>
+          {canManageLifecycle ? <>
             <div className="inventory-action-grid">
-              <Link className="inventory-action-card" to={`/inventory/${item.id}/edit`}><Edit3 /><strong>Redaguoti</strong><span>Pagrindiniai duomenys, vieta ir atsakingas asmuo</span></Link>
+              {canEdit && <Link className="inventory-action-card" to={`/inventory/${item.id}/edit`}><Edit3 /><strong>Redaguoti</strong><span>Pagrindiniai duomenys, vieta ir atsakingas asmuo</span></Link>}
               {canRestock && <ActionCard icon={PackagePlus} title="Papildyti" description="Pridėti gautą arba nupirktą kiekį" active={actionPanel === "stock"} onClick={() => setActionPanel("stock")} />}
               {canConsume && <ActionCard icon={PackageMinus} title="Sunaudoti" description="Užregistruoti sunaudotą kiekį" active={actionPanel === "stock"} onClick={() => setActionPanel("stock")} />}
               {canTransfer && <ActionCard icon={ArrowUpFromLine} title="Perduoti vienetui" description="Perkelti dalį bendro inventoriaus" active={actionPanel === "transfer"} onClick={() => setActionPanel("transfer")} />}
               {canReturnToShared && <ActionCard icon={ArrowDownToLine} title="Grąžinti bendram" description="Grąžinti perduotą inventorių į tunto sandėlį" active={actionPanel === "return"} onClick={() => setActionPanel("return")} />}
               {canLoan && <ActionCard icon={UserPlus} title="Išduoti nariui" description={`Laisvas likutis: ${availableToLoan}`} active={actionPanel === "loan"} onClick={() => setActionPanel("loan")} />}
-              {canDelete && <ActionCard icon={Trash2} title="Nurašyti" description="Uždaryti įrašą su nurašymo priežastimi" active={actionPanel === "writeoff"} onClick={() => setActionPanel("writeoff")} danger />}
+              {canWriteOff && <ActionCard icon={Trash2} title="Nurašyti" description="Uždaryti įrašą su nurašymo priežastimi" active={actionPanel === "writeoff"} onClick={() => setActionPanel("writeoff")} danger />}
             </div>
 
             {actionPanel === "stock" && <StockForm canRestock={canRestock} canConsume={canConsume} quantity={quantity} notes={notes} purchaseDate={purchaseDate} purchasePrice={purchasePrice} disabled={Boolean(busyAction)} onQuantityChange={setQuantity} onNotesChange={setNotes} onPurchaseDateChange={setPurchaseDate} onPurchasePriceChange={setPurchasePrice} onSubmit={submitStock} />}
@@ -228,12 +222,12 @@ export function InventoryLifecycle({ item, onItemUpdated }: { item: Item; onItem
             {actionPanel === "loan" && <LoanForm members={members} userId={loanUserId} quantity={quantity} maximum={availableToLoan} dueAt={loanDueAt} notes={notes} disabled={Boolean(busyAction)} onUserChange={setLoanUserId} onQuantityChange={setQuantity} onDueAtChange={setLoanDueAt} onNotesChange={setNotes} onSubmit={submitLoan} />}
             {actionPanel === "writeoff" && <form className="form-panel" onSubmit={writeOff}><h3>Nurašyti inventorių</h3><label className="form-field"><span>Priežastis *</span><textarea rows={3} required value={writeOffReason} onChange={(event) => setWriteOffReason(event.target.value)} /></label><div className="form-actions"><button className="primary-button compact-primary-button tone-danger" type="submit" disabled={Boolean(busyAction)}>Nurašyti</button></div></form>}
 
-            <section className="form-panel lifecycle-status-panel"><div><h3>Įrašo būsena</h3><p>Dabartinė būsena: <strong>{statusLabel(item.status)}</strong></p></div><div className="form-actions">{item.status !== "ACTIVE" && <button className="secondary-button" type="button" onClick={() => updateStatus("ACTIVE")} disabled={Boolean(busyAction)}>Aktyvuoti</button>}{item.status !== "INACTIVE" && <button className="secondary-button" type="button" onClick={() => updateStatus("INACTIVE")} disabled={Boolean(busyAction)}>Pažymėti neaktyviu</button>}{canDelete && <button className="secondary-button tone-danger" type="button" onClick={deleteItem} disabled={Boolean(busyAction)}>Ištrinti įrašą</button>}</div></section>
+            {(canChangeStatus || canDelete) && <section className="form-panel lifecycle-status-panel"><div><h3>Įrašo būsena</h3><p>Dabartinė būsena: <strong>{statusLabel(item.status)}</strong></p></div><div className="form-actions">{canChangeStatus && item.status !== "ACTIVE" && <button className="secondary-button" type="button" onClick={() => updateStatus("ACTIVE")} disabled={Boolean(busyAction)}>Aktyvuoti</button>}{canChangeStatus && item.status !== "INACTIVE" && <button className="secondary-button" type="button" onClick={() => updateStatus("INACTIVE")} disabled={Boolean(busyAction)}>Pažymėti neaktyviu</button>}{canDelete && <button className="secondary-button tone-danger" type="button" onClick={deleteItem} disabled={Boolean(busyAction)}>Ištrinti įrašą</button>}</div></section>}
           </> : <SkautaiEmptyState compact icon={ShieldCheck} title="Įrašas skirtas peržiūrai" description="Valdymo veiksmai rodomi inventoriaus valdytojams arba atsakingo vieneto vadovams." />}
         </div>
       )}
 
-      {tab === "loans" && <LoansTab loans={loans} assignments={assignments} returnQuantities={returnQuantities} isLoading={isLoading} canReturn={canEdit} busyAction={busyAction} onQuantityChange={(id, value) => setReturnQuantities((current) => ({ ...current, [id]: value }))} onReturn={returnLoan} />}
+      {tab === "loans" && <LoansTab loans={loans} assignments={assignments} returnQuantities={returnQuantities} isLoading={isLoading} canReturn={canReturnLoan} busyAction={busyAction} onQuantityChange={(id, value) => setReturnQuantities((current) => ({ ...current, [id]: value }))} onReturn={returnLoan} />}
       {tab === "history" && <HistoryTab history={history} transfers={transfers} conditionLog={conditionLog} isLoading={isLoading} />}
     </section>
   );
@@ -270,7 +264,6 @@ function HistoryTab({ history, transfers, conditionLog, isLoading }: { history: 
   return <div className="inventory-history-stack"><section className="detail-section"><h3>Veiksmų istorija</h3>{history.length === 0 ? <p>Istorijos įrašų dar nėra.</p> : <div className="timeline-list">{history.map((entry) => <article key={entry.id}><History size={16} /><div><strong>{historyEventLabel(entry.eventType)}{entry.quantityChange != null ? ` · ${entry.quantityChange > 0 ? "+" : ""}${entry.quantityChange}` : ""}</strong><span>{formatDateTime(entry.createdAt)} · {entry.performedByUserName ?? "Sistema"}</span><small>{entry.notes ?? ""}</small></div></article>)}</div>}</section><section className="detail-section"><h3>Perdavimai</h3>{transfers.length === 0 ? <p>Perdavimų dar nėra.</p> : <div className="timeline-list">{transfers.map((transfer) => <article key={transfer.id}><Repeat2 size={16} /><div><strong>{transfer.fromCustodianName ?? "Bendras tuntas"} → {transfer.toCustodianName ?? "Bendras tuntas"}</strong><span>{formatDateTime(transfer.createdAt)} · {statusLabel(transfer.status)}</span><small>{transfer.notes ?? ""}</small></div></article>)}</div>}</section><section className="detail-section"><h3>Būklės žurnalas</h3>{conditionLog.length === 0 ? <p>Būklės pakeitimų dar nėra.</p> : <div className="timeline-list">{conditionLog.map((entry) => <article key={entry.id}><CheckCircle2 size={16} /><div><strong>{entry.previousCondition ? `${itemConditionLabel(entry.previousCondition)} → ` : ""}{itemConditionLabel(entry.newCondition)}</strong><span>{formatDateTime(entry.reportedAt)} · {entry.reportedByUserName ?? "Sistema"}</span><small>{entry.notes ?? ""}</small></div></article>)}</div>}</section></div>;
 }
 
-function hasScoped(permissions: string[], permission: string, scope: string) { return permissions.includes(`${permission}:${scope}`); }
 function positiveInteger(value: string) { const number = Number(value); return Number.isInteger(number) && number > 0 ? number : null; }
 function optional(value: string) { const trimmed = value.trim(); return trimmed ? trimmed : null; }
 function optionalNumber(value: string) { if (!value.trim()) return null; const number = Number(value); return Number.isFinite(number) && number >= 0 ? number : null; }
